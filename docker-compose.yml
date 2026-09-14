@@ -1,0 +1,11 @@
+services:
+  badminton-ai-web:
+    image: nginx:alpine
+    container_name: badminton_ai_app
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-8085}:80"
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+    restart: always

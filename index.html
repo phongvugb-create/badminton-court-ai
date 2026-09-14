@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BADMINTON.AI - Hệ Thống Quản Lý Sân Cầu Lông AI</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <!-- APP INTRO / SPLASH ANIMATION OVERLAY -->
+  <div id="app-splash-screen" class="splash-overlay">
+    <div class="splash-content">
+      <div class="splash-logo-wrapper">
+        <div class="splash-pulse-ring"></div>
+        <div class="splash-logo-icon">
+          <svg width="44" height="44" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 7L13 22H19L23 7L16 3L9 7Z" fill="url(#splashShuttleGrad)" opacity="0.9"/>
+            <path d="M9 7L13 22M23 7L19 22M16 3V22" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+            <path d="M10.5 11.5H21.5M11.8 16.5H20.2" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+            <path d="M13 22C13 24.8 14.3 27 16 27C17.7 27 19 24.8 19 22H13Z" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
+            <path d="M26 3L27 6L30 7L27 8L26 11L25 8L22 7L25 6L26 3Z" fill="#f59e0b"/>
+            <defs>
+              <linearGradient id="splashShuttleGrad" x1="16" y1="3" x2="16" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#10b981"/>
+                <stop offset="1" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+      <h1 class="splash-brand">BADMINTON<span style="color: var(--primary);">.AI</span></h1>
+      <p class="splash-sub">Hệ Thống Quản Lý & Cho Thuê Sân Cầu Lông AI</p>
+      <div class="splash-loader-bar"><div class="splash-loader-progress"></div></div>
+    </div>
+  </div>
+
+  <div id="app">
+    <!-- Top Navigation Bar -->
+    <header class="top-navbar">
+      <a href="#" class="brand-logo" onclick="app.switchRole('CUSTOMER'); return false;">
+        <div class="brand-icon">
+          <!-- Logo Quả Cầu Lông Độc Quyền (Badminton Shuttlecock AI SVG) -->
+          <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 7L13 22H19L23 7L16 3L9 7Z" fill="url(#shuttleGrad)" opacity="0.9"/>
+            <path d="M9 7L13 22M23 7L19 22M16 3V22" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M10.5 11.5H21.5M11.8 16.5H20.2" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M13 22C13 24.8 14.3 27 16 27C17.7 27 19 24.8 19 22H13Z" fill="#10b981" stroke="#ffffff" stroke-width="1.8"/>
+            <path d="M26 3L27 6L30 7L27 8L26 11L25 8L22 7L25 6L26 3Z" fill="#f59e0b"/>
+            <defs>
+              <linearGradient id="shuttleGrad" x1="16" y1="3" x2="16" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#10b981"/>
+                <stop offset="1" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div>
+          <span style="font-weight: 800; letter-spacing: 0.5px;">BADMINTON</span><span style="color: var(--primary); font-weight: 800;">.AI</span>
+          <div style="font-size: 0.65rem; color: var(--text-dim); font-weight: 600; margin-top: -3px; letter-spacing: 0.2px;">Hệ Thống Quản Lý Sân Cầu Lông AI</div>
+        </div>
+      </a>
+
+      <!-- Quick Role Switcher Toolbar -->
+      <div class="role-switcher-container">
+        <button class="role-btn active" id="role-btn-customer" onclick="app.switchRole('CUSTOMER')">
+          <i class="fa-solid fa-user-check"></i> Khách Hàng
+        </button>
+        <button class="role-btn" id="role-btn-owner" onclick="app.switchRole('OWNER')">
+          <i class="fa-solid fa-building-user"></i> Chủ Sân
+        </button>
+        <button class="role-btn" id="role-btn-staff" onclick="app.switchRole('STAFF')">
+          <i class="fa-solid fa-cash-register"></i> Thu Ngân Quầy
+        </button>
+        <button class="role-btn" id="role-btn-admin" onclick="app.switchRole('ADMIN')">
+          <i class="fa-solid fa-user-shield"></i> Quản Trị Viên
+        </button>
+      </div>
+
+      <!-- Header User Actions -->
+      <div class="nav-actions">
+        <button class="icon-btn" id="header-csdl-btn" onclick="app.navigateTo('ui-20')" title="Xem CSDL Web 9 Bảng (Chỉ dành cho Admin)" style="display: none; border-color: var(--primary); color: var(--primary); align-items: center; gap: 5px; padding: 0 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1);">
+          <i class="fa-solid fa-database"></i> <span>CSDL WEB</span>
+        </button>
+        <button class="icon-btn" onclick="app.toggleTheme()" title="Đổi giao diện Sáng/Tối">
+          <i class="fa-solid fa-moon" id="theme-icon"></i>
+        </button>
+        <button class="icon-btn" onclick="app.toggleGeminiDrawer()" title="Hỏi Trợ Lý Badminton AI" style="border-color: var(--accent-purple);">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-purple);"></i>
+        </button>
+        <button class="icon-btn" onclick="app.showToast('Thông báo: Bạn có 1 lịch đặt sân lúc 17:30 chiều nay!')" title="Thông báo">
+          <i class="fa-solid fa-bell"></i>
+          <span class="badge-dot"></span>
+        </button>
+        <div class="user-profile-badge" onclick="app.navigateTo('ui-08')" title="Xem Hồ Sơ Cá Nhân">
+          <div class="avatar" id="header-avatar">H</div>
+          <span class="user-info-text" id="header-user-name">Nguyễn Văn Hùng</span>
+        </div>
+        <button class="icon-btn text-danger" onclick="app.logout()" title="Đăng Xuất Hệ Thống" style="border-color: rgba(239, 68, 68, 0.4); color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <div class="main-wrapper">
+      <!-- Dynamic Sidebar Navigation -->
+      <aside class="sidebar" id="main-sidebar">
+        <div class="sidebar-title" id="sidebar-role-title">PHÂN HỆ KHÁCH HÀNG</div>
+        <nav id="sidebar-nav-list">
+          <!-- Rendered dynamically by JavaScript -->
+        </nav>
+      </aside>
+
+      <!-- Page Content View Containers (19 Screens) -->
+      <main class="page-container">
+        
+        <!-- Auth / Login / Register Page -->
+        <!-- UI-01: ĐĂNG NHẬP & XÁC THỰC TÀI KHOẢN -->
+        <section id="view-ui-01" class="screen-view">
+          <div class="page-header" style="margin-bottom: 1.5rem; text-align: center;">
+            <h1 class="page-title" style="justify-content: center;"><i class="fa-solid fa-right-to-bracket text-primary"></i> Đăng Nhập & Xác Thực Tài Khoản</h1>
+            <p class="page-subtitle">Hệ thống phân quyền RBAC 4 vai trò tích hợp quy trình phê duyệt tài khoản tự động</p>
+          </div>
+
+          <!-- Centered Login & Register Card -->
+          <div class="glass-card" style="max-width: 480px; margin: 0 auto; padding: 2rem;">
+            
+            <!-- Tab Switcher: Login / Register -->
+            <div style="display: flex; gap: 0.5rem; background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: var(--radius-md); margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+              <button type="button" class="btn active" id="auth-tab-login" onclick="app.switchAuthTab('login')" style="flex: 1; padding: 0.6rem; font-size: 0.88rem;">
+                <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
+              </button>
+              <button type="button" class="btn" id="auth-tab-register" onclick="app.switchAuthTab('register')" style="flex: 1; padding: 0.6rem; font-size: 0.88rem; color: var(--text-muted); background: transparent;">
+                <i class="fa-solid fa-user-plus"></i> Đăng Ký Tài Khoản
+              </button>
+            </div>
+
+            <!-- Form 1: LOGIN FORM -->
+            <form id="form-auth-login" onsubmit="app.handleLogin(event)">
+              <div style="text-align: center; margin-bottom: 1.5rem;">
+                <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 0.5rem;">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20a2 2 0 0 0 2-2v-1a2 2 0 0 0-4 0v1a2 2 0 0 0 2 2z" fill="#ffffff"/>
+                    <path d="M10 17L5 4h14l-5 13"/>
+                    <path d="M7 9h10"/>
+                    <path d="M8.5 13h7"/>
+                    <path d="M12 4v13"/>
+                  </svg>
+                </div>
+                <h3 style="font-size: 1.35rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px;">BADMINTON.AI</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Hệ thống quản lý sân cầu lông thông minh AI</p>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-phone text-primary"></i> Số điện thoại / Username</label>
+                <input type="text" id="login-phone" class="form-control" value="0901234567" placeholder="Nhập SĐT..." required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-lock text-primary"></i> Mật khẩu</label>
+                <div style="position: relative;">
+                  <input type="password" id="login-password" class="form-control" value="123456" placeholder="Nhập mật khẩu..." required style="padding-right: 2.5rem;">
+                  <button type="button" onclick="app.togglePasswordVisibility('login-password', this)" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;" title="Hiện/Ẩn Mật khẩu">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-user-gear text-primary"></i> Chọn Vai Trò Đăng Nhập</label>
+                <select id="login-role-select" class="form-control" onchange="app.handleLoginRoleSelectChange(this.value)" style="background-color: #0f172a; color: #f8fafc; font-weight: 600;">
+                  <option value="CUSTOMER" style="background-color: #0f172a; color: #f8fafc;">👤 Khách Hàng</option>
+                  <option value="OWNER" style="background-color: #0f172a; color: #f8fafc;">🏢 Chủ Sân</option>
+                  <option value="STAFF" style="background-color: #0f172a; color: #f8fafc;">🧾 Nhân Viên Quầy</option>
+                  <option value="ADMIN" style="background-color: #0f172a; color: #f8fafc;">🔑 Quản Trị Viên</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.25rem; padding: 0.75rem; font-size: 0.95rem; font-weight: 700;">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Hệ Thống Ngay
+              </button>
+            </form>
+
+            <!-- Form 2: REGISTER FORM (Hidden by default - Public Registration for CUSTOMER) -->
+            <form id="form-auth-register" onsubmit="app.handleRegister(event)" style="display: none;">
+              <div style="text-align: center; margin-bottom: 1.25rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 4px;">Đăng Ký Tài Khoản Khách Hàng</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Đăng ký thành viên Badminton.AI trực tuyến chỉ trong 30 giây</p>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-signature text-primary"></i> Họ và tên</label>
+                <input type="text" id="reg-fullname" class="form-control" placeholder="VD: Nguyễn Văn Hùng" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-phone text-primary"></i> Số điện thoại</label>
+                <input type="tel" id="reg-phone" class="form-control" placeholder="VD: 0988776655" pattern="[0-9]{10}" title="Nhập đủ 10 chữ số" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-lock text-primary"></i> Mật khẩu khởi tạo</label>
+                <input type="password" id="reg-password" class="form-control" placeholder="Nhập từ 6 ký tự..." required>
+              </div>
+
+              <!-- Fixed Role Notice as per 4-Tier Hierarchy Model -->
+              <input type="hidden" id="reg-role" value="CUSTOMER">
+
+              <div id="reg-role-hint" class="glass-card" style="padding: 0.85rem; font-size: 0.8rem; color: var(--accent-cyan); background: rgba(0, 229, 255, 0.08); margin-bottom: 1rem; border: 1px solid rgba(0,229,255,0.2); border-radius: var(--radius-md);">
+                <i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i> 
+                <strong>Mô hình phân quyền:</strong> Khách truy cập đăng ký trực tiếp tài khoản <strong>KHÁCH HÀNG</strong>. Tài khoản <em>Chủ Sân</em> do Admin tạo, tài khoản <em>Thu Ngân</em> do Chủ Sân tạo.
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; padding: 0.75rem; font-weight: 700;">
+                <i class="fa-solid fa-user-plus"></i> Hoàn Tất Đăng Ký Khách Hàng
+              </button>
+            </form>
+
+          </div>
+        </section>
+
+        <!-- Customer Search & AI Recommendation -->
+        <section id="view-ui-02" class="screen-view">
+          <div class="hero-youth-banner glass-card" style="background: linear-gradient(135deg, rgba(0, 230, 118, 0.12), rgba(0, 229, 255, 0.1), rgba(168, 85, 247, 0.12)); border: 1.5px solid rgba(0, 230, 118, 0.35); padding: 1.75rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; position: relative; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; position: relative; z-index: 2;">
+              <div>
+                <span class="tag-badge tag-ai" style="margin-bottom: 0.5rem; display: inline-flex;"><i class="fa-solid fa-robot"></i> Haversine GPS AI • Bán Kính 10KM ⚡</span>
+                <h1 class="hero-title-text" style="font-size: 1.8rem; font-weight: 800; line-height: 1.25; margin-top: 0.25rem;">Tìm Kiếm & Gợi Ý Sân Bằng AI</h1>
+                <p style="font-size: 0.92rem; color: var(--text-muted); margin-top: 0.5rem; max-width: 620px;">Gợi ý cụm sân thảm Yonex Pro gần bạn nhất dựa trên vị trí GPS và thuật toán học máy linh hoạt.</p>
+              </div>
+              <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="app.requestGPSLocation()"><i class="fa-solid fa-location-crosshairs"></i> Định Vị GPS Sân Gần Nhất</button>
+                <button class="btn btn-accent" onclick="app.navigateTo('ui-06')"><i class="fa-solid fa-fire"></i> Săn Kèo Ghép ELO</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="court-search-box">
+              <input type="text" id="search-keyword" class="form-control" placeholder="Tìm theo tên sân, đường, quận/huyện...">
+              <select id="search-district" class="form-control">
+                <option value="">Tất cả Quận/Huyện</option>
+                <option value="Thủ Đức">TP. Thủ Đức</option>
+                <option value="Quận 1">Quận 1</option>
+                <option value="Bình Thạnh">Quận Bình Thạnh</option>
+                <option value="Tân Bình">Quận Tân Bình</option>
+                <option value="Quận 7">Quận 7</option>
+                <option value="Gò Vấp">Quận Gò Vấp</option>
+                <option value="Quận 10">Quận 10</option>
+                <option value="Phú Nhuận">Quận Phú Nhuận</option>
+              </select>
+              <select id="search-sort" class="form-control">
+                <option value="ai">Sắp xếp: AI Gợi Ý Tốt Nhất</option>
+                <option value="distance">Khoảng cách gần nhất</option>
+                <option value="rating">Đánh giá cao nhất</option>
+              </select>
+              <button class="btn btn-primary" onclick="app.filterFacilities()">
+                <i class="fa-solid fa-magnifying-glass"></i> Tìm Sân
+              </button>
+            </div>
+          </div>
+
+          <div id="facilities-grid-container" class="facility-cards-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- Facility Detail & Slot Matrix Selection & Rental -->
+        <section id="view-ui-03" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-calendar-check text-primary"></i> Đặt Sân Trực Tuyến & Thuê Thiết Bị</h1>
+              <p class="page-subtitle">Chọn sân con, khung giờ khả dụng và tích chọn thiết bị dụng cụ thuê kèm</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('ui-02')">
+              <i class="fa-solid fa-arrow-left"></i> Quay lại tìm sân
+            </button>
+          </div>
+
+          <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h2 id="facility-detail-name">Sân Cầu Lông AI Smashing Arena</h2>
+                <p id="facility-detail-address" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 6px;">123 Đường Lê Văn Việt, TP. Thủ Đức</p>
+                <button class="btn btn-secondary btn-sm" onclick="app.openCurrentGoogleMaps()">
+                  <i class="fa-solid fa-map-location-dot text-primary"></i> 🗺️ Xem Vị Trí & Chỉ Đường Google Maps
+                </button>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Chọn Ngày Đặt Sân</label>
+                <input type="date" id="booking-date-picker" class="form-control" value="2026-09-11" onchange="app.renderSlotMatrix()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Slot Matrix Grid -->
+          <div class="glass-card">
+            <div class="slot-matrix-header">
+              <h3>Ma Trận Lịch Đặt Sân (Block 60 phút)</h3>
+              <div style="display: flex; gap: 1rem; font-size: 0.8rem;">
+                <span><i class="fa-solid fa-circle" style="color: var(--status-available);"></i> Còn trống</span>
+                <span><i class="fa-solid fa-circle" style="color: var(--status-held);"></i> Đang giữ 10p</span>
+                <span><i class="fa-solid fa-circle" style="color: var(--status-booked);"></i> Đã đặt</span>
+              </div>
+            </div>
+            <div id="slot-matrix-grid" class="matrix-grid">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Equipment Addon Selector -->
+          <div class="glass-card">
+            <h3><i class="fa-solid fa-box-open text-primary"></i> Thuê Thêm Thiết Bị & Dụng Cụ</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Tích chọn số lượng vợt, hộp cầu hoặc nước uống phát sinh kèm đơn đặt sân</p>
+            <div id="equipment-rent-container" class="equipment-rent-grid">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Selected Order Summary Bar -->
+          <div class="glass-card" style="border-color: var(--primary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">Khung giờ đã chọn:</div>
+              <div id="selected-slot-summary" style="font-size: 1.1rem; font-weight: 700; color: var(--primary);">Chưa chọn slot</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.85rem; color: var(--text-muted);">Tổng Tiền / Tiền cọc (50k):</div>
+              <div id="selected-total-summary" style="font-size: 1.3rem; font-weight: 800;">0 VNĐ</div>
+            </div>
+            <button id="btn-proceed-checkout" class="btn btn-primary" disabled onclick="app.proceedToCheckout()">
+              <i class="fa-solid fa-lock"></i> Giữ Chỗ 10 Phút & Thanh Toán Cọc
+            </button>
+          </div>
+        </section>
+
+        <!-- Checkout 10-Min Timer & VNPay QR Payment -->
+        <section id="view-ui-04" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-qrcode text-primary"></i> Thanh Toán Đặt Cọc Tự Động</h1>
+              <p class="page-subtitle">Quét mã VNPay QR Code thanh toán tiền cọc trong 10 phút giữ chỗ tự động</p>
+            </div>
+          </div>
+
+          <div class="countdown-box">
+            <div style="font-size: 0.9rem; font-weight: 600; text-transform: uppercase;">Thời Gian Giữ Chỗ Đặt Sân Còn Lại</div>
+            <div class="timer-display" id="hold-timer-display">09:58</div>
+            <div style="font-size: 0.8rem; opacity: 0.8;">Hệ thống sử dụng Redis Atomic Lock để khóa slot. Vui lòng hoàn tất thanh toán trước khi hết giờ!</div>
+          </div>
+
+          <div class="qr-payment-card">
+            <h3>CỔNG THANH TOÁN VNPAY QR</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">Quét mã bằng App Ngân hàng hoặc Ví MoMo / ZaloPay</p>
+            <div class="qr-code-img">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=VNPAY_DEPOSIT_50000_BADMINTON_AI" alt="VNPay QR Code" style="width: 100%; height: 100%;">
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 0.75rem;">
+              <div><strong>Chủ TK:</strong> CÔNG TY BADMINTON.AI VIỆT NAM</div>
+              <div><strong>Số TK:</strong> 9999 8888 6666 (MB Bank)</div>
+              <div><strong>Nội dung:</strong> COC BADMINTON BK001</div>
+            </div>
+            <div style="margin-bottom: 1rem; text-align: left; background: #f8fafc; padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
+              <div><strong>Đơn hàng:</strong> BK-20260911-001</div>
+              <div><strong>Số tiền cọc:</strong> <span style="color: #059669; font-weight: 700;">50,000 VNĐ</span></div>
+              <div><strong>Nội dung:</strong> COC BADMINTON BK001</div>
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="app.simulatePaymentSuccess()">
+              <i class="fa-solid fa-circle-check"></i> [Giả Lập] Nhận Webhook IPN Thanh Toán Thành Công
+            </button>
+          </div>
+        </section>
+
+        <!-- Electronic Ticket QR & Order History -->
+        <section id="view-ui-05" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-ticket text-primary"></i> Vé QR Điện Tử & Quản Lý Đơn Đặt</h1>
+              <p class="page-subtitle">Hiển thị mã QR Code Vé điện tử đã xác nhận để Check-in tại quầy sân</p>
+            </div>
+          </div>
+
+          <div id="booking-orders-list-container">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- AI Matchmaking Room Finder -->
+        <section id="view-ui-06" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">
+                <i class="fa-solid fa-users-viewfinder text-primary"></i> AI Matchmaking & Tìm Đối Thủ
+                <span class="tag-badge tag-ai"><i class="fa-solid fa-microchip"></i> Hệ Thống ELO Rating</span>
+              </h1>
+              <p class="page-subtitle">Tự động gợi ý và xếp phòng giao lưu phù hợp với trình độ ELO của bạn</p>
+            </div>
+            <button class="btn btn-accent" onclick="app.openCreateRoomModal()">
+              <i class="fa-solid fa-plus"></i> Tạo Phòng Ghép Mới
+            </button>
+          </div>
+
+          <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div class="avatar" style="width: 48px; height: 48px; font-size: 1.2rem;">H</div>
+              <div>
+                <div style="font-weight: 700; font-size: 1.1rem;">Nguyễn Văn Hùng</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Trình độ hiện tại: <span class="elo-badge">ELO 1450 - Trạng thái: Hạng Khá</span></div>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('ui-08')">
+                <i class="fa-solid fa-chart-line"></i> Xem Thống Kê Trận Đấu
+              </button>
+            </div>
+          </div>
+
+          <div id="matchmaking-rooms-grid" class="facility-cards-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- Matchmaking Room Detail & Live Chat Group -->
+        <section id="view-ui-07" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-comments text-primary"></i> Chi Tiết Phòng Ghép & Nhóm Chat</h1>
+              <p class="page-subtitle">Trao đổi trực tiếp giữa các thành viên phòng ghép sau khi ghép cặp thành công</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('ui-06')">
+              <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách phòng
+            </button>
+          </div>
+
+          <div class="glass-card">
+            <h2 id="room-detail-title">Giao lưu Trình độ Khá (ELO 1400 - 1600)</h2>
+            <p id="room-detail-meta" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">Sân Smashing Arena | 12/09/2026 (18:00 - 20:00) | Thể thức: Đôi Nam/Nữ</p>
+          </div>
+
+          <div class="chat-box-container">
+            <div id="chat-messages-list" class="chat-messages">
+              <!-- Rendered by JS -->
+            </div>
+            <form class="chat-input-bar" onsubmit="app.sendChatMessage(event)">
+              <input type="text" id="chat-input-text" class="form-control" placeholder="Nhập tin nhắn giao lưu..." style="border-radius: var(--radius-full); margin-right: 0.5rem;" required>
+              <button type="submit" class="btn btn-primary" style="border-radius: var(--radius-full);">
+                <i class="fa-solid fa-paper-plane"></i> Gửi
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- User Profile & ELO Stats -->
+        <section id="view-ui-08" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-id-card text-primary"></i> Hồ Sơ Cá Nhân & Chỉ Số ELO</h1>
+              <p class="page-subtitle">Quản lý tài khoản cá nhân, điểm trình độ ELO và lịch sử đấu giao lưu</p>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon purple"><i class="fa-solid fa-trophy"></i></div>
+              <div>
+                <div class="stat-value">1,450</div>
+                <div class="stat-label">Chỉ số ELO Rating</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+              <div>
+                <div class="stat-value">18 Trận</div>
+                <div class="stat-label">Đã Giao Lưu</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon cyan"><i class="fa-solid fa-percent"></i></div>
+              <div>
+                <div class="stat-value">72%</div>
+                <div class="stat-label">Tỉ lệ Thắng Matchmaking</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Field Owner Dashboard Overview -->
+        <section id="view-ui-09" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-chart-line text-primary"></i> Dashboard Tổng Quan Chủ Sân</h1>
+              <p class="page-subtitle">Theo dõi tình hình kinh doanh, số đơn đặt sân và tải lấp đầy sân trong ngày</p>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card" onclick="app.showOwnerRevenueModal()" style="cursor: pointer;" title="Bấm để xem phân tích chi tiết doanh thu hôm nay">
+              <div class="stat-icon green"><i class="fa-solid fa-dong-sign"></i></div>
+              <div>
+                <div class="stat-value">4,850,000đ</div>
+                <div class="stat-label">Doanh Thu Hôm Nay (Bấm xem)</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="document.getElementById('owner-orders-table-card').scrollIntoView({behavior: 'smooth'})" style="cursor: pointer;" title="Bấm để xem danh sách 32 đơn đặt sân trong ngày">
+              <div class="stat-icon cyan"><i class="fa-solid fa-calendar-day"></i></div>
+              <div>
+                <div class="stat-value">32 Lượt</div>
+                <div class="stat-label">Đơn Đặt Sân Trong Ngày</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="app.navigateTo('ui-14')" style="cursor: pointer;" title="Bấm để xem Heatmap tải lấp đầy giờ vàng">
+              <div class="stat-icon amber"><i class="fa-solid fa-fire"></i></div>
+              <div>
+                <div class="stat-value">88%</div>
+                <div class="stat-label">Tỷ Lệ Lấp Đầy Giờ Vàng (Bấm xem)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bảng Quản Lý Đơn Đặt Sân Trong Ngày của Chủ Sân -->
+          <div class="glass-card" id="owner-orders-table-card" style="margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3><i class="fa-solid fa-receipt text-primary"></i> Danh Sách Đơn Đặt Sân Hôm Nay (Real-time Booking)</h3>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('ui-11')">
+                  <i class="fa-solid fa-bolt"></i> Cấu Hình AI Pricing
+                </button>
+                <button class="btn btn-accent btn-sm" onclick="app.exportExcelReport()">
+                  <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Excel
+                </button>
+              </div>
+            </div>
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Mã Đơn</th>
+                  <th>Khách Hàng & SĐT</th>
+                  <th>Cụm Sân & Sân Con</th>
+                  <th>Slot Giờ</th>
+                  <th>Tổng Tiền</th>
+                  <th>Trạng Thái Cọc</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="owner-dashboard-orders-tbody">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Facility & Court Management + GPS Pinning -->
+        <section id="view-ui-10" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-map-location-dot text-primary"></i> Quản Lý Cơ Sở Sân & Sân Con</h1>
+              <p class="page-subtitle">Khai báo thông tin cơ sở sân, ghim vị trí GPS và cấu hình danh mục các sân con</p>
+            </div>
+            <button class="btn btn-primary" onclick="app.openAddFacilityModal()">
+              <i class="fa-solid fa-plus"></i> Thêm Cơ Sở Sân Mới
+            </button>
+          </div>
+
+          <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3><i class="fa-solid fa-map-location-dot text-primary"></i> Bản Đồ Ghim Tọa Độ GPS Cụm Sân (Latitude & Longitude)</h3>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="btn btn-secondary btn-sm" onclick="app.zoomMapIn()" title="Phóng to bản đồ (Zoom In)">
+                  <i class="fa-solid fa-magnifying-glass-plus text-primary"></i> Phóng To (+)
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="app.zoomMapOut()" title="Thu nhỏ bản đồ (Zoom Out)">
+                  <i class="fa-solid fa-magnifying-glass-minus text-primary"></i> Thu Nhỏ (-)
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="app.resetMapZoom()" title="Về vị trí & kích thước mặc định">
+                  <i class="fa-solid fa-rotate-left"></i> Đặt Lại
+                </button>
+              </div>
+            </div>
+
+            <!-- Address Search Bar for Map -->
+            <form onsubmit="app.searchMapAddress(event)" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <input type="text" id="map-search-address-input" class="form-control" placeholder="🔍 Nhập tên đường, địa chỉ hoặc quận/huyện tại TP.HCM (VD: 123 Lê Văn Việt, TP. Thủ Đức)..." required>
+              <button type="submit" class="btn btn-primary btn-sm" style="white-space: nowrap;">
+                <i class="fa-solid fa-magnifying-glass"></i> Tìm Vị Trí
+              </button>
+            </form>
+
+            <!-- Leaflet Interactive Real Map Container -->
+            <div id="leaflet-map-container" style="width: 100%; height: 360px; border-radius: var(--radius-md); border: 2px solid var(--primary); z-index: 1; position: relative;"></div>
+
+            <!-- Fallback Visual Map Box with Wheel & Click Zooming -->
+            <div class="map-sim-box" id="owner-gps-map-box" onclick="app.pickGPSLocation(event)" onwheel="app.handleMapWheel(event)" style="margin-top: 0.5rem; cursor: crosshair; position: relative; overflow: hidden; display: none;" title="Bấm vào vị trí bất kỳ hoặc cuộn chuột để thu phóng & ghim tọa độ">
+              <div id="map-zoom-wrapper" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; transform-origin: center center; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+                <div class="map-pin" id="owner-map-pin" style="top: 40%; left: 52%;" title="Cụm Sân Smashing Arena (10.8456, 106.7925)"></div>
+              </div>
+            </div>
+
+            <div style="margin-top: 8px; background: rgba(0,0,0,0.6); padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; border: 1px solid var(--border-color); color: #fff;">
+              📍 Tọa độ GPS được chọn: <strong id="owner-gps-coords-text" style="color: var(--primary); font-size: 0.95rem;">10.8456 N, 106.7925 E</strong> — <span style="color: var(--accent-cyan); font-weight: bold;">📍 Bấm bản đồ hoặc kéo nút ghim đỏ để đổi vị trí!</span>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3><i class="fa-solid fa-table-cells text-primary"></i> Danh Sách Sân Con Thi Đấu</h3>
+              <button class="btn btn-primary btn-sm" onclick="app.openAddCourtModal()">
+                <i class="fa-solid fa-plus"></i> Thêm Sân Con Mới
+              </button>
+            </div>
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Mã Sân</th>
+                  <th>Tên Sân Con</th>
+                  <th>Loại Thảm / Mặt Sân</th>
+                  <th>Giá Cơ Bản / Giờ</th>
+                  <th>Trạng Thái</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="owner-courts-table-body">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Time Slot Matrix & AI Dynamic Pricing Toggle -->
+        <section id="view-ui-11" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">
+                <i class="fa-solid fa-bolt text-primary"></i> Cấu Hình AI Dynamic Pricing
+                <span class="tag-badge tag-ai"><i class="fa-solid fa-robot"></i> Giá Biến Động AI</span>
+              </h1>
+              <p class="page-subtitle">AI đề xuất mức giá linh hoạt (+15% giờ vàng, -10% giờ thấp điểm) theo tải lấp đầy</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <label class="form-label" style="margin: 0;">Bật AI Dynamic Price:</label>
+              <button id="btn-toggle-ai-price" class="btn btn-accent btn-sm" onclick="app.toggleAIDynamicPricing()">
+                <i class="fa-solid fa-toggle-on"></i> Đang Bật AI Price
+              </button>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="slot-matrix-header">
+              <h3>Duyệt Ma Trận Giá AI Cho Sân 01 (Yonex Pro)</h3>
+              <span style="font-size: 0.85rem; color: var(--text-muted);">AI Engine đã cập nhật đề xuất giá mới nhất</span>
+            </div>
+            <div id="owner-ai-slot-matrix" class="matrix-grid">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Rental Equipment Inventory Management -->
+        <section id="view-ui-12" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-boxes-stacked text-primary"></i> Quản Lý Thiết Bị Dụng Cụ & Tồn Kho</h1>
+              <p class="page-subtitle">Khai báo danh mục dụng cụ cho thuê, đơn giá và số lượng tồn kho khả dụng</p>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Tên Dụng Cụ / Thiết Bị</th>
+                  <th>Đơn Giá Thuê</th>
+                  <th>Số Lượng Tồn Kho</th>
+                  <th>Đơn Vị Tính</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="owner-equipments-table-body">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Staff Account & Shift Management -->
+        <section id="view-ui-13" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-user-gear text-primary"></i> Quản Lý Ca Trực & Phân Công Nhân Viên</h1>
+              <p class="page-subtitle">Tạo tài khoản và gán quyền làm việc tại quầy POS cho nhân viên</p>
+            </div>
+            <button class="btn btn-primary" onclick="app.openAddStaffModal()">
+              <i class="fa-solid fa-user-plus"></i> Thêm Nhân Viên Ca Trực
+            </button>
+          </div>
+
+          <div class="glass-card">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Họ và Tên</th>
+                  <th>Số Điện Thoại</th>
+                  <th>Cơ Sở Được Gán</th>
+                  <th>Quyền Truy Cập</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="owner-staff-table-body">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Revenue & Occupancy Heatmap Visualizer -->
+        <section id="view-ui-14" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-chart-pie text-primary"></i> Thống Kê Báo Cáo & Heatmap Tải Sân</h1>
+              <p class="page-subtitle">Biểu đồ báo cáo doanh thu tài chính và biểu đồ nhiệt (Heatmap) lấp đầy khung giờ</p>
+            </div>
+            <button class="btn btn-secondary" onclick="app.exportExcelReport()">
+              <i class="fa-solid fa-file-excel text-primary"></i> Xuất File Báo Cáo Excel
+            </button>
+          </div>
+
+          <div class="glass-card">
+            <h3>BIỂU ĐỒ NHIỆT (HEATMAP) TẢI LẤP ĐẦY SÂN THEO KHUNG GIỜ</h3>
+            <table class="heatmap-table">
+              <thead>
+                <tr>
+                  <th>Khung Giờ Đánh Sân</th>
+                  <th>Tỷ Lệ Giữ Sân / Lấp Đầy (%)</th>
+                  <th>Mức Độ Tải</th>
+                </tr>
+              </thead>
+              <tbody id="occupancy-heatmap-body">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Staff POS Ticket QR Scanner & Phone Search -->
+        <section id="view-ui-15" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">
+                <i class="fa-solid fa-qrcode text-primary"></i> Check-in Sân tại Quầy POS
+                <span class="tag-badge tag-pos"><i class="fa-solid fa-desktop"></i> Chế Độ Thu Ngân POS</span>
+              </h1>
+              <p class="page-subtitle">Quét mã QR vé điện tử của khách hoặc tra cứu đơn đặt sân theo Số Điện Thoại</p>
+            </div>
+          </div>
+
+          <div class="glass-card" style="max-width: 780px; margin: 0 auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <h3><i class="fa-solid fa-camera text-primary"></i> Tra Cứu Đơn & Quét Mã QR Vé</h3>
+              <button class="btn btn-accent btn-sm" onclick="app.simulateCameraQRScan()">
+                <i class="fa-solid fa-camera"></i> Quét Bằng Camera
+              </button>
+            </div>
+
+            <form onsubmit="app.searchPOSBooking(); return false;" class="form-group">
+              <label class="form-label">Nhập Mã QR Ticket, Mã Đơn Đặt (Ví dụ: BK-20260911-001) Hoặc Số Điện Thoại Khách</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="pos-scan-input" class="form-control" value="TICKET-BADMINTON-8899" placeholder="Gõ mã QR Ticket hoặc SĐT khách (VD: 0901234567)..." required>
+                <button type="submit" class="btn btn-primary" style="white-space: nowrap;">
+                  <i class="fa-solid fa-magnifying-glass"></i> Tìm Đơn
+                </button>
+              </div>
+            </form>
+
+            <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted);">
+              💡 <strong>Gợi ý bấm chọn nhanh các mã vé mẫu để test quầy:</strong>
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem;">
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 3px 8px;" onclick="app.searchPOSBooking('TICKET-BADMINTON-8899')">🎟️ TICKET-BADMINTON-8899 (Nguyễn Văn Hùng)</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 3px 8px;" onclick="app.searchPOSBooking('TICKET-BADMINTON-9911')">🎟️ TICKET-BADMINTON-9911 (Trần Thị Mai)</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 3px 8px;" onclick="app.searchPOSBooking('0901234567')">📱 SĐT: 0901234567</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 3px 8px;" onclick="app.searchPOSBooking('BK-20260911-003')">📋 Mã Đơn: BK-20260911-003</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="pos-booking-result-container" style="margin-top: 1.25rem;">
+            <!-- Rendered by JS -->
+          </div>
+
+          <div class="glass-card" style="margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3><i class="fa-solid fa-list-check text-primary"></i> Danh Sách Tất Cả Vé Đặt Sân Cần Check-in Hôm Nay</h3>
+              <button class="btn btn-secondary btn-sm" onclick="app.renderPOSTodayBookingsTable()">
+                <i class="fa-solid fa-rotate"></i> Làm Mới Danh Sách
+              </button>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Mã QR Ticket</th>
+                    <th>Khách Hàng</th>
+                    <th>Cụm Sân & Khung Giờ</th>
+                    <th>Tiền Cọc / Còn Lại</th>
+                    <th>Trạng Thái</th>
+                    <th>Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody id="pos-today-bookings-tbody">
+                  <!-- Rendered by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Staff POS Billing, Overtime Calculator & Print Invoice -->
+        <section id="view-ui-16" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-file-invoice-dollar text-primary"></i> Lập Hóa Đơn & Check-out POS</h1>
+              <p class="page-subtitle">Tính phụ phí phát sinh (nước, quá giờ block 15p), khấu trừ tiền cọc và in hóa đơn tài chính</p>
+            </div>
+          </div>
+
+          <div class="glass-card" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div>
+              <h3>Tính Phụ Phí Phát Sinh</h3>
+              <div class="form-group" style="margin-top: 1rem;">
+                <label class="form-label">Phụ phí nước uống / thuê thêm đồ (VNĐ)</label>
+                <input type="number" id="pos-extra-fee" class="form-control" value="30000" onchange="app.calculatePOSFinalAmount()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Số phút chơi quá giờ (Tính block 15 phút - 23.000đ/block)</label>
+                <input type="number" id="pos-overtime-mins" class="form-control" value="15" onchange="app.calculatePOSFinalAmount()">
+              </div>
+              <div class="glass-card" style="background: rgba(0,0,0,0.3); border-color: var(--primary);">
+                <div>Tiền sân + thiết bị đặt trước: <strong>122,000đ</strong></div>
+                <div>Trừ tiền cọc đã nộp: <strong style="color: var(--primary);">-50,000đ</strong></div>
+                <div>Phụ phí phát sinh: <strong id="pos-calc-extra">30,000đ</strong></div>
+                <div>Phí quá giờ (15p): <strong id="pos-calc-overtime">23,000đ</strong></div>
+                <hr style="border-color: var(--border-color); margin: 0.5rem 0;">
+                <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary);">TỔNG TIỀN CẦN THU (CÒN LẠI): <span id="pos-calc-final">125,000đ</span></div>
+              </div>
+              <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="app.completePOSInvoice()">
+                <i class="fa-solid fa-print"></i> Xác Nhận Thanh Toán & In Hóa Đơn POS
+              </button>
+            </div>
+
+            <!-- Receipt Print View -->
+            <div>
+              <h3>In Xem Trước Hóa Đơn Quầy POS</h3>
+              <div class="pos-invoice-print" id="invoice-print-preview">
+                <div class="invoice-header">
+                  <h3 style="margin-bottom: 4px;">BADMINTON ARENA POS</h3>
+                  <div>HÓA ĐƠN THANH TOÁN SÂN</div>
+                  <div style="font-size: 0.75rem;">Mã HĐ: INV-20260911-88</div>
+                </div>
+                <div class="invoice-line"><span>Khách hàng:</span> <span>Nguyễn Văn Hùng</span></div>
+                <div class="invoice-line"><span>Khung giờ:</span> <span>17:30 - 18:30</span></div>
+                <div class="invoice-line"><span>Giờ vào sân:</span> <span>17:28:10</span></div>
+                <div class="invoice-line"><span>Giờ ra sân:</span> <span>18:45:00</span></div>
+                <hr style="border: none; border-top: 1px dashed #000; margin: 0.5rem 0;">
+                <div class="invoice-line"><span>Tiền đặt sân:</span> <span>122.000đ</span></div>
+                <div class="invoice-line"><span>Phụ phí nước:</span> <span>30.000đ</span></div>
+                <div class="invoice-line"><span>Quá giờ (15p):</span> <span>23.000đ</span></div>
+                <div class="invoice-line"><span>Đã cọc:</span> <span>-50.000đ</span></div>
+                <hr style="border: none; border-top: 1px dashed #000; margin: 0.5rem 0;">
+                <div class="invoice-line" style="font-weight: bold; font-size: 1rem;"><span>CẦN THANH TOÁN:</span> <span>125.000đ</span></div>
+                <div style="text-align: center; margin-top: 1rem; font-size: 0.75rem;">Cảm ơn quý khách & Hẹn gặp lại!</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Admin Dashboard Overview -->
+        <section id="view-ui-17" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-user-shield text-primary"></i> Trang Quản Trị Hệ Thống (Admin)</h1>
+              <p class="page-subtitle">Tổng quan sàn thể thao, phê duyệt cơ sở đăng ký mới và kiểm soát hệ thống</p>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card" onclick="document.getElementById('admin-overview-table-card').scrollIntoView({behavior: 'smooth'})" style="cursor: pointer;" title="Bấm để xem danh sách chi tiết các cụm sân đã phê duyệt">
+              <div class="stat-icon green"><i class="fa-solid fa-building-circle-check"></i></div>
+              <div>
+                <div class="stat-value" id="admin-stat-approved-count">10 Cụm</div>
+                <div class="stat-label">Cụm Sân Đã Phê Duyệt</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="app.navigateTo('ui-18')" style="cursor: pointer;" title="Bấm để chuyển tới trang Duyệt Cơ Sở Sân Mới">
+              <div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div>
+              <div>
+                <div class="stat-value" id="admin-stat-pending-count">3 Cơ Sở</div>
+                <div class="stat-label">Cơ Sở Đang Chờ Duyệt (Bấm xem)</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="app.navigateTo('ui-19')" style="cursor: pointer;" title="Bấm để chuyển tới trang Quản Lý User & Phân Quyền">
+              <div class="stat-icon purple"><i class="fa-solid fa-users"></i></div>
+              <div>
+                <div class="stat-value">15,420</div>
+                <div class="stat-label">Tổng Người Dùng Sàn (Bấm xem)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chi Tiết Các Cụm Sân Đã Phê Duyệt -->
+          <div class="glass-card" id="admin-overview-table-card" style="margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3><i class="fa-solid fa-layer-group text-primary"></i> Danh Sách Chi Tiết Cụm Sân Hệ Thống (Đã Phê Duyệt)</h3>
+              <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('ui-18')">
+                <i class="fa-solid fa-clipboard-check"></i> Kiểm Duyệt Sân Mới
+              </button>
+            </div>
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tên Cụm Sân</th>
+                  <th>Địa Chỉ Chi Nhánh</th>
+                  <th>Số Sân</th>
+                  <th>Đánh Giá</th>
+                  <th>Trạng Thái</th>
+                  <th>Thao Tác Chi Tiết</th>
+                </tr>
+              </thead>
+              <tbody id="admin-facilities-table-body">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Admin Facility Approval & GPS Check -->
+        <section id="view-ui-18" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-clipboard-check text-primary"></i> Kiểm Duyệt Cơ Sở Sân Mới</h1>
+              <p class="page-subtitle">Kiểm tra thông tin pháp lý, tọa độ GPS thực tế và phê duyệt cho phép hiển thị</p>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <h3>Danh Sách Cơ Sở Đang Chờ Duyệt (is_approved = FALSE)</h3>
+            <div id="admin-facilities-approval-container" class="facility-cards-grid">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Admin User Management & Role Toggling -->
+        <section id="view-ui-19" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-users-gear text-primary"></i> Quản Lý Người Dùng & Phân Quyền</h1>
+              <p class="page-subtitle">Quản lý danh sách tài khoản toàn hệ thống theo mô hình phân cấp 4 tầng</p>
+            </div>
+            <button class="btn btn-primary" onclick="app.openAddOwnerModal()" title="Admin tạo tài khoản Chủ Sân mới">
+              <i class="fa-solid fa-user-plus"></i> Tạo Tài Khoản Chủ Sân
+            </button>
+          </div>
+
+          <div class="glass-card">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Họ và Tên</th>
+                  <th>Số Điện Thoại</th>
+                  <th>Vai Trò (Role)</th>
+                  <th>Chỉ Số ELO</th>
+                  <th>Trạng Thái</th>
+                  <th>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-table-body">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- UI-20: WEB DATABASE INSPECTOR & 9 TABLES VISUALIZER -->
+        <section id="view-ui-20" class="screen-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title"><i class="fa-solid fa-database text-primary"></i> Trình Quan Sát CSDL Web (9 Bảng Database)</h1>
+              <p class="page-subtitle">Xem chi tiết trực tiếp dữ liệu thực tế 9 bảng CSDL hệ thống BADMINTON.AI</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="app.toggleDBViewMode()">
+                <i class="fa-solid fa-code" id="db-view-mode-icon"></i> <span id="db-view-mode-text">Xem Dạng JSON Raw</span>
+              </button>
+              <button class="btn btn-accent btn-sm" onclick="app.exportDatabaseJSON()">
+                <i class="fa-solid fa-download"></i> Xuất Tệp CSDL JSON
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Tabs Bar -->
+          <div class="glass-card" style="padding: 0.85rem;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+              <i class="fa-solid fa-table text-primary"></i> CHỌN BẢNG CSDL CẦN QUAN SÁT (9 BẢNG CS DL):
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;" id="db-table-tabs-container">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Active Table Content Card -->
+          <div class="glass-card" style="margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h3 id="db-active-table-title" style="color: var(--primary);"><i class="fa-solid fa-table"></i> Bảng CSDL: users</h3>
+                <div id="db-active-table-desc" style="font-size: 0.85rem; color: var(--text-muted);">Danh sách tài khoản người dùng hệ thống</div>
+              </div>
+              <input type="text" id="db-search-input" class="form-control" placeholder="🔍 Lọc tìm kiếm dữ liệu..." onkeyup="app.filterDatabaseRecords()" style="max-width: 260px;">
+            </div>
+
+            <!-- Table Container -->
+            <div id="db-table-view-container" style="overflow-x: auto;">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- JSON Raw Container (Hidden by default) -->
+            <pre id="db-json-view-container" style="display: none; background: #0f172a; padding: 1.25rem; border-radius: var(--radius-md); color: #38bdf8; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; max-height: 550px; overflow: auto; border: 1px solid var(--primary); line-height: 1.5;"></pre>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- FLOATING GEMINI AI ASSISTANT WIDGET -->
+  <button class="gemini-float-btn" onclick="app.toggleGeminiDrawer()" title="Hỏi Trợ Lý Gemini AI">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+  </button>
+
+  <!-- GEMINI AI CHAT DRAWER -->
+  <div class="gemini-drawer" id="gemini-chat-drawer">
+    <div class="gemini-header">
+      <div class="gemini-title">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 7L13 22H19L23 7L16 3L9 7Z" fill="url(#shuttleGrad2)" opacity="0.9"/>
+          <path d="M9 7L13 22M23 7L19 22M16 3V22" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M10.5 11.5H21.5M11.8 16.5H20.2" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M13 22C13 24.8 14.3 27 16 27C17.7 27 19 24.8 19 22H13Z" fill="#06b6d4" stroke="#ffffff" stroke-width="2"/>
+          <defs>
+            <linearGradient id="shuttleGrad2" x1="16" y1="3" x2="16" y2="22" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#10b981"/>
+              <stop offset="1" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span>Badminton Gemini AI</span>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="btn btn-secondary btn-sm" onclick="app.promptGeminiAPIKey()" title="Cài đặt Gemini API Key" style="padding: 2px 8px; font-size: 0.75rem;">
+          <i class="fa-solid fa-key"></i> Key
+        </button>
+        <button style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;" onclick="app.toggleGeminiDrawer()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div class="gemini-body" id="gemini-chat-messages">
+      <div class="chat-msg received">
+        <div style="font-size: 0.7rem; font-weight: 700; color: var(--accent-cyan);">Badminton Gemini AI</div>
+        <div>Xin chào! Tôi là Trợ lý AI Cầu Lông tích hợp Google Gemini. Bạn có thể hỏi tôi về gợi ý sân, chọn vợt, AI Dynamic Price hay ghép kèo ELO!</div>
+      </div>
+    </div>
+
+    <!-- Quick Prompt Chips -->
+    <div class="gemini-prompt-chips">
+      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('🤖 Tìm giúp tôi sân gần Thủ Đức có giá dưới 100k?')">🤖 Tìm sân Thủ Đức</button>
+      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('🏸 Tư vấn cách chọn vợt cầu lông phù hợp đập cầu?')">🏸 Tư vấn chọn vợt</button>
+      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('⚔️ ELO của tôi 1450, tìm phòng ghép phù hợp?')">⚔️ Kèo ELO 1450</button>
+      <button class="chip-btn" onclick="app.promptGeminiAPIKey()">⚙️ Nhập API Key Gemini</button>
+    </div>
+
+    <form class="gemini-footer" id="gemini-chat-form" onsubmit="app.handleGeminiSubmit(event)">
+      <input type="text" id="gemini-input-text" class="form-control" placeholder="Hỏi Trợ Lý AI Cầu Lông..." style="border-radius: var(--radius-full);" required>
+      <button type="submit" class="btn btn-primary btn-sm" style="border-radius: var(--radius-full);">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </form>
+  </div>
+
+  <!-- Dynamic Modal Overlay -->
+  <div class="modal-overlay" id="global-modal">
+    <div class="modal-content">
+      <button class="modal-close-btn" onclick="app.closeModal()"><i class="fa-solid fa-xmark"></i></button>
+      <div id="modal-body">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Include App Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/gemini.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

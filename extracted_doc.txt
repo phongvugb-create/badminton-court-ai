@@ -1,0 +1,514 @@
+HỆ THỐNG CHO THUÊ SÂN CẦU LÔNG TÍCH HỢP AI - Nhóm 4ĐẶC TẢ YÊU CẦU ỨNG DỤNG (SRS) – V1.0
+Nhóm thực hiện: Vũ Nhất Phong (Trưởng nhóm), Nguyễn Việt Anh, Trương Quốc KhánhĐơn vị: CNTT - K23ANăm 2026
+Nội Dung
+1. GIỚI THIỆU CHUNG4
+1.1 Mục đích4
+1.2 Phạm vi4
+1.3 Các định nghĩa, thuật ngữ, từ viết tắt4
+1.4 Tài liệu tham khảo6
+2. MÔ TẢ TỔNG QUAN ỨNG DỤNG7
+2.1 Mô hình Use Case tổng quát7
+2.2 Danh sách các tác nhân và mô tả8
+2.3 Danh sách Use Case và mô tả Mapping Chức năng8
+2.4 Các điều kiện phụ thuộc (Technical Requirements)10
+3. ĐẶC TẢ CÁC YÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS)10
+3.1. UC001_ Đăng ký, Đăng nhập & Xác thực Tài khoản10
+3.1.1. Mô tả use case UC00110
+3.1.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)11
+ 3.2. UC002_ Quản lý Cơ sở Sân & Danh mục Sân con12
+3.2.1. Mô tả use case UC00212
+3.2.2. Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)13
+3.3. UC003_ Quản lý Khung giờ & Cấu hình AI Dynamic Pricing13
+3.3.1.  Mô tả use case UC00313
+3.3.2. Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)14
+3.4. UC004_ Tìm kiếm & Gợi ý Sân bằng AI15
+3.4.1. Mô tả use case UC00415
+3.4.2. Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)16
+3.5. UC005_ Đặt sân Trực tuyến & Giữ chỗ 10 Phút16
+3.5.1 Mô tả use case UC00516
+3.5.2. Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)17
+ 3.6. UC006_ AI Matchmaking & Tìm Đối Thủ Giao Lưu (ELO Rating)18
+3.6.1 Mô tả use case UC00618
+3.6.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)19
+3.7. UC007_ Quản lý & Thuê Thiết bị Dụng cụ19
+3.7.1 Mô tả use case UC00719
+3.7.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)20
+3.8. UC008_ Thanh toán Đặt cọc Tự động qua Cổng Thanh toán21
+3.8.1 Mô tả use case UC00821
+3.8.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)22
+3.9. UC009_ Check-in & Lập Hóa đơn Thanh toán tại Quầy (POS)22
+3.9.1 Mô tả use case UC00922
+3.9.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)23
+3.10. UC010_ Quản lý Ca trực & Phân công Nhân viên24
+3.10.1 Mô tả use case UC01024
+3.10.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)25
+3.11. UC011_ Phê duyệt Cơ sở & Quản trị Hệ thống25
+3.11.1 Mô tả use case UC01125
+3.11.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)26
+3.12. UC012_ Thống kê Báo cáo Doanh thu & Tải lấp đầy Sân27
+3.12.1 Mô tả use case UC01227
+3.12.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)28
+4. CÁC THÔNG TIN HỖ TRỢ KHÁC & SƠ ĐỒ CSDL 9 BẢNG28
+1. GIỚI THIỆU CHUNG
+1.1. Mục đích
+Tài liệu Đặc tả Yêu cầu Ứng dụng (Software Requirements Specification - SRS) nhằm mô tả một cách đầy đủ, chi tiết và toàn diện các yêu cầu chức năng, phi chức năng, quy trình nghiệp vụ và các ràng buộc thiết kế của dự án 'Hệ thống Cho Thuê Sân Cầu Lông tích hợp AI'.
+Tài liệu này chuẩn hóa toàn bộ các Use Case, kịch bản luồng sự kiện (Basic Flow, Alternative Flow), biểu đồ hoạt động (Activity Diagram), biểu đồ trình tự (Sequence Diagram), sơ đồ CSDL 9 bảng và kiến trúc tích hợp Trí tuệ Nhân tạo (AI Engine). Đây là căn cứ kỹ thuật chính xác cho các thành viên trong đội ngũ phát triển, kiểm thử, quản lý dự án và các bên liên quan xây dựng phần mềm đúng chất lượng và đúng tiến độ.
+1.2. Phạm vi
+Hệ thống 'Cho Thuê Sân Cầu Lông tích hợp AI' là nền tảng Web App & Mobile Web hiện đại cung cấp giải pháp chuyển đổi số toàn diện cho lĩnh vực thể thao cầu lông.
+Phân hệ Khách hàng (Customer App): Cung cấp giao diện trực quan cho Khách hàng tìm kiếm cụm sân gần nhất (GPS), xem ma trận khung giờ khả dụng theo thời gian thực, đặt sân trực tuyến, thuê thiết bị đi kèm và thanh toán đặt cọc qua cổng thanh toán tự động.
+Phân hệ Chủ sân (Field Owner Portal): Giúp các chủ cơ sở quản lý thông tin cụm sân, sân con, thiết lập giá cố định / giá động AI, xem lịch đặt sân trực quan, quản lý danh mục thiết bị và theo dõi báo cáo doanh thu.
+Phân hệ Nhân viên (Staff / Counter App): Hỗ trợ nhân viên trực quầy thực hiện check-in khách đến sân, ghi nhận phí phát sinh (nước uống, thuê vợt), xuất hóa đơn tài chính tự động và check-out trả sân.
+Phân hệ Quản trị viên (Admin Portal): Kiểm duyệt các cơ sở đăng ký mới, quản lý tài khoản người dùng, phân quyền hệ thống và giám sát nhật ký hoạt động (Audit Logs).
+Phân hệ AI Engine Service: Thực hiện 2 tính năng chính: (1) AI Dynamic Pricing - tự động gợi ý / điều chỉnh giá khung giờ theo tải sân và giờ vàng; (2) AI Matchmaking & ELO Rating - ghép đội, ghép đối thủ giao lưu chuẩn trình độ dựa trên hệ số ELO và thuật toán phân tích.
+Đối tượng sử dụng tài liệu: Tài liệu này được thiết kế để sử dụng cho các đối tượng:
+1. Đội ngũ Lập trình viên (Developers): Nắm bắt cấu trúc Use Case, quy tắc nghiệp vụ, giao tiếp API và mô hình CSDL 9 bảng để lập trình chính xác.
+2. Đội ngũ Kiểm thử (QA/Testers): Dựa vào kịch bản luồng sự kiện (Basic/Alternative flows) và điều kiện trước/sau để viết Test Cases và thực hiện kiểm thử tự động / thủ công.
+3. Quản lý Dự án (Project Managers): Theo dõi tiến độ, phạm vi tính năng và điều kiện kỹ thuật để điều phối nguồn lực phát triển.
+4. Hội đồng Đánh giá & Giảng viên (Reviewers): Căn cứ đánh giá mức độ hoàn thiện kĩ thuật, tính khả thi và hàm lượng công nghệ AI của đồ án.
+1.3. Các định nghĩa, thuật ngữ, từ viết tắt
+Dưới đây là bảng giải thích toàn bộ các thuật ngữ và từ viết tắt được sử dụng xuyên suốt trong tài liệu:
+STT
+Thuật ngữ / Từ viết tắt
+Giải thích ý nghĩa
+Ghi chú
+1
+SRS
+Software Requirements Specification (Tài liệu đặc tả yêu cầu phần mềm)
+Tiêu chuẩn IEEE 830
+2
+AI Dynamic Pricing
+Tính năng AI định giá thông minh theo tải sân, khung giờ cao điểm và nhu cầu thực tế
+Thuật toán học máy / Rule-based
+3
+AI Matchmaking
+Tính năng ghép đội, tìm bạn chơi / đối thủ giao lưu theo trình độ kỹ năng
+Dựa trên ELO Rating & K-Means
+4
+ELO Rating
+Hệ số điểm đánh giá trình độ thể thao của người chơi (mặc định 1000 ELO)
+Cập nhật sau mỗi trận đấu
+5
+Time Slot
+Khung giờ thuê sân (ví dụ: 18:00 - 19:30) trên ma trận quản lý lịch
+Áp dụng theo ngày
+6
+Slot Holding
+Cơ chế giữ chỗ tạm thời (10 phút) cho khách đặt sân đang thực hiện thanh toán cọc
+Chống trùng lịch (Overbooking)
+7
+RBAC
+Role-Based Access Control (Phân quyền truy cập hệ thống dựa trên vai trò)
+CUSTOMER, FIELD_OWNER, STAFF, ADMIN
+8
+UUID
+Universally Unique Identifier (Mã định danh duy nhất toàn cầu 128-bit)
+Dùng làm Khóa chính CSDL
+9
+POS / Counter
+Point of Sale - Phân hệ quầy thu ngân thực hiện Check-in/Check-out và lập hóa đơn
+Dùng cho Nhân viên trực quầy
+10
+JWT
+JSON Web Token - Phương thức xác thực an toàn giữa Client và Server qua Token Header
+Thời hạn hết hạn tự động
+1.4. Tài liệu tham khảo
+STT
+Tên tài liệu / Nguồn tham chiếu
+Ghi chú & Ứng dụng
+1
+Tài liệu Đặc tả 9 Bảng Cơ sở dữ liệu Sân Cầu Lông AI (MO_TA_9_BANG_CSDL_SAN_CAU_LONG_AI.docx)
+Quy định schema, khóa ngoại UUID và các trường dữ liệu
+2
+Báo cáo Đồ án Môn Ứng dụng Trí tuệ Nhân tạo - Nhóm 4 ICTU
+Kế hoạch thực hiện 9 tuần và kiến trúc hệ thống
+3
+Standard IEEE Std 830-1998 for Software Requirements Specifications
+Chuẩn mẫu cấu trúc tài liệu SRS quốc tế
+4
+Tài liệu tích hợp Cổng thanh toán VNPay / ZaloPay API Document
+Quy trình tạo đơn cọc và IPN Webhook xác nhận
+2. MÔ TẢ TỔNG QUAN ỨNG DỤNG
+2.1. Mô hình Use Case tổng quát
+2.2. Danh sách các tác nhân và mô tả
+Tác nhân (Actor)
+Mô tả vai trò trong hệ thống
+Quyền hạn & Ghi chú
+Khách hàng (Customer)
+Người dùng cá nhân hoặc nhóm cầu lông có nhu cầu tìm kiếm, đặt sân, thuê dụng cụ và tìm đối thủ giao lưu.
+Truy cập phân hệ Khách hàng. Role = 'CUSTOMER'
+Chủ sân (Field Owner)
+Đơn vị hoặc cá nhân kinh doanh cụm sân cầu lông, sở hữu các sân con và thiết bị.
+Quản lý cơ sở sân, khung giờ, thiết bị và doanh thu. Role = 'FIELD_OWNER'
+Nhân viên quầy (Staff)
+Nhân viên làm việc tại cụm sân, trực tiếp đón tiếp khách, lập hóa đơn thanh toán và quản lý bàn giao vợt/cầu.
+Thực hiện tác nghiệp POS tại quầy. Role = 'STAFF'
+Quản trị viên (Admin)
+Người quản trị toàn bộ nền tảng hệ thống.
+Phê duyệt cơ sở, phân quyền, quản lý hệ thống. Role = 'ADMIN'
+AI Engine (System Actor)
+Hệ thống dịch vụ thông minh tự động chạy ngầm và xử lý tính toán học máy.
+Tương tác qua API nội bộ (Internal Microservice)
+2.3. Danh sách Use Case và mô tả Mapping Chức năng
+Bảng dưới đây thể hiện sự ánh xạ (Mapping) chính xác 1-1 giữa các Chức năng nghiệp vụ và mã Use Case tương ứng:
+Mã UC
+Tên Use Case
+Chức năng ánh xạ
+Mô tả ngắn gọn
+Tác nhân chính
+UC001
+Đăng ký & Đăng nhập Hệ thống
+F01 - Quản lý tài khoản & Xác thực
+Xác thực người dùng với Bcrypt & mã hóa JWT
+Tất cả tác nhân
+UC002
+Quản lý Cơ sở & Sân con
+F02 - Quản lý danh mục Sân
+Thêm/Sửa cụm sân (`facilities`) và sân con (`courts`)
+Chủ sân, Admin
+UC003
+Quản lý Khung giờ & Giá AI
+F03 - Thiết lập Ma trận Lịch & Giá
+Quản lý slot (`time_slots`) & áp dụng AI Dynamic Pricing
+Chủ sân, AI Engine
+UC004
+Tìm kiếm & Gợi ý Sân AI
+F04 - AI Smart Search
+Tìm kiếm sân theo địa lý GPS và AI thuật toán đề xuất
+Khách hàng, AI Engine
+UC005
+Đặt sân & Giữ chỗ giữ 10p
+F05 - Booking & Slot Holding
+Đặt lịch sân trực tuyến, giữ slot 10p chống Overbooking
+Khách hàng
+UC006
+AI Matchmaking & Ghép ELO
+F06 - Tìm bạn chơi AI
+Tạo phòng ghép trận (`matchmaking_rooms`) theo ELO Rating
+Khách hàng, AI Engine
+UC007
+Quản lý Thuê Thiết bị
+F07 - Quản lý Thiết bị đi kèm
+Cho thuê vợt, ống cầu, nước uống (`equipments`)
+Chủ sân, Khách hàng
+UC008
+Thanh toán Đặt cọc Tự động
+F08 - Payment Gateway
+Thanh toán cọc 30-50% qua QR VNPay/MOMO (`booking_orders`)
+Khách hàng
+UC009
+Check-in & Xuất Hóa đơn POS
+F09 - Quản lý Quầy & Hóa đơn
+Xác nhận khách tới, tính phụ thu và xuất hóa đơn (`invoices`)
+Nhân viên, Khách hàng
+UC010
+Quản lý Nhân viên & Ca trực
+F10 - Phân công Quầy
+Thêm nhân viên quầy và gán ca trực theo cơ sở
+Chủ sân
+UC011
+Duyệt Cơ sở & Quản trị Admin
+F11 - Admin System Control
+Duyệt cơ sở sân mới (`is_approved`), khóa tài khoản vi phạm
+Admin
+UC012
+Thống kê Doanh thu & Tải sân
+F12 - Analytics & Reporting
+Báo cáo doanh thu tài chính, biểu đồ tần suất lấp đầy sân
+Chủ sân, Admin
+2.4. Các điều kiện phụ thuộc (Technical Requirements)
+Để xây dựng và vận hành thành công hệ thống Cho thuê sân cầu lông tích hợp AI, các điều kiện hạ tầng kỹ thuật và phần mềm phụ thuộc tối thiểu cần đáp ứng bao gồm:
+ Yêu cầu Hạ tầng Phần cứng Server: Hệ điều hành Linux Ubuntu Server 22.04 LTS / Windows Server. CPU 4 vCPU, RAM 8GB (Server AI FastAPI/PyTorch), Disk SSD 100GB.
+Yêu cầu Cấu hình Mạng & Bảo mật: Kết nối Internet băng thông tối thiểu 100 Mbps, hạ tầng HTTPS với chứng chỉ SSL/TLS, hỗ trợ Webhook IPN cho Cổng thanh toán.
+Cơ sở dữ liệu & Caching: Hệ quản trị CSDL PostgreSQL 15+ hỗ trợ UUID extension, Redis 7+ cho caching ma trận slot và giữ chỗ (Slot Holding lock 10p).
+Backend Service: Node.js v18+ (Express/NestJS) cho Core API Gateway; Python 3.10+ (FastAPI, Scikit-learn, Pandas) cho AI Microservice.
+Frontend Application: Next.js 14 / React 18, TailwindCSS, Lucide Icons, Axios, Leaflet/Mapbox API cho bản đồ GPS gợi ý sân.
+Công cụ Phát triển & DevOps: Docker, Docker-Compose, Git Version Control, Visual Studio Code / Antigravity IDE, Postman API Testing.
+3. ĐẶC TẢ CÁC YÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS)
+Phần này trình bày đặc tả chi tiết toàn bộ 12 Use Cases thuộc hệ thống. Mỗi Use Case bao gồm: Mã & Tên, Mục đích, Mô tả, Tác nhân, Điều kiện trước/sau, Luồng sự kiện chính (Basic Flow), Luồng sự kiện phụ/ngoại lệ (Alternative Flows) và Mô hình Biểu đồ Activity & Sequence Diagram.
+3.1. UC001_ Đăng ký, Đăng nhập & Xác thực Tài khoản
+3.1.1. Mô tả use case UC001
+Mã Use Case
+UC001
+Tên Use Case
+Đăng ký & Đăng nhập Hệ thống
+Tác nhân chính
+Khách hàng (Customer), Chủ sân (Field Owner), Nhân viên quầy (Staff), Admin
+Tác nhân phụ
+Auth Service (Bcrypt, JWT Engine)
+Mục đích
+Xác thực danh tính người dùng, cấp Token JWT an toàn và phân quyền truy cập theo đúng Role (CUSTOMER, FIELD_OWNER, STAFF, ADMIN).
+Điều kiện trước
+Hệ thống hoạt động bình thường; Người dùng truy cập trang Đăng ký/Đăng nhập.
+Điều kiện sau
+Người dùng nhận JWT Token mã hóa, đăng nhập thành công và được chuyển hướng tới đúng giao diện phân hệ tương ứng.
+Luồng sự kiện chính (Basic Flow)
+1. Người dùng mở trang web/app và chọn 'Đăng ký' hoặc 'Đăng nhập'.2. Nhập số điện thoại/username và mật khẩu.3. Frontend gửi POST /api/v1/auth/login tới Auth Service.4. Hệ thống kiểm tra định dạng và truy vấn thông tin trong bảng users.5. Hệ thống thực hiện đối soát password_hash bằng thuật toán Bcrypt 1 chiều.6. Khởi tạo JWT Token chứa user_id & role, lưu phiên làm việc.7. Trả về kết quả thành công và chuyển hướng tới Dashboard tương ứng.
+Luồng sự kiện phụ (Alternative Flow)
+3a. Đăng ký tài khoản mới: Người dùng nhập đầy đủ Họ tên, Số điện thoại, Email và Mật khẩu. Hệ thống kiểm tra trùng lặp sđt/email -> Tạo record mới trong bảng users -> Tự động đăng nhập.
+Luồng ngoại lệ (Exception Flow)
+4a. Số điện thoại không tồn tại hoặc Mật khẩu sai -> Hệ thống báo lỗi 'Tên đăng nhập hoặc mật khẩu không chính xác'.4b. Tài khoản bị khóa (is_active = FALSE) -> Báo lỗi 'Tài khoản tạm thời bị vô hiệu hóa, vui lòng liên hệ Admin'.
+3.1.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.2. UC002_ Quản lý Cơ sở Sân & Danh mục Sân con
+3.2.1. Mô tả use case UC002
+Mã Use Case
+UC002
+Tên Use Case
+Quản lý Cơ sở Sân & Danh mục Sân con
+Tác nhân chính
+Chủ sân (Field Owner)
+Tác nhân phụ
+Admin, Mapbox/Leaflet API
+Mục đích
+Cho phép Chủ sân tạo mới, cập nhật thông tin cụm sân (facilities) và quản lý danh mục các sân con (courts).
+Điều kiện trước
+Chủ sân đã đăng nhập thành công vào Field Owner Portal.
+Điều kiện sau
+Cơ sở sân mới được ghi nhận vào bảng facilities ở trạng thái chờ duyệt (is_approved = FALSE); Sân con được khởi tạo trong bảng courts.
+Luồng sự kiện chính (Basic Flow)
+1. Chủ sân chọn menu 'Quản lý Cơ sở Sân' -> Bấm 'Thêm Cơ sở mới'.2. Nhập tên cơ sở, địa chỉ, giờ mở/đóng cửa, và vị trí tọa độ GPS (latitude, longitude).3. Khai báo danh sách sân con thuộc cơ sở (VD: Sân 1 - Thảm Yonex, Sân 2 - Thảm PVC, giá gốc/giờ).4. Hệ thống khởi tạo mã UUID cho facility_id và từng court_id.5. Lưu dữ liệu vào CSDL và gửi yêu cầu phê duyệt tới Admin Portal.
+Luồng sự kiện phụ (Alternative Flow)
+2a. Cập nhật thông tin: Chủ sân chọn cơ sở hiện có để điều chỉnh giờ hoạt động, thêm/xóa sân con hoặc thay đổi giá gốc/giờ.
+Luồng ngoại lệ (Exception Flow)
+2b. Tọa độ GPS không khả dụng -> Hệ thống hiển thị bản đồ tương tác cho Chủ sân ghim vị trí thực tế.3b. Tên sân con bị trùng lặp trong cùng một cơ sở -> Cảnh báo yêu cầu đổi tên sân.
+3.2.2. Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.3. UC003_ Quản lý Khung giờ & Cấu hình AI Dynamic Pricing
+3.3.1.  Mô tả use case UC003
+Mã Use Case
+UC003
+Tên Use Case
+Quản lý Khung giờ & Cấu hình AI Dynamic Pricing
+Tác nhân chính
+Chủ sân (Field Owner)
+Tác nhân phụ
+AI Engine Service
+Mục đích
+Thiết lập ma trận các ô thời gian (time_slots) và kích hoạt tính năng AI tự động đề xuất giá khung giờ cao điểm / thấp điểm.
+Điều kiện trước
+Sân con (courts) ở trạng thái hoạt động (ACTIVE).
+Điều kiện sau
+Ma trận time_slots theo ngày được tạo/cập nhật với giá thuê hiển thị công khai cho khách hàng.
+Luồng sự kiện chính (Basic Flow)
+1. Chủ sân chọn Sân con và Ngày cần áp dụng lịch đặt.2. Hệ thống tự động sinh các slot giờ theo block 60p/90p (VD: 17:30 - 19:00).3. Chủ sân chọn tính năng 'Bật AI Dynamic Pricing'.4. AI Engine phân tích dữ liệu lấp đầy quá khứ và dự báo nhu cầu -> Đề xuất mức giá biến động (+15% giờ vàng, -10% giờ thấp điểm).5. Chủ sân duyệt mức giá đề xuất -> Lưu ma trận slot vào bảng time_slots.
+Luồng sự kiện phụ (Alternative Flow)
+3a. Đặt giá thủ công: Chủ sân tắt AI và tự nhập giá cố định cho từng slot giờ.
+Luồng ngoại lệ (Exception Flow)
+4a. AI Engine bị mất kết nối -> Hệ thống tự động fallback về sử dụng base_price_per_hour của sân con.
+3.3.2. Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.4. UC004_ Tìm kiếm & Gợi ý Sân bằng AI
+3.4.1. Mô tả use case UC004
+Mã Use Case
+UC004
+Tên Use Case
+Tìm kiếm & Gợi ý Sân bằng AI
+Tác nhân chính
+Khách hàng (Customer)
+Tác nhân phụ
+AI Recommendation Microservice, Mapbox GPS API
+Mục đích
+Giúp Khách hàng tìm kiếm cụm sân phù hợp nhất dựa trên tọa độ GPS hiện tại, khoảng cách địa lý và khuyến nghị học máy.
+Điều kiện trước
+Khách hàng truy cập phần ứng dụng đặt sân trên Mobile Web / App.
+Điều kiện sau
+Danh sách các cụm sân gần nhất kèm khung giờ khả dụng được sắp xếp tối ưu.
+Luồng sự kiện chính (Basic Flow)
+1. Khách hàng mở ứng dụng và cấp quyền truy cập vị trí GPS.2. Ứng dụng gửi tọa độ hiện tại (latitude, longitude) về Backend.3. Backend gọi AI Recommendation Microservice.4. AI dùng thuật toán Haversine lọc cơ sở trong bán kính 10km, kết hợp điểm đánh giá & slot trống -> Sắp xếp Top sân tốt nhất.5. Giao diện hiển thị danh sách sân kèm khoảng cách (km) và bản đồ tương tác.
+Luồng sự kiện phụ (Alternative Flow)
+1a. Khách hàng không bật GPS: Cho phép gõ tìm kiếm theo tên Quận/Huyện hoặc Tỉnh/Thành phố.
+Luồng ngoại lệ (Exception Flow)
+4a. Không có sân nào còn slot trống trong khu vực -> AI gợi ý mở rộng bán kính lên 15km hoặc gợi ý ngày tiếp theo.
+3.4.2. Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.5. UC005_ Đặt sân Trực tuyến & Giữ chỗ 10 Phút
+3.5.1 Mô tả use case UC005
+Mã Use Case
+UC005
+Tên Use Case
+Đặt sân Trực tuyến & Giữ chỗ 10 Phút
+Tác nhân chính
+Khách hàng (Customer)
+Tác nhân phụ
+Redis Lock Engine
+Mục đích
+Cho phép Khách hàng đặt lịch, khóa slot thời gian 10 phút để thanh toán cọc, ngăn chặn hoàn toàn việc đặt trùng lịch (Overbooking).
+Điều kiện trước
+Khách hàng đã chọn được sân con và khung giờ có trạng thái AVAILABLE.
+Điều kiện sau
+Trạng thái slot chuyển sang HELD trong 10 phút, đơn đặt sân booking_orders ở trạng thái PENDING.
+Luồng sự kiện chính (Basic Flow)
+1. Khách hàng chọn slot giờ trên ma trận lịch -> Bấm 'Đặt sân'.2. Hệ thống gửi request khóa slot với cơ chế Redis Atomic Lock.3. Cập nhật time_slots.status = 'HELD' và thiết lập held_until = Now() + 10 phút.4. Khởi tạo đơn hàng booking_orders với status = 'PENDING'.5. Chuyển Khách hàng tới màn hình Thanh toán đặt cọc kèm đồng hồ đếm ngược 10:00.
+Luồng sự kiện phụ (Alternative Flow)
+1a. Khách hàng tích chọn thuê thêm dụng cụ (Vợt, Cầu) -> Hệ thống gọi UC007 tính thêm tiền vào đơn hàng.
+Luồng ngoại lệ (Exception Flow)
+2a. Slot vừa bị người khác giữ chỗ -> Thông báo 'Slot giờ này vừa có người chọn, vui lòng chọn slot khác'.5a. Khách không thanh toán sau 10 phút -> Redis Expire / Cronjob giải phóng slot về AVAILABLE và hủy đơn hàng PENDING.
+3.5.2. Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.6. UC006_ AI Matchmaking & Tìm Đối Thủ Giao Lưu (ELO Rating)
+3.6.1 Mô tả use case UC006
+Mã Use Case
+UC006
+Tên Use Case
+AI Matchmaking & Tìm Đối Thủ Giao Lưu (ELO Rating)
+Tác nhân chính
+Khách hàng (Customer)
+Tác nhân phụ
+AI Matchmaking Engine (K-Means Clustering)
+Mục đích
+Tự động ghép phòng giao lưu thể thao cân bằng trình độ giữa các người chơi dựa trên chỉ số ELO.
+Điều kiện trước
+Khách hàng đã đăng nhập và có điểm trình độ elo_rating trong bảng users.
+Điều kiện sau
+Phòng ghép trận đạt trạng thái MATCHED, kết nối các người chơi cùng thanh toán chia tiền sân.
+Luồng sự kiện chính (Basic Flow)
+1. Khách hàng truy cập phân hệ 'AI Ghép Đội / Tìm Bạn Chơi'.2. Chọn Ngày, Khung giờ rảnh và Tiêu chí giao lưu (Đơn/Đôi).3. AI Engine quét các phòng hiện có trong bảng matchmaking_rooms.4. Thuật toán AI kiểm tra dải ELO (required_elo_min, max) và khoảng cách địa lý -> Tự động xếp phòng phù hợp.5. Khi đủ số lượng người chơi, chuyển trạng thái phòng sang MATCHED và mở nhóm Chat.
+Luồng sự kiện phụ (Alternative Flow)
+2a. Tự mở phòng ghép: Khách hàng chủ động tạo phòng ghép mới và thiết lập dải ELO mong muốn.
+Luồng ngoại lệ (Exception Flow)
+4a. Không tìm thấy người chơi cùng trình độ -> AI gợi ý mở rộng khoảng ELO (+-150 điểm) hoặc đổi khung giờ.
+3.6.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.7. UC007_ Quản lý & Thuê Thiết bị Dụng cụ
+3.7.1 Mô tả use case UC007
+Mã Use Case
+UC007
+Tên Use Case
+Quản lý & Thuê Thiết bị Dụng cụ
+Tác nhân chính
+Chủ sân (Field Owner), Khách hàng (Customer)
+Tác nhân phụ
+Order Service
+Mục đích
+Quản lý danh mục dụng cụ (Vợt, Cầu, Nước) và cho phép Khách chọn thuê kèm khi đặt sân trực tuyến.
+Điều kiện trước
+Chủ sân đã khai báo danh mục dụng cụ trong bảng equipments.
+Điều kiện sau
+Số lượng thiết bị thuê được ghi nhận vào booking_details, trừ số lượng tồn kho khả dụng.
+Luồng sự kiện chính (Basic Flow)
+1. Chủ sân nhập thiết bị: Tên, đơn giá thuê, số lượng tồn kho quantity.2. Khách hàng tại màn hình Đặt sân tích chọn thuê kèm (VD: 2 Vợt Yonex, 1 Hộp cầu).3. Hệ thống kiểm tra số lượng khả dụng trong kho.4. Hệ thống cập nhật bảng booking_details dòng thiết bị và cộng thành tiền vào total_amount.
+Luồng sự kiện phụ (Alternative Flow)
+Không có
+Luồng ngoại lệ (Exception Flow)
+3a. Thiết bị trong kho đã hết -> Hiển thị 'Tạm hết hàng' và ẩn nút chọn.
+3.7.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.8. UC008_ Thanh toán Đặt cọc Tự động qua Cổng Thanh toán
+3.8.1 Mô tả use case UC008
+Mã Use Case
+UC008
+Tên Use Case
+Thanh toán Đặt cọc Tự động qua Cổng Thanh toán
+Tác nhân chính
+Khách hàng (Customer)
+Tác nhân phụ
+VNPay / ZaloPay / MOMO Payment Gateway (External)
+Mục đích
+Xử lý giao dịch thanh toán cọc trực tuyến an toàn, tự động xác nhận đơn đặt sân qua Webhook IPN.
+Điều kiện trước
+Đơn hàng booking_orders ở trạng thái PENDING và slot giờ đang ở trạng thái HELD.
+Điều kiện sau
+Giao dịch cọc hoàn tất (payment_status = 'DEPOSITED'), slot giờ chuyển sang BOOKED, xuất Vé QR.
+Luồng sự kiện chính (Basic Flow)
+1. Khách hàng chọn phương thức thanh toán (VNPay QR Code).2. Hệ thống tạo giao dịch thanh toán tiền cọc (deposit_amount).3. Hiển thị mã QR Code thanh toán động trên màn hình.4. Khách dùng App Ngân hàng quét mã và xác nhận chuyển tiền.5. Cổng thanh toán gọi Webhook (IPN) tới Backend xác nhận tiền đã nộp thành công.6. Cập nhật booking_orders.status = 'CONFIRMED', đổi slot sang BOOKED và tạo Vé QR.
+Luồng sự kiện phụ (Alternative Flow)
+Không có
+Luồng ngoại lệ (Exception Flow)
+5a. Chuyển tiền thất bại hoặc Hủy giao dịch -> Báo lỗi trên UI, cho phép chọn lại PTTT trước khi hết 10p giữ chỗ.
+3.8.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.9. UC009_ Check-in & Lập Hóa đơn Thanh toán tại Quầy (POS)
+3.9.1 Mô tả use case UC009
+Mã Use Case
+UC009
+Tên Use Case
+Check-in & Lập Hóa đơn Thanh toán tại Quầy (POS)
+Tác nhân chính
+Nhân viên quầy (Staff)
+Tác nhân phụ
+Khách hàng (Customer)
+Mục đích
+Xác nhận khách đến sân, ghi nhận phụ phí phát sinh (nước uống, chơi quá giờ) và xuất hóa đơn tài chính (invoices).
+Điều kiện trước
+Đơn đặt sân đã ở trạng thái CONFIRMED.
+Điều kiện sau
+Hóa đơn được lưu vào bảng invoices, đơn hàng chuyển COMPLETED, slot được giải phóng.
+Luồng sự kiện chính (Basic Flow)
+1. Khách tới sân, Nhân viên quét mã QR vé hoặc tìm theo Số điện thoại.2. Nhân viên bấm 'Xác nhận Check-in' cho khách vào sân.3. Khi hết giờ chơi, Nhân viên nhập phí phát sinh (extra_fee nước uống, tiền thuê thêm vợt).4. Hệ thống tự động tính toán: final_amount = (booking_fee + extra_fee) - deposit_deducted.5. Nhân viên nhận tiền mặt/chuyển khoản -> Bấm 'In Hóa đơn & Check-out'.6. Lưu dữ liệu bảng invoices và cập nhật đơn hàng thành COMPLETED.
+Luồng sự kiện phụ (Alternative Flow)
+Không có
+Luồng ngoại lệ (Exception Flow)
+3a. Khách chơi quá giờ -> Hệ thống tự động tính thêm phụ phí quá giờ vào extra_fee theo block 15 phút.
+3.9.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.10. UC010_ Quản lý Ca trực & Phân công Nhân viên
+3.10.1 Mô tả use case UC010
+Mã Use Case
+UC010
+Tên Use Case
+Quản lý Ca trực & Phân công Nhân viên
+Tác nhân chính
+Chủ sân (Field Owner)
+Tác nhân phụ
+Staff
+Mục đích
+Cấp tài khoản cho Nhân viên quầy và phân quyền truy cập dữ liệu POS đúng cơ sở cụm sân được gán.
+Điều kiện trước
+Chủ sân đang làm việc tại phần Field Owner Portal.
+Điều kiện sau
+Tài khoản Nhân viên (role = 'STAFF') được tạo và gán với facility_id quản lý.
+Luồng sự kiện chính (Basic Flow)
+1. Chủ sân chọn menu 'Quản lý Nhân viên' -> Bấm 'Thêm Nhân viên'.2. Nhập Họ tên, Số điện thoại, Email và chọn Cơ sở gán ca trực.3. Hệ thống khởi tạo tài khoản với role = 'STAFF' và lưu facility_id.4. Hệ thống gửi mật khẩu khởi tạo qua Email cho Nhân viên.
+Luồng sự kiện phụ (Alternative Flow)
+Không có
+Luồng ngoại lệ (Exception Flow)
+2a. Số điện thoại Nhân viên đã được đăng ký trước đó -> Thông báo lỗi trùng tài khoản.
+3.10.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.11. UC011_ Phê duyệt Cơ sở & Quản trị Hệ thống
+3.11.1 Mô tả use case UC011
+Mã Use Case
+UC011
+Tên Use Case
+Phê duyệt Cơ sở & Quản trị Admin
+Tác nhân chính
+Quản trị viên (Admin)
+Tác nhân phụ
+Owner
+Mục đích
+Kiểm duyệt tính hợp lệ của các cụm sân mới đăng ký trước khi cho phép hiển thị công khai trên ứng dụng.
+Điều kiện trước
+Admin đăng nhập thành công vào Admin Portal.
+Điều kiện sau
+Cơ sở được duyệt (is_approved = TRUE) hoặc bị từ chối kèm lý do.
+Luồng sự kiện chính (Basic Flow)
+1. Admin truy cập danh sách 'Cơ sở Chờ duyệt' (is_approved = FALSE).2. Admin kiểm tra thông tin địa chỉ, vị trí GPS và hình ảnh cơ sở.3. Admin bấm 'Phê duyệt'.4. Hệ thống cập nhật facilities.is_approved = TRUE và gửi thông báo cho Chủ sân.
+Luồng sự kiện phụ (Alternative Flow)
+3a. Từ chối phê duyệt: Admin bấm 'Từ chối' -> Nhập lý do (VD: Tọa độ GPS không chính xác) -> Gửi yêu cầu sửa đổi.
+Luồng ngoại lệ (Exception Flow)
+Không có
+3.11.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+3.12. UC012_ Thống kê Báo cáo Doanh thu & Tải lấp đầy Sân
+3.12.1 Mô tả use case UC012
+Mã Use Case
+UC012
+Tên Use Case
+Thống kê Báo cáo Doanh thu & Tải sân
+Tác nhân chính
+Chủ sân (Field Owner), Admin
+Tác nhân phụ
+Analytics Service
+Mục đích
+Cung cấp báo cáo trực quan về doanh thu tài chính, số lượng đơn hàng và biểu đồ nhiệt (Heatmap) tải lấp đầy sân.
+Điều kiện trước
+Hệ thống đã có dữ liệu giao dịch từ bảng invoices và booking_orders.
+Điều kiện sau
+Báo cáo thống kê được xuất dạng biểu đồ và cho phép tải file Excel/PDF.
+Luồng sự kiện chính (Basic Flow)
+1. Chủ sân chọn Khoảng thời gian xem báo cáo (Ví dụ: 01/08/2026 - 31/08/2026).2. Analytics Service tổng hợp dữ liệu từ invoices (final_amount, extra_fee).3. Vẽ biểu đồ doanh thu theo thời gian và biểu đồ tải lấp đầy theo khung giờ.4. Chủ sân chọn 'Xuất file Excel' để tải báo cáo về máy.
+Luồng sự kiện phụ (Alternative Flow)
+Không có
+Luồng ngoại lệ (Exception Flow)
+Không có
+3.12.2 Biểu đồ Luồng & Trình tự (Activity & Sequence Specifications)
+4. CÁC THÔNG TIN HỖ TRỢ KHÁC & SƠ ĐỒ CSDL 9 BẢNG
+Để làm rõ nền tảng lưu trữ của hệ thống, dưới đây là mô tả chi tiết 9 bảng Cơ sở dữ liệu và mối quan hệ ERD đã được chuẩn hóa:
+1. BẢNG users: Lưu trữ người dùng (Khách hàng, Chủ sân, Nhân viên, Admin). Trường `elo_rating` phục vụ AI Matchmaking.
+2. BẢNG facilities: Lưu các cụm cơ sở thể thao. Trường `latitude`, `longitude` phục vụ AI gợi ý sân theo vị trí GPS.
+3. BẢNG courts: Quản lý từng sân con thi đấu thuộc cụm sân (Loại thảm, giá cơ bản/giờ, trạng thái ACTIVE/MAINTENANCE).
+4. BẢNG time_slots: Ma trận ô thời gian đặt sân theo ngày. Trạng thái: AVAILABLE, HELD (giữ 10p), BOOKED. Tích hợp AI Dynamic Price.
+5. BẢNG equipments: Danh mục dụng cụ cho thuê kèm (Vợt, Cầu, Nước uống) và số lượng tồn kho.
+6. BẢNG booking_orders: Đơn đặt sân tổng quan giữa Khách và Cơ sở (`booking_code`, `total_amount`, `deposit_amount`, status PENDING/CONFIRMED).
+7. BẢNG booking_details: Chi tiết các sân con, slot giờ và thiết bị thuê thuộc một đơn đặt.
+8. BẢNG invoices: Hóa đơn thanh toán xuất tại quầy POS (`invoice_code`, `extra_fee`, `deposit_deducted`, `final_amount`).
+9. BẢNG matchmaking_rooms: Phòng ghép đội/đối thủ giao lưu tự động dựa trên dải ELO (`required_elo_min`, `max`) và AI Matchmaking.
