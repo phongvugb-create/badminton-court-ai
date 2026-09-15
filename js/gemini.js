@@ -12,36 +12,36 @@ class GeminiAIAssistant {
     this.systemInstruction = `
       Bạn là Smashing AI Assistant - Trợ lý Trí Tuệ Nhân Tạo chính thức của Hệ thống Quản lý & Cho Thuê Sân Cầu Lông BADMINTON.AI.
 
-      DỮ LIỆU THỰC TẾ CHI TIẾT TỪNG CỤM SÂN TRÊN HỆ THỐNG (MOCKDATA.FACILITIES):
-      1. Sân Cầu Lông AI Badminton Arena
-         - Địa chỉ: 123 Đường Lê Văn Việt, Tăng Nhơn Phú A, TP. Thủ Đức, TP.HCM
+      DỮ LIỆU THỰC TẾ CHI TIẾT TỪNG CỤM SÂN TRÊN HỆ THỐNG THỦ ĐÔ HÀ NỘI (MOCKDATA.FACILITIES):
+      1. Sân Cầu Lông AI Badminton Arena Cầu Giấy
+         - Địa chỉ: 123 Đường Cầu Giấy, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội
          - Giờ mở cửa: 06:00 - 23:00 | Số lượng: 8 sân con (thảm Yonex Pro chuẩn) | Đánh giá: 4.9⭐ (128 đánh giá)
-      2. Cụm Sân Thể Thao Pro Badminton Center
-         - Địa chỉ: 45 Nguyễn Thị Minh Khai, Phường Bến Nghé, Quận 1, TP.HCM
+      2. Cụm Sân Thể Thao Pro Badminton Center Hoàn Kiếm
+         - Địa chỉ: 45 Phố Hàng Bạc, Phường Hàng Bạc, Quận Hoàn Kiếm, Hà Nội
          - Giờ mở cửa: 05:30 - 22:30 | Số lượng: 6 sân con | Đánh giá: 4.7⭐ (95 đánh giá)
-      3. Sân Cầu Lông Sài Gòn Star
-         - Địa chỉ: 88 Phạm Văn Đồng, Phường 13, Bình Thạnh, TP.HCM
+      3. Sân Cầu Lông Tràng Tiền Star Arena
+         - Địa chỉ: 88 Phố Tràng Tiền, Phường Tràng Tiền, Quận Hoàn Kiếm, Hà Nội
          - Giờ mở cửa: 06:00 - 22:00 | Số lượng: 4 sân con | Đánh giá: 4.6⭐ (64 đánh giá)
-      4. Tân Bình Sport Hub Badminton Arena
-         - Địa chỉ: 102 Trường Chinh, Phường 12, Quận Tân Bình, TP.HCM
+      4. Đống Đa Sport Hub Badminton Arena
+         - Địa chỉ: 102 Phố Láng Hạ, Phường Láng Hạ, Quận Đống Đa, Hà Nội
          - Giờ mở cửa: 05:00 - 23:00 | Số lượng: 10 sân con | Đánh giá: 4.9⭐ (142 đánh giá)
-      5. Smash Zone Cyber Badminton D7
-         - Địa chỉ: 15 Nguyễn Hữu Thọ, Phường Tân Hưng, Quận 7, TP.HCM
+      5. Smash Zone Cyber Badminton Mỹ Đình
+         - Địa chỉ: 15 Lê Đức Thọ, Phường Mỹ Đình, Quận Nam Từ Liêm, Hà Nội
          - Giờ mở cửa: 06:00 - 23:30 | Số lượng: 8 sân con | Đánh giá: 4.8⭐ (88 đánh giá)
-      6. CLB Cầu Lông Gò Vấp Star Arena
-         - Địa chỉ: 178 Nguyễn Oanh, Phường 17, Quận Gò Vấp, TP.HCM
+      6. CLB Cầu Lông Ba Đình Star Arena
+         - Địa chỉ: 178 Điện Biên Phủ, Phường Điện Biên, Quận Ba Đình, Hà Nội
          - Giờ mở cửa: 05:30 - 23:00 | Số lượng: 12 sân con | Đánh giá: 4.8⭐ (116 đánh giá)
-      7. Nhà Thi Đấu Cầu Lông Quận 10 Yonex Pro
-         - Địa chỉ: 219 Lý Thường Kiệt, Phường 15, Quận 10, TP.HCM
+      7. Nhà Thi Đấu Cầu Lông Bách Khoa Yonex Pro
+         - Địa chỉ: 219 Phố Lê Thanh Nghị, Phường Bách Khoa, Quận Hai Bà Trưng, Hà Nội
          - Giờ mở cửa: 06:00 - 22:30 | Số lượng: 10 sân con | Đánh giá: 4.9⭐ (175 đánh giá)
-      8. Phú Nhuận Sport Center & Fuji Badminton Club
-         - Địa chỉ: 159 Phan Đăng Lưu, Phường 1, Quận Phú Nhuận, TP.HCM
+      8. Thanh Xuân Sport Center & Fuji Badminton Club
+         - Địa chỉ: 159 Lê Văn Lương, Phường Nhân Chính, Quận Thanh Xuân, Hà Nội
          - Giờ mở cửa: 05:30 - 23:00 | Số lượng: 14 sân con (Quy mô lớn nhất) | Đánh giá: 4.9⭐ (210 đánh giá)
-      9. CLB Cầu Lông Bình Thạnh Arena - Thanh Đa
-         - Địa chỉ: 48 Bình Quới, Phường 27, Quận Bình Thạnh, TP.HCM
+      9. CLB Cầu Lông Tây Hồ Arena - Quảng An
+         - Địa chỉ: 48 Đặng Thai Mai, Phường Quảng An, Quận Tây Hồ, Hà Nội
          - Giờ mở cửa: 06:00 - 22:30 | Số lượng: 8 sân con | Đánh giá: 4.7⭐ (92 đánh giá)
-      10. Thủ Đức Cyber Badminton Club - Võ Văn Ngân
-         - Địa chỉ: 215 Võ Văn Ngân, Phường Bình Thọ, TP. Thủ Đức, TP.HCM
+      10. Hà Đông Cyber Badminton Club - Văn Quán
+         - Địa chỉ: 215 Trần Phú, Phường Văn Quán, Quận Hà Đông, Hà Nội
          - Giờ mở cửa: 05:00 - 23:30 | Số lượng: 12 sân con | Đánh giá: 4.9⭐ (185 đánh giá)
 
       BẢNG GIÁ THUÊ SÂN:
@@ -118,7 +118,7 @@ class GeminiAIAssistant {
 
   async generateResponse(userPrompt) {
     if (this.isOtherProvinceQuery(userPrompt)) {
-      return "Dạ xin lỗi bạn, hiện tại hệ thống **BADMINTON.AI** chỉ hỗ trợ đặt sân và tư vấn các cụm sân cầu lông tại khu vực **TP. Hồ Chí Minh** thôi ạ! 📍\n\nNếu bạn cần tìm sân cầu lông ở khu vực TP.HCM (như TP. Thủ Đức, Quận 1, Phú Nhuận, Tân Bình, Gò Vấp, Bình Thạnh, Quận 7, Quận 10...), bạn hãy cho mình biết nhé!";
+      return "Dạ xin lỗi bạn, hiện tại hệ thống **BADMINTON.AI** tập trung hỗ trợ đặt sân và tư vấn các cụm sân cầu lông tại khu vực **Thủ Đô Hà Nội** ạ! 📍\n\nNếu bạn cần tìm sân cầu lông ở các phường/xã Hà Nội (như Cầu Giấy, Hoàn Kiếm, Đống Đa, Ba Đình, Mỹ Đình, Thanh Xuân, Tây Hồ, Hà Đông, Đông Anh, Gia Lâm...), bạn hãy cho mình biết nhé!";
     }
 
     if (!this.isBadmintonRelated(userPrompt)) {

@@ -1081,33 +1081,33 @@ class BadmintonAIApp {
     const query = input.value.trim();
     this.showToast(`🔍 Đang tìm vị trí địa chỉ: "${query}"...`);
 
-    // Các khu vực & quận phổ biến tại TP.HCM
+    // Các xã/phường & khu vực tại Thủ Đô Hà Nội
     const districtCoords = {
-      'thủ đức': { lat: 10.8456, lng: 106.7925, name: 'TP. Thủ Đức' },
-      'thu duc': { lat: 10.8456, lng: 106.7925, name: 'TP. Thủ Đức' },
-      'quận 1': { lat: 10.7769, lng: 106.7009, name: 'Quận 1' },
-      'quan 1': { lat: 10.7769, lng: 106.7009, name: 'Quận 1' },
-      'quận 3': { lat: 10.7828, lng: 106.6859, name: 'Quận 3' },
-      'quan 3': { lat: 10.7828, lng: 106.6859, name: 'Quận 3' },
-      'bình thạnh': { lat: 10.8106, lng: 106.6975, name: 'Quận Bình Thạnh' },
-      'binh thanh': { lat: 10.8106, lng: 106.6975, name: 'Quận Bình Thạnh' },
-      'gò vấp': { lat: 10.8387, lng: 106.6653, name: 'Quận Gò Vấp' },
-      'go vap': { lat: 10.8387, lng: 106.6653, name: 'Quận Gò Vấp' },
-      'tân bình': { lat: 10.8014, lng: 106.6545, name: 'Quận Tân Bình' },
-      'tan binh': { lat: 10.8014, lng: 106.6545, name: 'Quận Tân Bình' },
-      'quận 7': { lat: 10.7337, lng: 106.7170, name: 'Quận 7' },
-      'quan 7': { lat: 10.7337, lng: 106.7170, name: 'Quận 7' },
-      'phú nhuận': { lat: 10.7992, lng: 106.6803, name: 'Quận Phú Nhuận' },
-      'phu nhuan': { lat: 10.7992, lng: 106.6803, name: 'Quận Phú Nhuận' },
-      'quận 10': { lat: 10.7719, lng: 106.6678, name: 'Quận 10' },
-      'quan 10': { lat: 10.7719, lng: 106.6678, name: 'Quận 10' }
+      'cầu giấy': { lat: 21.0333, lng: 105.7994, name: 'Phường Dịch Vọng (Cầu Giấy)' },
+      'dịch vọng': { lat: 21.0333, lng: 105.7994, name: 'Phường Dịch Vọng (Cầu Giấy)' },
+      'hoàn kiếm': { lat: 21.0285, lng: 105.8542, name: 'Quận Hoàn Kiếm' },
+      'hàng bạc': { lat: 21.0338, lng: 105.8525, name: 'Phường Hàng Bạc (Hoàn Kiếm)' },
+      'tràng tiền': { lat: 21.0252, lng: 105.8561, name: 'Phường Tràng Tiền' },
+      'ba đình': { lat: 21.0341, lng: 105.8265, name: 'Quận Ba Đình' },
+      'điện biên': { lat: 21.0315, lng: 105.8398, name: 'Phường Điện Biên (Ba Đình)' },
+      'đống đa': { lat: 21.0125, lng: 105.8252, name: 'Quận Đống Đa' },
+      'láng hạ': { lat: 21.0153, lng: 105.8152, name: 'Phường Láng Hạ (Đống Đa)' },
+      'văn miếu': { lat: 21.0272, lng: 105.8356, name: 'Phường Văn Miếu' },
+      'mỹ đình': { lat: 21.0285, lng: 105.7682, name: 'Phường Mỹ Đình (Nam Từ Liêm)' },
+      'bách khoa': { lat: 21.0028, lng: 105.8475, name: 'Phường Bách Khoa (Hai Bà Trưng)' },
+      'nhân chính': { lat: 21.0062, lng: 105.8085, name: 'Phường Nhân Chính (Thanh Xuân)' },
+      'quảng an': { lat: 21.0645, lng: 105.8241, name: 'Phường Quảng An (Tây Hồ)' },
+      'văn quán': { lat: 20.9812, lng: 105.7891, name: 'Phường Văn Quán (Hà Đông)' },
+      'đông anh': { lat: 21.1412, lng: 105.8451, name: 'Xã Đông Anh' },
+      'gia lâm': { lat: 21.0454, lng: 105.9125, name: 'Xã Gia Lâm' },
+      'thanh trì': { lat: 20.9521, lng: 105.8412, name: 'Xã Thanh Trì' }
     };
 
     const qLower = query.toLowerCase();
 
     // Khớp nhanh tên quận/khu vực
     for (const key in districtCoords) {
-      if (qLower === key || qLower.startsWith(key + ' ') || qLower.endsWith(' ' + key)) {
+      if (qLower === key || qLower.includes(key)) {
         const item = districtCoords[key];
         this.moveMapToCoords(item.lat, item.lng, 15);
         this.showToast(`🎯 Tìm thấy khu vực: ${item.name}!`);
@@ -1117,7 +1117,7 @@ class BadmintonAIApp {
 
     // Tra cứu qua OpenStreetMap Nominatim Geocoding API
     try {
-      const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Hồ Chí Minh, Việt Nam')}`;
+      const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Hà Nội, Việt Nam')}`;
       const resp = await fetch(searchUrl);
       const data = await resp.json();
 
