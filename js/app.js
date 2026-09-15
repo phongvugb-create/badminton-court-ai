@@ -1950,6 +1950,8 @@ class BadmintonAIApp {
 
   renderAdminUsers() {
     const tbody = document.getElementById('admin-users-table-body');
+    if (!tbody) return;
+
     let html = '';
 
     MockData.users.forEach(u => {
@@ -1962,7 +1964,7 @@ class BadmintonAIApp {
 
       const approveBtn = isApproved 
         ? '' 
-        : `<button class="btn btn-primary btn-sm" onclick="app.approveUserAccount(${u.id})" title="Admin Phê Duyệt Kích Hoạt Tài Khoản"><i class="fa-solid fa-user-check"></i> Duyệt Quyền Admin</button>`;
+        : `<button class="btn btn-primary btn-sm" onclick="app.approveUserAccount(${u.id})" title="Admin Phê Duyệt Kích Hoạt Tài Khoản"><i class="fa-solid fa-user-check"></i> Duyệt Quyền</button>`;
 
       html += `
         <tr>
@@ -1973,16 +1975,73 @@ class BadmintonAIApp {
           <td>${u.elo_rating || 'N/A'}</td>
           <td>${statusBadge}</td>
           <td>
-            <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;">
               ${approveBtn}
-              <button class="btn btn-secondary btn-sm" onclick="app.showToast('Quản lý user ${u.name}')" title="Chi tiết tài khoản"><i class="fa-solid fa-user-shield"></i></button>
+              <button class="btn btn-secondary btn-sm" onclick="app.viewUserDetail(${u.id})" title="Xem thông tin chi tiết tài khoản"><i class="fa-solid fa-eye"></i> Xem</button>
+              <button class="btn btn-sm" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35);" onclick="app.deleteUserAccount(${u.id})" title="Xóa tài khoản này khỏi hệ thống"><i class="fa-solid fa-trash-can"></i> Xóa</button>
             </div>
           </td>
         </tr>
       `;
     });
 
-    if (tbody) tbody.innerHTML = html;
+    tbody.innerHTML = html;
+  }
+
+  viewUserDetail(userId) {
+    const u = MockData.users.find(user => user.id === userId);
+    if (!u) return;
+
+    const modalBody = document.getElementById('modal-body');
+    const isApproved = u.is_approved !== false;
+    modalBody.innerHTML = `
+      <div style="text-align: left;">
+        <h3 style="color: var(--primary); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-id-card"></i> Chi Tiết Tài Khoản #${u.id}
+        </h3>
+        <hr style="border-color: var(--border-color); margin: 0.75rem 0;">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+          <div><strong>Họ và tên:</strong> <span style="color: var(--text-main); font-weight: 700;">${u.name}</span></div>
+          <div><strong>Số điện thoại / Login:</strong> <code style="color: var(--accent-cyan); font-weight: 700;">${u.phone}</code></div>
+          <div><strong>Phân hệ vai trò:</strong> <span class="tag-badge tag-ai">${u.role}</span></div>
+          <div><strong>Trình độ ELO:</strong> <span style="color: #f59e0b; font-weight: 700;">${u.elo_rating || 'N/A'} ELO</span></div>
+          <div><strong>Trạng thái phê duyệt:</strong> ${isApproved ? '<span style="color: var(--primary); font-weight: bold;">✅ Đã kích hoạt (Active)</span>' : '<span style="color: #ef4444; font-weight: bold;">⏳ Chờ duyệt</span>'}</div>
+          <div><strong>Ngày khởi tạo:</strong> ${u.created_at || 'Khởi tạo hệ thống'}</div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button class="btn btn-secondary btn-sm" onclick="app.closeModal()">Đóng</button>
+          <button class="btn btn-danger btn-sm" onclick="app.closeModal(); app.deleteUserAccount(${u.id});">
+            <i class="fa-solid fa-trash-can"></i> Xóa Tài Khoản Này
+          </button>
+        </div>
+      </div>
+    `;
+    this.openModal();
+  }
+
+  deleteUserAccount(userId) {
+    const user = MockData.users.find(u => u.id === userId);
+    if (!user) {
+      this.showToast("⛔ Không tìm thấy tài khoản để xóa!", "error");
+      return;
+    }
+
+    if (this.currentUser && this.currentUser.id === userId) {
+      this.showToast("⛔ Quyền Admin: Không thể tự xóa tài khoản đang đăng nhập hiện tại!", "error");
+      return;
+    }
+
+    if (confirm(`⚠️ XÁC NHẬN XÓA TÀI KHOẢN:\n\n- Họ tên: ${user.name}\n- SĐT: ${user.phone}\n- Vai trò: ${user.role}\n- ID: #${user.id}\n\nBạn có chắc chắn muốn XÓA VĨNH VIỄN tài khoản này khỏi hệ thống? Hành động này sẽ được đồng bộ ngay lập tức vào CSDL!`)) {
+      MockData.users = MockData.users.filter(u => u.id !== userId);
+      if (typeof saveMockDataToLocalStorage === 'function') {
+        saveMockDataToLocalStorage();
+      }
+
+      this.renderAdminUsers();
+      this.renderOwnerStaff();
+      if (this.currentView === 'ui-20') this.renderDatabaseInspector();
+      this.showToast(`🗑️ Đã xóa vĩnh viễn tài khoản "${user.name}" (#${userId}) khỏi hệ thống!`);
+    }
   }
 
   /* ------------------------------------------------------------------------
