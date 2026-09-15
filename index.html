@@ -102,11 +102,11 @@
           <i class="fa-solid fa-bell"></i>
           <span class="badge-dot"></span>
         </button>
-        <div class="user-profile-badge" onclick="app.navigateTo('ui-08')" title="Xem Hồ Sơ Cá Nhân">
-          <div class="avatar" id="header-avatar">H</div>
-          <span class="user-info-text" id="header-user-name">Nguyễn Văn Hùng</span>
+        <div class="user-profile-badge" onclick="app.handleHeaderProfileClick()" title="Bấm để Đăng Nhập / Xem Hồ Sơ">
+          <div class="avatar" id="header-avatar">👤</div>
+          <span class="user-info-text" id="header-user-name">Chưa Đăng Nhập</span>
         </div>
-        <button class="icon-btn text-danger" onclick="app.logout()" title="Đăng Xuất Hệ Thống" style="border-color: rgba(239, 68, 68, 0.4); color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+        <button class="icon-btn text-danger" id="header-logout-btn" onclick="app.logout()" title="Đăng Xuất Hệ Thống" style="display: none; border-color: rgba(239, 68, 68, 0.4); color: #ef4444; background: rgba(239, 68, 68, 0.1);">
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>
       </div>

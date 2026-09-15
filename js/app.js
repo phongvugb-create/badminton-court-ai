@@ -6,7 +6,7 @@ class BadmintonAIApp {
   constructor() {
     this.currentRole = 'CUSTOMER';
     this.currentView = 'ui-02';
-    this.currentUser = MockData.users[0]; // Default: Nguyễn Văn Hùng
+    this.currentUser = null; // Default: Chưa đăng nhập (Giao diện Khách hàng vãng lai)
     
     // Booking & State Tracking
     this.selectedFacility = MockData.facilities[0];
@@ -26,6 +26,7 @@ class BadmintonAIApp {
 
   init() {
     this.initSplashScreen();
+    this.updateHeaderUserUI();
     this.renderSidebarNav();
     this.navigateTo(this.currentView);
     this.renderCustomerFacilities();
@@ -42,6 +43,31 @@ class BadmintonAIApp {
     this.renderAdminOverviewFacilities();
     this.renderOwnerDashboardOrders();
     this.initLeafletMap();
+  }
+
+  updateHeaderUserUI() {
+    const avatarEl = document.getElementById('header-avatar');
+    const nameEl = document.getElementById('header-user-name');
+    const logoutBtn = document.getElementById('header-logout-btn');
+
+    if (this.currentUser) {
+      if (avatarEl) avatarEl.textContent = this.currentUser.avatar || '👤';
+      if (nameEl) nameEl.textContent = this.currentUser.name;
+      if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+    } else {
+      if (avatarEl) avatarEl.textContent = '👤';
+      if (nameEl) nameEl.textContent = 'Chưa Đăng Nhập';
+      if (logoutBtn) logoutBtn.style.display = 'none';
+    }
+  }
+
+  handleHeaderProfileClick() {
+    if (this.currentUser) {
+      this.navigateTo('ui-08');
+    } else {
+      this.navigateTo('ui-01');
+      this.showToast('ℹ️ Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để xem thông tin cá nhân!', 'info');
+    }
   }
 
   initSplashScreen() {
@@ -80,10 +106,10 @@ class BadmintonAIApp {
         return false;
       }
 
-      // If no user is logged in, find default demo user for this role
-      if (!this.currentUser) {
+      // If no user is logged in:
+      // If switching to non-CUSTOMER role, auto load demo user for that role so testing is smooth
+      if (!this.currentUser && role !== 'CUSTOMER') {
         const userRoleMap = {
-          'CUSTOMER': MockData.users.find(u => u.role === 'CUSTOMER') || MockData.users[0],
           'OWNER': MockData.users.find(u => u.role === 'OWNER') || MockData.users[2],
           'STAFF': MockData.users.find(u => u.role === 'STAFF') || MockData.users[3],
           'ADMIN': MockData.users.find(u => u.role === 'ADMIN') || MockData.users[4]
@@ -110,12 +136,7 @@ class BadmintonAIApp {
     if (activeBtn) activeBtn.classList.add('active');
 
     // Update Header Avatar & Name
-    if (this.currentUser) {
-      const avatarEl = document.getElementById('header-avatar');
-      const nameEl = document.getElementById('header-user-name');
-      if (avatarEl) avatarEl.textContent = this.currentUser.avatar || 'U';
-      if (nameEl) nameEl.textContent = this.currentUser.name;
-    }
+    this.updateHeaderUserUI();
 
     // Update Sidebar Navigation according to Role
     this.renderSidebarNav();
@@ -134,18 +155,14 @@ class BadmintonAIApp {
   logout() {
     this.currentUser = null;
     this.currentRole = 'CUSTOMER';
-
-    const avatarEl = document.getElementById('header-avatar');
-    const nameEl = document.getElementById('header-user-name');
-    if (avatarEl) avatarEl.textContent = '👤';
-    if (nameEl) nameEl.textContent = 'Chưa Đăng Nhập';
+    this.updateHeaderUserUI();
 
     document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.getElementById('role-btn-customer');
     if (activeBtn) activeBtn.classList.add('active');
 
     this.renderSidebarNav();
-    this.navigateTo('ui-01');
+    this.navigateTo('ui-02');
     this.showToast('👋 Đã đăng xuất khỏi hệ thống!');
   }
 
@@ -458,6 +475,11 @@ class BadmintonAIApp {
   }
 
   proceedToCheckout() {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản trước khi thực hiện Đặt Sân & Thanh Toán!", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
     this.navigateTo('ui-04');
     this.startHoldTimer();
     this.showToast("Hệ thống đã kích hoạt Redis Atomic Lock giữ chỗ slot giờ trong 10:00 phút!");
