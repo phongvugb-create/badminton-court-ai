@@ -394,3 +394,36 @@ const MockData = {
     { hour: "21:00 - 23:00", rate: 70, status: "mid" }
   ]
 };
+
+// Luu va Tai du lieu tu dong vao LocalStorage de khong bi mat du lieu khi F5 / Reload
+function loadMockDataFromLocalStorage() {
+  try {
+    const savedData = localStorage.getItem('badminton_mock_data');
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      if (parsed.users && Array.isArray(parsed.users) && parsed.users.length > 0) MockData.users = parsed.users;
+      if (parsed.facilities && Array.isArray(parsed.facilities) && parsed.facilities.length > 0) MockData.facilities = parsed.facilities;
+      if (parsed.bookings && Array.isArray(parsed.bookings)) MockData.bookings = parsed.bookings;
+      if (parsed.orders && Array.isArray(parsed.orders)) MockData.orders = parsed.orders;
+    }
+  } catch (e) {
+    console.warn('Could not load mock data from localStorage:', e);
+  }
+}
+
+function saveMockDataToLocalStorage() {
+  try {
+    localStorage.setItem('badminton_mock_data', JSON.stringify({
+      users: MockData.users,
+      facilities: MockData.facilities,
+      bookings: MockData.bookings,
+      orders: MockData.orders
+    }));
+  } catch (e) {
+    console.warn('Could not save mock data to localStorage:', e);
+  }
+}
+
+// Khoi tao load du lieu ngay khi nap file data.js
+loadMockDataFromLocalStorage();
+

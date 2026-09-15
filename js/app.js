@@ -1439,6 +1439,8 @@ class BadmintonAIApp {
     };
 
     MockData.users.push(newOwner);
+    if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+
     this.closeModal();
     this.renderAdminUsers();
     if (typeof this.renderAdminOverviewFacilities === 'function') {
@@ -1476,6 +1478,8 @@ class BadmintonAIApp {
     };
 
     MockData.users.push(newStaff);
+    if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+
     this.closeModal();
     this.renderOwnerStaff();
     this.showToast(`🎉 CHỦ SÂN đã tạo thành công tài khoản Thu Ngân: ${name}!`);
@@ -1487,6 +1491,7 @@ class BadmintonAIApp {
       const staffName = MockData.users[staffIndex].name;
       if (confirm(`Bạn có chắc chắn muốn xóa tài khoản nhân viên "${staffName}" không?`)) {
         MockData.users.splice(staffIndex, 1);
+        if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
         this.renderOwnerStaff();
         this.showToast(`🗑️ Đã xóa nhân viên ${staffName} khỏi hệ thống!`);
       }
@@ -2297,6 +2302,7 @@ class BadmintonAIApp {
     };
 
     MockData.users.push(newUser);
+    if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
 
     // Tu dong dang nhap voi tai khoan Khach Hang vua tao
     this.switchRole('CUSTOMER', newUser);
@@ -2309,6 +2315,7 @@ class BadmintonAIApp {
     const user = MockData.users.find(u => u.id === userId);
     if (!user) return;
     user.is_approved = true;
+    if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
 
     if (user.role === 'STAFF') {
       this.showToast(`✅ Chủ Sân đã phê duyệt tài khoản Thu Ngân: ${user.name}!`);
