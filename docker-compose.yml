@@ -1,6 +1,7 @@
 services:
   badminton-ai-web:
-    image: nginx:alpine
+    build: .
+    image: badminton_ai_web:latest
     container_name: badminton_ai_app
     env_file:
       - .env
@@ -8,4 +9,37 @@ services:
       - "${PORT:-8085}:80"
     volumes:
       - ./:/usr/share/nginx/html:ro
+    depends_on:
+      - badminton-ai-db
+      - badminton-ai-redis
     restart: always
+
+  # PostgreSQL Database Container (Cơ sở dữ liệu 9 bảng quản lý hệ thống)
+  badminton-ai-db:
+    image: postgres:15-alpine
+    container_name: badminton_ai_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_DB: ${POSTGRES_DB:-badminton_ai_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  # Redis Cache Container (Khóa Slot Atomic Lock giữ chỗ 10 phút)
+  badminton-ai-redis:
+    image: redis:alpine
+    container_name: badminton_ai_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
