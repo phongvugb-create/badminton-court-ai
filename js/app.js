@@ -2320,6 +2320,7 @@ class BadmintonAIApp {
   handleLogin(e) {
     e.preventDefault();
     const phone = document.getElementById('login-phone').value.trim();
+    const password = document.getElementById('login-password').value.trim();
     const selectedRole = document.getElementById('login-role-select').value;
 
     // 1. Tim kiem tai khoan nguoi dung theo dung so dien thoại/username nhap vao
@@ -2330,7 +2331,14 @@ class BadmintonAIApp {
       return;
     }
 
-    // 2. Kiem tra nghiem ngat: Vai tro tai khoan phai khop voi vai tro dang chon
+    // 2. Kiem tra mat khau chinh xac
+    const expectedPassword = user.password || '123456';
+    if (password !== expectedPassword) {
+      this.showToast(`⛔ Đăng nhập thất bại: Mật khẩu nhập vào không chính xác! Vui lòng thử lại.`, 'error');
+      return;
+    }
+
+    // 3. Kiem tra nghiem ngat: Vai tro tai khoan phai khop voi vai tro dang chon
     if (user.role !== selectedRole) {
       const roleNames = {
         'CUSTOMER': 'Khách Hàng',
@@ -2345,7 +2353,7 @@ class BadmintonAIApp {
       return;
     }
 
-    // 3. Kiem tra trang thai phe duyyet (is_approved)
+    // 4. Kiem tra trang thai phe duyyet (is_approved)
     if (user.is_approved === false) {
       if (selectedRole === 'STAFF') {
         this.showToast(`⛔ Đăng nhập thất bại: Tài khoản Thu Ngân (${user.name}) đang CHỜ CHỦ SÂN PHÊ DUYỆT!`, 'error');
@@ -2357,10 +2365,16 @@ class BadmintonAIApp {
       }
     }
 
-    // 4. Dang nhap thanh cong va truyen doi tuong user chinh xac vao switchRole
+    // 5. Dang nhap thanh cong va truyen doi tuong user chinh xac vao switchRole
     const success = this.switchRole(selectedRole, user);
     if (success !== false) {
-      this.showToast(`🎉 Đăng nhập thành công vai trò Khách Hàng! Xin chào ${user.name}`);
+      const roleNames = {
+        'CUSTOMER': 'Khách Hàng',
+        'OWNER': 'Chủ Sân',
+        'STAFF': 'Thu Ngân Quầy',
+        'ADMIN': 'Quản Trị Viên'
+      };
+      this.showToast(`🎉 Đăng nhập thành công vai trò ${roleNames[selectedRole] || selectedRole}! Xin chào ${user.name}`);
     }
   }
 
@@ -2368,12 +2382,25 @@ class BadmintonAIApp {
     e.preventDefault();
     const name = document.getElementById('reg-fullname').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
-    
+    const password = document.getElementById('reg-password').value.trim();
+
+    if (!password || password.length < 6) {
+      this.showToast('⛔ Đăng ký thất bại: Mật khẩu khởi tạo phải từ 6 ký tự trở lên!', 'error');
+      return;
+    }
+
+    const existingUser = MockData.users.find(u => u.phone === phone);
+    if (existingUser) {
+      this.showToast(`⛔ Đăng ký thất bại: Số điện thoại "${phone}" đã được tạo tài khoản trong hệ thống!`, 'error');
+      return;
+    }
+
     const newId = MockData.users.length + 1;
     const newUser = {
       id: newId,
       name: name,
       phone: phone,
+      password: password,
       role: 'CUSTOMER',
       facility_id: null,
       elo_rating: 1200,
@@ -2387,7 +2414,7 @@ class BadmintonAIApp {
 
     // Tu dong dang nhap voi tai khoan Khach Hang vua tao
     this.switchRole('CUSTOMER', newUser);
-    this.showToast(`🎉 Đăng ký thành công! Đã tự động kích hoạt & đăng nhập tài khoản Khách Hàng cho ${name}.`);
+    this.showToast(`🎉 Đăng ký thành công! Đã lưu mật khẩu & tự động đăng nhập tài khoản Khách Hàng cho ${name}.`);
 
     this.renderAdminUsers();
   }
