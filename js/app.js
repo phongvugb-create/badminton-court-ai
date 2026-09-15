@@ -2200,29 +2200,6 @@ class BadmintonAIApp {
     const select = document.getElementById('login-role-select');
     if (select) select.value = role;
 
-    if (autoFillPhone) {
-      const phoneInput = document.getElementById('login-phone');
-      const passInput = document.getElementById('login-password');
-      const phoneMap = {
-        'CUSTOMER': '0901234567',
-        'OWNER': '0988888888',
-        'STAFF': '0922334455',
-        'ADMIN': '0999888777'
-      };
-      const passMap = {
-        'CUSTOMER': '123456',
-        'OWNER': 'owner123',
-        'STAFF': 'staff123',
-        'ADMIN': 'admin123'
-      };
-      if (phoneInput && phoneMap[role]) {
-        phoneInput.value = phoneMap[role];
-      }
-      if (passInput && passMap[role]) {
-        passInput.value = passMap[role];
-      }
-    }
-
     document.querySelectorAll('.login-role-card').forEach(card => card.classList.remove('active'));
     const activeCard = document.getElementById(`login-card-${role.toLowerCase()}`);
     if (activeCard) activeCard.classList.add('active');
