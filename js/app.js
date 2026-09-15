@@ -49,15 +49,18 @@ class BadmintonAIApp {
     const avatarEl = document.getElementById('header-avatar');
     const nameEl = document.getElementById('header-user-name');
     const logoutBtn = document.getElementById('header-logout-btn');
+    const authBtn = document.getElementById('header-auth-btn');
 
     if (this.currentUser) {
       if (avatarEl) avatarEl.textContent = this.currentUser.avatar || '👤';
       if (nameEl) nameEl.textContent = this.currentUser.name;
       if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+      if (authBtn) authBtn.style.display = 'none';
     } else {
       if (avatarEl) avatarEl.textContent = '👤';
       if (nameEl) nameEl.textContent = 'Chưa Đăng Nhập';
       if (logoutBtn) logoutBtn.style.display = 'none';
+      if (authBtn) authBtn.style.display = 'inline-flex';
     }
   }
 
@@ -2199,14 +2202,24 @@ class BadmintonAIApp {
 
     if (autoFillPhone) {
       const phoneInput = document.getElementById('login-phone');
+      const passInput = document.getElementById('login-password');
       const phoneMap = {
         'CUSTOMER': '0901234567',
-        'OWNER': '0912345678',
+        'OWNER': '0988888888',
         'STAFF': '0922334455',
         'ADMIN': '0999888777'
       };
+      const passMap = {
+        'CUSTOMER': '123456',
+        'OWNER': 'owner123',
+        'STAFF': 'staff123',
+        'ADMIN': 'admin123'
+      };
       if (phoneInput && phoneMap[role]) {
         phoneInput.value = phoneMap[role];
+      }
+      if (passInput && passMap[role]) {
+        passInput.value = passMap[role];
       }
     }
 
@@ -2417,6 +2430,122 @@ class BadmintonAIApp {
     this.showToast(`🎉 Đăng ký thành công! Đã lưu mật khẩu & tự động đăng nhập tài khoản Khách Hàng cho ${name}.`);
 
     this.renderAdminUsers();
+  }
+
+  /* ------------------------------------------------------------------------
+     FORGOT PASSWORD & SMS OTP VERIFICATION FLOW
+     ------------------------------------------------------------------------ */
+  openForgotPasswordModal() {
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    modalBody.innerHTML = `
+      <div style="text-align: left;">
+        <h3 style="color: var(--primary); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-mobile-retro"></i> Khôi Phục Mật Khẩu Qua SMS OTP
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+          Nhập số điện thoại đã đăng ký để nhận mã xác thực OTP gửi qua tin nhắn SMS.
+        </p>
+        <form onsubmit="app.handleSendForgotPasswordOTP(event)" style="margin-top: 1.25rem;">
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-phone text-primary"></i> Số điện thoại đã đăng ký</label>
+            <input type="tel" id="forgot-phone-input" class="form-control" placeholder="VD: 0901234567" required>
+          </div>
+          <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="app.closeModal()">Hủy</button>
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-paper-plane"></i> Gửi Mã OTP SMS
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+    this.openModal();
+  }
+
+  handleSendForgotPasswordOTP(e) {
+    e.preventDefault();
+    const phone = document.getElementById('forgot-phone-input').value.trim();
+    const user = MockData.users.find(u => u.phone === phone);
+
+    if (!user) {
+      this.showToast(`⛔ Không tìm thấy tài khoản nào đăng ký với SĐT "${phone}"!`, 'error');
+      return;
+    }
+
+    const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+    this.forgotPasswordSession = {
+      phone: phone,
+      userId: user.id,
+      otp: generatedOTP
+    };
+
+    // Mo phang gui SMS gia lap
+    this.showToast(`💬 SMS OTP: Mã xác thực khôi phục mật khẩu của bạn là [ ${generatedOTP} ]`, 'info');
+
+    const modalBody = document.getElementById('modal-body');
+    modalBody.innerHTML = `
+      <div style="text-align: left;">
+        <h3 style="color: var(--accent-cyan); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-shield-halved"></i> Xác Nhận Mã OTP & Đổi Mật Khẩu
+        </h3>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; background: rgba(16,185,129,0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(16,185,129,0.3);">
+          📲 Mã OTP đã được gửi đến số: <strong>${phone}</strong> (Tài khoản: <strong>${user.name}</strong>).<br>
+          <span style="color: var(--primary); font-weight: 700;">Mã OTP SMS thử nghiệm: [ ${generatedOTP} ]</span>
+        </div>
+        <form onsubmit="app.handleVerifyOTPAndResetPassword(event)" style="margin-top: 1.25rem;">
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-key text-primary"></i> Nhập 6 số OTP từ SMS</label>
+            <input type="text" id="forgot-otp-input" class="form-control" placeholder="VD: ${generatedOTP}" maxlength="6" required style="letter-spacing: 4px; font-weight: 800; text-align: center; font-size: 1.1rem;">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-lock text-primary"></i> Mật khẩu mới</label>
+            <input type="password" id="forgot-new-password" class="form-control" placeholder="Nhập mật khẩu mới từ 6 ký tự..." required>
+          </div>
+          <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="app.closeModal()">Hủy</button>
+            <button type="submit" class="btn btn-accent btn-sm">
+              <i class="fa-solid fa-circle-check"></i> Xác Nhận & Cập Nhật Mật Khẩu
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+  }
+
+  handleVerifyOTPAndResetPassword(e) {
+    e.preventDefault();
+    const otpInput = document.getElementById('forgot-otp-input').value.trim();
+    const newPassword = document.getElementById('forgot-new-password').value.trim();
+
+    if (!this.forgotPasswordSession || otpInput !== this.forgotPasswordSession.otp) {
+      this.showToast('⛔ Mã OTP nhập vào không chính xác! Vui lòng kiểm tra lại tin nhắn SMS.', 'error');
+      return;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      this.showToast('⛔ Mật khẩu mới phải chứa ít nhất 6 ký tự!', 'error');
+      return;
+    }
+
+    const user = MockData.users.find(u => u.id === this.forgotPasswordSession.userId);
+    if (user) {
+      user.password = newPassword;
+      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+
+      this.closeModal();
+      this.showToast(`🎉 Đã khôi phục mật khẩu thành công cho tài khoản ${user.name}! Bạn có thể đăng nhập bằng mật khẩu mới.`);
+
+      // Dien san SĐT va Mat khau moi vao form login
+      const phoneInput = document.getElementById('login-phone');
+      const passInput = document.getElementById('login-password');
+      if (phoneInput) phoneInput.value = user.phone;
+      if (passInput) passInput.value = newPassword;
+
+      this.selectLoginRole(user.role, false);
+      this.navigateTo('ui-01');
+    }
   }
 
   approveUserAccount(userId) {

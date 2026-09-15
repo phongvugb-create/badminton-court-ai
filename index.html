@@ -106,6 +106,9 @@
           <div class="avatar" id="header-avatar">👤</div>
           <span class="user-info-text" id="header-user-name">Chưa Đăng Nhập</span>
         </div>
+        <button class="btn btn-primary btn-sm" id="header-auth-btn" onclick="app.navigateTo('ui-01')" title="Đăng Nhập hoặc Đăng Ký Tài Khoản" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 20px; padding: 0 12px; font-size: 0.8rem; height: 36px;">
+          <i class="fa-solid fa-right-to-bracket"></i> <span>Đăng Nhập / Đăng Ký</span>
+        </button>
         <button class="icon-btn text-danger" id="header-logout-btn" onclick="app.logout()" title="Đăng Xuất Hệ Thống" style="display: none; border-color: rgba(239, 68, 68, 0.4); color: #ef4444; background: rgba(239, 68, 68, 0.1);">
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>
@@ -138,11 +141,11 @@
             
             <!-- Tab Switcher: Login / Register -->
             <div style="display: flex; gap: 0.5rem; background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: var(--radius-md); margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
-              <button type="button" class="btn active" id="auth-tab-login" onclick="app.switchAuthTab('login')" style="flex: 1; padding: 0.6rem; font-size: 0.88rem;">
+              <button class="btn active" id="auth-tab-login" onclick="app.switchAuthTab('login')" style="flex: 1; font-weight: 700;">
                 <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
               </button>
-              <button type="button" class="btn" id="auth-tab-register" onclick="app.switchAuthTab('register')" style="flex: 1; padding: 0.6rem; font-size: 0.88rem; color: var(--text-muted); background: transparent;">
-                <i class="fa-solid fa-user-plus"></i> Đăng Ký Tài Khoản
+              <button class="btn" id="auth-tab-register" onclick="app.switchAuthTab('register')" style="flex: 1; font-weight: 700; background: transparent; color: var(--text-muted);">
+                <i class="fa-solid fa-user-plus"></i> Đăng Ký Khách Hàng
               </button>
             </div>
 
@@ -167,7 +170,7 @@
                 <input type="text" id="login-phone" class="form-control" value="0901234567" placeholder="Nhập SĐT..." required>
               </div>
 
-              <div class="form-group">
+              <div class="form-group" style="margin-bottom: 0.75rem;">
                 <label class="form-label"><i class="fa-solid fa-lock text-primary"></i> Mật khẩu</label>
                 <div style="position: relative;">
                   <input type="password" id="login-password" class="form-control" value="123456" placeholder="Nhập mật khẩu..." required style="padding-right: 2.5rem;">
@@ -175,6 +178,12 @@
                     <i class="fa-solid fa-eye"></i>
                   </button>
                 </div>
+              </div>
+
+              <div style="text-align: right; margin-bottom: 1.25rem;">
+                <a href="#" onclick="app.openForgotPasswordModal(); return false;" style="font-size: 0.8rem; color: var(--accent-cyan); text-decoration: none; font-weight: 600;">
+                  <i class="fa-solid fa-key"></i> Quên mật khẩu? Lấy lại bằng mã SMS OTP
+                </a>
               </div>
 
               <div class="form-group">
@@ -190,6 +199,19 @@
               <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.25rem; padding: 0.75rem; font-size: 0.95rem; font-weight: 700;">
                 <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Hệ Thống Ngay
               </button>
+
+              <!-- Demo Credentials Quick Helper Card -->
+              <div style="margin-top: 1.25rem; padding: 0.85rem; background: rgba(15, 23, 42, 0.7); border: 1px dashed var(--border-color); border-radius: var(--radius-md); font-size: 0.78rem;">
+                <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-circle-info"></i> Mật khẩu demo theo từng vai trò:
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; color: var(--text-muted);">
+                  <div>👤 <strong>Khách:</strong> <code>0901234567</code> / <code>123456</code></div>
+                  <div>🏢 <strong>Chủ Sân:</strong> <code>0988888888</code> / <code>owner123</code></div>
+                  <div>🧾 <strong>Thu Ngân:</strong> <code>0922334455</code> / <code>staff123</code></div>
+                  <div>🔑 <strong>Admin:</strong> <code>0999888777</code> / <code>admin123</code></div>
+                </div>
+              </div>
             </form>
 
             <!-- Form 2: REGISTER FORM (Hidden by default - Public Registration for CUSTOMER) -->

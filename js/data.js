@@ -7,9 +7,9 @@ const MockData = {
   users: [
     { id: 1, name: "Nguyễn Văn Hùng", phone: "0901234567", password: "123456", role: "CUSTOMER", elo_rating: 1450, avatar: "H", is_approved: true },
     { id: 2, name: "Trần Thị Mai", phone: "0912345678", password: "123456", role: "CUSTOMER", elo_rating: 1680, avatar: "M", is_approved: true },
-    { id: 3, name: "Lê Hoàng Nam (Chủ Sân)", phone: "0912345678", password: "123456", role: "OWNER", facility_id: 101, avatar: "N", is_approved: true },
-    { id: 4, name: "Phạm Quốc Tuấn (Thu Ngân)", phone: "0922334455", password: "123456", role: "STAFF", facility_id: 101, avatar: "T", is_approved: true },
-    { id: 5, name: "Admin Quản Trị", phone: "0999888777", password: "123456", role: "ADMIN", avatar: "A", is_approved: true }
+    { id: 3, name: "Lê Hoàng Nam (Chủ Sân)", phone: "0988888888", password: "owner123", role: "OWNER", facility_id: 101, avatar: "N", is_approved: true },
+    { id: 4, name: "Phạm Quốc Tuấn (Thu Ngân)", phone: "0922334455", password: "staff123", role: "STAFF", facility_id: 101, avatar: "T", is_approved: true },
+    { id: 5, name: "Admin Quản Trị", phone: "0999888777", password: "admin123", role: "ADMIN", avatar: "A", is_approved: true }
   ],
 
   // 2. BẢNG facilities (Danh sách cụm cơ sở sân cầu lông tại Thủ Đô Hà Nội)
