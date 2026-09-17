@@ -9,10 +9,26 @@ services:
       - "${PORT:-8085}:80"
     volumes:
       - ./:/usr/share/nginx/html:ro
+  # Python FastAPI Backend Container (RESTful API, 4 AI Engines & Swagger UI)
+  badminton-ai-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: badminton_ai_backend:latest
+    container_name: badminton_ai_backend
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-admin123}@badminton-ai-db:5432/${POSTGRES_DB:-badminton_ai_db}
+      - REDIS_URL=redis://badminton-ai-redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8000:8000"
     depends_on:
       - badminton-ai-db
       - badminton-ai-redis
     restart: always
+
 
   # PostgreSQL Database Container (Cơ sở dữ liệu 9 bảng quản lý hệ thống)
   badminton-ai-db:
