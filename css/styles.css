@@ -2270,3 +2270,329 @@ body {
   margin: 1.5rem 0 1.25rem 0;
 }
 
+/* ==========================================================================
+   FULLSCREEN GOOGLE MAPS SPORTS EXPLORER INTERFACE (Alobo screenshot design)
+   ========================================================================== */
+.map-overlay-header {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.map-overlay-header > * {
+  pointer-events: auto;
+}
+
+/* Search Input Pill */
+.map-search-pill-container {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  padding: 6px 14px;
+  border-radius: 30px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+  min-width: 280px;
+  max-width: 360px;
+  border: 1.5px solid rgba(22, 121, 70, 0.2);
+  transition: all 0.2s ease;
+}
+
+.map-search-pill-container:focus-within {
+  border-color: #167946;
+  box-shadow: 0 6px 24px rgba(22, 121, 70, 0.25);
+}
+
+.map-brand-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+
+.map-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #0f172a;
+  width: 100%;
+}
+
+.map-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.map-search-btn {
+  background: none;
+  border: none;
+  color: #167946;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 1rem;
+}
+
+/* Sport Filter Badges Row (Horizontal Scroll) */
+.map-sport-chips-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 2px 4px;
+  flex: 1;
+}
+
+.map-sport-chips-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.sport-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 5px 14px 5px 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sport-chip:hover {
+  border-color: #167946;
+  transform: translateY(-1px);
+}
+
+.sport-chip.active {
+  background: #167946;
+  color: #ffffff;
+  border-color: #167946;
+  box-shadow: 0 4px 12px rgba(22, 121, 70, 0.35);
+}
+
+.sport-chip-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+}
+
+/* Map Floating Action Buttons (Right-Bottom) */
+.map-floating-actions {
+  position: absolute;
+  right: 18px;
+  bottom: 30px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.map-float-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.map-float-btn:hover {
+  transform: scale(1.08);
+  border-color: #167946;
+}
+
+.map-float-btn.primary {
+  color: #0284c7;
+}
+
+.map-float-btn.green-btn {
+  background: #167946;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(22, 121, 70, 0.4);
+}
+
+.map-float-btn.green-btn:hover {
+  background: #0f6838;
+}
+
+/* Google Maps Watermark */
+.map-google-watermark {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  pointer-events: none;
+}
+
+.google-logo-text {
+  font-family: 'Roboto', 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-size: 1rem;
+}
+
+.map-legal-text {
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+/* Side Drawer for Facilities */
+.map-side-drawer {
+  position: absolute;
+  top: 70px;
+  right: -380px;
+  width: 360px;
+  height: calc(100% - 85px);
+  background: #ffffff;
+  border-radius: 16px 0 0 16px;
+  box-shadow: -6px 0 24px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 1.5px solid #e2e8f0;
+}
+
+.map-side-drawer.open {
+  right: 0;
+}
+
+.drawer-header {
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 16px 0 0 0;
+}
+
+.drawer-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.drawer-facility-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  gap: 10px;
+}
+
+.drawer-facility-card:hover {
+  border-color: #167946;
+  box-shadow: 0 4px 12px rgba(22, 121, 70, 0.15);
+  transform: translateY(-2px);
+}
+
+.live-dot-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
+  display: inline-block;
+  animation: mapPinPulse 1.8s infinite;
+}
+
+/* Custom Marker Pins on Map (Exact shape from screenshot) */
+.sports-map-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.sports-map-marker:hover {
+  transform: rotate(-45deg) scale(1.25);
+  z-index: 10000 !important;
+}
+
+.sports-map-marker-icon {
+  transform: rotate(45deg);
+  font-size: 14px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pin Color Variants */
+.sports-map-marker.badminton { background: #16a34a; }
+.sports-map-marker.pickleball { background: #0284c7; }
+.sports-map-marker.football { background: #15803d; }
+.sports-map-marker.basketball { background: #ea580c; }
+.sports-map-marker.multi { background: #dc2626; }
+
+/* Map Facility Preview Bottom Popup */
+.map-preview-popup {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  z-index: 1002;
+  width: calc(100% - 32px);
+  max-width: 440px;
+  border: 1.5px solid #167946;
+  animation: slideUpFade 0.25s ease;
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translate(-50%, 15px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+

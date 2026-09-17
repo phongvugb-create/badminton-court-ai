@@ -195,6 +195,7 @@ class BadmintonAIApp {
         title: 'PHÂN HỆ KHÁCH HÀNG',
         items: [
           { id: 'ui-02', icon: 'fa-compass', text: 'Tìm Kiếm Sân AI' },
+          { id: 'ui-map', icon: 'fa-map-location-dot', text: 'Bản Đồ Thể Thao GPS' },
           { id: 'ui-03', icon: 'fa-calendar-days', text: 'Đặt Sân & Thuê Đồ' },
           { id: 'ui-04', icon: 'fa-qrcode', text: 'Thanh Toán Cọc QR' },
           { id: 'ui-05', icon: 'fa-ticket', text: 'Vé QR Điện Tử' },
@@ -282,10 +283,12 @@ class BadmintonAIApp {
     });
 
     if (screenId === 'ui-02') this.updateBottomNavActive('home');
+    else if (screenId === 'ui-map') this.updateBottomNavActive('map');
     else if (screenId === 'ui-03') this.updateBottomNavActive('explore');
     else if (screenId === 'ui-06') this.updateBottomNavActive('trending');
     else if (screenId === 'ui-01' || screenId === 'ui-08') this.updateBottomNavActive('account');
 
+    if (screenId === 'ui-map') this.initGoogleSportsMap();
     if (screenId === 'ui-09') this.renderOwnerDashboardOrders();
     if (screenId === 'ui-10') this.initLeafletMap();
     if (screenId === 'ui-13') this.renderOwnerStaff();
@@ -1374,12 +1377,346 @@ class BadmintonAIApp {
     }
     if (pin) {
       const counterScale = (1 / this.mapZoomScale).toFixed(3);
-      pin.style.transform = `translate(-50%, -50%) scale(${counterScale})`;
+  }
+
+  /* ------------------------------------------------------------------------
+     GOOGLE MAPS INTERACTIVE SPORTS EXPLORER ENGINE (Alobo Style)
+     ------------------------------------------------------------------------ */
+  openFacilitiesMap() {
+    this.navigateTo('ui-map');
+  }
+
+  initGoogleSportsMap() {
+    const mapContainer = document.getElementById('google-sports-map');
+    if (!mapContainer) return;
+
+    if (this.googleSportsMap) {
+      setTimeout(() => {
+        this.googleSportsMap.invalidateSize();
+      }, 250);
+      return;
     }
-    if (text) {
-      text.textContent = `${Math.round(this.mapZoomScale * 100)}%`;
+
+    // Initialize Map at central Hanoi (as seen in user screenshot: Hanoi sports clusters)
+    this.googleSportsMap = L.map('google-sports-map', {
+      center: [21.0285, 105.8150],
+      zoom: 12,
+      zoomControl: false // custom floating controls
+    });
+
+    // Add zoom control top-right
+    L.control.zoom({ position: 'bottomright' }).addTo(this.googleSportsMap);
+
+    // Primary Layer: Google Maps Roads / Clean Sports Tile Layer
+    this.googleRoadsLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: '&copy; Google Maps'
+    });
+
+    // Satellite Layer: Google Maps Satellite + Labels
+    this.googleSatelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: '&copy; Google Maps Satellite'
+    });
+
+    // Fallback OpenStreetMap if Google tiles are blocked or slow
+    this.osmFallbackLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    });
+
+    this.currentMapTileType = 'roads';
+    this.googleRoadsLayer.addTo(this.googleSportsMap);
+
+    let googleTileErrorHandled = false;
+    this.googleRoadsLayer.on('tileerror', () => {
+      if (!googleTileErrorHandled && this.googleSportsMap) {
+        googleTileErrorHandled = true;
+        this.googleSportsMap.removeLayer(this.googleRoadsLayer);
+        this.osmFallbackLayer.addTo(this.googleSportsMap);
+        console.log("Switched to OSM fallback layer");
+      }
+    });
+
+    // Marker Layer Group
+    this.sportsMarkerGroup = L.layerGroup().addTo(this.googleSportsMap);
+
+    // Current selected sport filter
+    this.currentMapSportFilter = 'all';
+
+    // Render Markers
+    this.renderGoogleSportsMarkers();
+
+    // Map Click Closes preview
+    this.googleSportsMap.on('click', () => {
+      this.hideFacilityPreviewCard();
+    });
+
+    setTimeout(() => {
+      if (this.googleSportsMap) this.googleSportsMap.invalidateSize();
+    }, 300);
+  }
+
+  toggleMapTileLayer() {
+    if (!this.googleSportsMap) return;
+
+    if (this.currentMapTileType === 'roads') {
+      this.googleSportsMap.removeLayer(this.googleRoadsLayer);
+      if (this.googleSportsMap.hasLayer(this.osmFallbackLayer)) {
+        this.googleSportsMap.removeLayer(this.osmFallbackLayer);
+      }
+      this.googleSatelliteLayer.addTo(this.googleSportsMap);
+      this.currentMapTileType = 'satellite';
+      this.showToast("🛰️ Đã chuyển sang chế độ Bản đồ Vệ Tinh Google!");
+    } else {
+      this.googleSportsMap.removeLayer(this.googleSatelliteLayer);
+      this.googleRoadsLayer.addTo(this.googleSportsMap);
+      this.currentMapTileType = 'roads';
+      this.showToast("🗺️ Đã chuyển sang chế độ Bản đồ Đường phố Google!");
     }
   }
+
+  locateUserGPS() {
+    if (!this.googleSportsMap) return;
+
+    if (navigator.geolocation) {
+      this.showToast("📡 Đang định vị GPS của bạn...");
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          this.googleSportsMap.setView([lat, lng], 14, { animate: true });
+
+          if (this.userGpsMarker) {
+            this.googleSportsMap.removeLayer(this.userGpsMarker);
+          }
+
+          const userIcon = L.divIcon({
+            className: 'user-gps-marker',
+            html: '<div style="width: 20px; height: 20px; border-radius: 50%; background: #0284c7; border: 3px solid #ffffff; box-shadow: 0 0 0 6px rgba(2,132,199,0.3); animation: mapPinPulse 1.5s infinite;"></div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+          });
+
+          this.userGpsMarker = L.marker([lat, lng], { icon: userIcon }).addTo(this.googleSportsMap);
+          this.userGpsMarker.bindPopup("📍 <strong>Vị trí của bạn</strong>").openPopup();
+          this.showToast("🎯 Đã định vị thành công vị trí của bạn!");
+        },
+        (err) => {
+          console.warn("GPS error:", err);
+          // Fallback to central Hanoi
+          this.googleSportsMap.setView([21.0285, 105.8150], 13, { animate: true });
+          this.showToast("📍 Vị trí trung tâm: Ba Đình, Hà Nội");
+        }
+      );
+    } else {
+      this.googleSportsMap.setView([21.0285, 105.8150], 13, { animate: true });
+      this.showToast("📍 Vị trí trung tâm: Ba Đình, Hà Nội");
+    }
+  }
+
+  renderGoogleSportsMarkers() {
+    if (!this.googleSportsMap || !this.sportsMarkerGroup) return;
+
+    this.sportsMarkerGroup.clearLayers();
+
+    const facilities = MockData.facilities.filter(f => f.is_approved !== false);
+    const filter = this.currentMapSportFilter;
+
+    let visibleCount = 0;
+    const drawerListContainer = document.getElementById('map-drawer-facilities-list');
+    let drawerHtml = '';
+
+    facilities.forEach(fac => {
+      const sport = fac.sport_type || 'badminton';
+      if (filter !== 'all' && filter !== sport) return;
+
+      visibleCount++;
+
+      // Create Custom Pin Icon
+      let iconEmoji = fac.sport_icon || '🏸';
+      let pinClass = 'badminton';
+      if (sport === 'pickleball') { pinClass = 'pickleball'; iconEmoji = '🎾'; }
+      else if (sport === 'football') { pinClass = 'football'; iconEmoji = '⚽'; }
+      else if (sport === 'basketball') { pinClass = 'basketball'; iconEmoji = '🏀'; }
+      else if (sport === 'tennis') { pinClass = 'tennis'; iconEmoji = '🎾'; }
+      else if (sport === 'multi') { pinClass = 'multi'; iconEmoji = '🏟️'; }
+
+      const pinHtml = `
+        <div class="sports-map-marker ${pinClass}" title="${fac.name}">
+          <span class="sports-map-marker-icon">${iconEmoji}</span>
+        </div>
+      `;
+
+      const customIcon = L.divIcon({
+        className: 'custom-sports-pin',
+        html: pinHtml,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+      });
+
+      const marker = L.marker([fac.latitude, fac.longitude], { icon: customIcon });
+
+      // Click Marker opens preview card & popup
+      marker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        this.showFacilityPreviewCard(fac);
+        this.googleSportsMap.panTo([fac.latitude, fac.longitude], { animate: true });
+      });
+
+      this.sportsMarkerGroup.addLayer(marker);
+
+      // Add to drawer list
+      drawerHtml += `
+        <div class="drawer-facility-card" onclick="app.panToFacilityOnMap(${fac.id})">
+          <img src="${fac.img}" alt="${fac.name}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; flex-shrink: 0;" onerror="this.src='images/court1.jpg'">
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+              <strong style="font-size: 0.88rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fac.name}</strong>
+            </div>
+            <p style="font-size: 0.75rem; color: #64748b; margin: 2px 0 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${fac.address}</p>
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: #16a34a; font-weight: 700;">📍 ${fac.distance || 'Gần bạn'}</span>
+              <span style="color: #f59e0b; font-weight: 700;">⭐ ${fac.rating}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    const countEl = document.getElementById('map-drawer-count');
+    if (countEl) countEl.textContent = visibleCount;
+
+    if (drawerListContainer) {
+      drawerListContainer.innerHTML = drawerHtml || '<p style="text-align: center; color: #64748b; padding: 2rem;">Không tìm thấy sân phù hợp môn này.</p>';
+    }
+  }
+
+  filterMapSport(sportType, btn) {
+    this.currentMapSportFilter = sportType;
+
+    document.querySelectorAll('.sport-chip').forEach(c => c.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    this.renderGoogleSportsMarkers();
+    this.showToast(`Lọc bản đồ môn: ${sportType === 'all' ? 'Tất cả các môn' : sportType.toUpperCase()}`);
+  }
+
+  handleMapSearch(e) {
+    const keyword = e.target.value.toLowerCase().trim();
+    if (!keyword) {
+      this.currentMapSportFilter = 'all';
+      this.renderGoogleSportsMarkers();
+      return;
+    }
+
+    if (this.googleSportsMap && this.sportsMarkerGroup) {
+      this.sportsMarkerGroup.clearLayers();
+      const facilities = MockData.facilities.filter(f => 
+        f.name.toLowerCase().includes(keyword) || 
+        f.address.toLowerCase().includes(keyword)
+      );
+
+      facilities.forEach(fac => {
+        const pinHtml = `
+          <div class="sports-map-marker ${fac.sport_type || 'badminton'}" title="${fac.name}">
+            <span class="sports-map-marker-icon">${fac.sport_icon || '🏸'}</span>
+          </div>
+        `;
+
+        const customIcon = L.divIcon({
+          className: 'custom-sports-pin',
+          html: pinHtml,
+          iconSize: [32, 32],
+          iconAnchor: [16, 32]
+        });
+
+        const marker = L.marker([fac.latitude, fac.longitude], { icon: customIcon });
+        marker.on('click', () => {
+          this.showFacilityPreviewCard(fac);
+          this.googleSportsMap.panTo([fac.latitude, fac.longitude]);
+        });
+        this.sportsMarkerGroup.addLayer(marker);
+      });
+
+      if (facilities.length > 0) {
+        this.googleSportsMap.panTo([facilities[0].latitude, facilities[0].longitude], { animate: true });
+        this.showFacilityPreviewCard(facilities[0]);
+      }
+    }
+  }
+
+  executeMapSearch() {
+    const input = document.getElementById('map-explore-search-input');
+    if (input) {
+      this.handleMapSearch({ target: input });
+    }
+  }
+
+  showFacilityPreviewCard(fac) {
+    const card = document.getElementById('map-facility-preview-card');
+    if (!card) return;
+
+    card.innerHTML = `
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <img src="${fac.img}" alt="${fac.name}" style="width: 80px; height: 80px; border-radius: 10px; object-fit: cover; border: 1.5px solid #e2e8f0; flex-shrink: 0;" onerror="this.src='images/court1.jpg'">
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <h4 style="margin: 0 0 4px; font-size: 0.95rem; font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fac.name}</h4>
+            <button onclick="app.hideFacilityPreviewCard()" style="background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; padding: 0 0 0 8px;">&times;</button>
+          </div>
+          <p style="font-size: 0.75rem; color: #64748b; margin: 0 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <i class="fa-solid fa-location-dot" style="color: #167946;"></i> ${fac.address}
+          </p>
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: #167946;">
+              <i class="fa-solid fa-clock"></i> ${fac.open_hours || '05:00 - 23:30'}
+            </span>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="app.openExternalGoogleMaps(${fac.latitude}, ${fac.longitude})">
+                <i class="fa-solid fa-diamond-turn-right"></i> Chỉ Đường
+              </button>
+              <button class="btn btn-primary btn-sm" style="padding: 4px 12px; font-size: 0.75rem;" onclick="app.selectFacilityForBooking(${fac.id})">
+                <i class="fa-solid fa-calendar-check"></i> Đặt Sân
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    card.style.display = 'block';
+  }
+
+  hideFacilityPreviewCard() {
+    const card = document.getElementById('map-facility-preview-card');
+    if (card) card.style.display = 'none';
+  }
+
+  toggleMapFacilitiesSidebar() {
+    const drawer = document.getElementById('map-facilities-drawer');
+    if (drawer) {
+      drawer.classList.toggle('open');
+    }
+  }
+
+  panToFacilityOnMap(facId) {
+    const fac = MockData.facilities.find(f => f.id === facId);
+    if (!fac || !this.googleSportsMap) return;
+
+    this.googleSportsMap.setView([fac.latitude, fac.longitude], 15, { animate: true });
+    this.showFacilityPreviewCard(fac);
+
+    const drawer = document.getElementById('map-facilities-drawer');
+    if (drawer) drawer.classList.remove('open');
+  }
+
+  openExternalGoogleMaps(lat, lng) {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+  }
+
 
   toggleAIDynamicPricing() {
     this.isAIDynamicPriceActive = !this.isAIDynamicPriceActive;

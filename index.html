@@ -596,6 +596,106 @@
           </div>
         </section>
 
+        <!-- FULLSCREEN INTERACTIVE GOOGLE MAPS STYLE SPORTS EXPLORER -->
+        <section id="view-ui-map" class="screen-view" style="padding: 0; margin: 0; position: relative; height: calc(100vh - 120px); overflow: hidden; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
+          
+          <!-- Top Floating Search Bar & Sport Filter Chips (Screenshot replica) -->
+          <div class="map-overlay-header">
+            <!-- Search Input Pill with Alobo Sports Icon -->
+            <div class="map-search-pill-container">
+              <div class="map-brand-badge" title="Alobo Sports Map">
+                <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+                  <path d="M18 4C10.268 4 4 10.268 4 18C4 25.732 10.268 32 18 32C25.732 32 32 25.732 32 18C32 10.268 25.732 4 18 4Z" fill="#167946"/>
+                  <path d="M13 25C13 18 23 15 23 11C23 8.5 21 7 18 7C14.5 7 13.2 9.2 12.8 11.5" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                  <circle cx="18" cy="18" r="3" fill="#a7f3d0"/>
+                </svg>
+              </div>
+              <input type="text" id="map-explore-search-input" class="map-search-input" placeholder="Tìm kiếm sân quanh đây..." oninput="app.handleMapSearch(event)">
+              <button class="map-search-btn" onclick="app.executeMapSearch()" title="Tìm vị trí sân">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </button>
+            </div>
+
+            <!-- Horizontal Scrollable Sport Filter Badges (Exact pills from screenshot) -->
+            <div class="map-sport-chips-scroll">
+              <button type="button" class="sport-chip active" data-sport="all" onclick="app.filterMapSport('all', this)">
+                <span class="sport-chip-icon" style="background: #0284c7; color: #fff;"><i class="fa-solid fa-layer-group"></i></span>
+                <span>Tất cả</span>
+              </button>
+              <button type="button" class="sport-chip" data-sport="pickleball" onclick="app.filterMapSport('pickleball', this)">
+                <span class="sport-chip-icon" style="background: #0ea5e9; color: #fff;">🎾</span>
+                <span>Pickleball</span>
+              </button>
+              <button type="button" class="sport-chip" data-sport="badminton" onclick="app.filterMapSport('badminton', this)">
+                <span class="sport-chip-icon" style="background: #16a34a; color: #fff;">🏸</span>
+                <span>Cầu lông</span>
+              </button>
+              <button type="button" class="sport-chip" data-sport="football" onclick="app.filterMapSport('football', this)">
+                <span class="sport-chip-icon" style="background: #15803d; color: #fff;">⚽</span>
+                <span>Bóng đá</span>
+              </button>
+              <button type="button" class="sport-chip" data-sport="basketball" onclick="app.filterMapSport('basketball', this)">
+                <span class="sport-chip-icon" style="background: #ea580c; color: #fff;">🏀</span>
+                <span>Bóng rổ</span>
+              </button>
+              <button type="button" class="sport-chip" data-sport="tennis" onclick="app.filterMapSport('tennis', this)">
+                <span class="sport-chip-icon" style="background: #b45309; color: #fff;">🎾</span>
+                <span>Quần vợt</span>
+              </button>
+              <button type="button" class="sport-chip" data-sport="multi" onclick="app.filterMapSport('multi', this)">
+                <span class="sport-chip-icon" style="background: #be123c; color: #fff;">🏟️</span>
+                <span>Đa năng</span>
+              </button>
+              <button type="button" class="sport-chip" data-sport="other" onclick="app.filterMapSport('other', this)">
+                <span class="sport-chip-icon" style="background: #6366f1; color: #fff;">🎯</span>
+                <span>Typti</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Interactive Map Canvas Container -->
+          <div id="google-sports-map" style="width: 100%; height: 100%; min-height: 580px; z-index: 1;"></div>
+
+          <!-- Floating Map Controls Right-Bottom (Layer & View List Buttons from screenshot) -->
+          <div class="map-floating-actions">
+            <button class="map-float-btn" onclick="app.toggleMapTileLayer()" title="Chuyển đổi kiểu Bản đồ (Google Roads / Google Satellite)">
+              <i class="fa-solid fa-layer-group"></i>
+            </button>
+            <button class="map-float-btn primary" onclick="app.locateUserGPS()" title="Định vị GPS vị trí của tôi">
+              <i class="fa-solid fa-crosshairs"></i>
+            </button>
+            <button class="map-float-btn green-btn" onclick="app.toggleMapFacilitiesSidebar()" title="Danh sách sân xung quanh">
+              <i class="fa-solid fa-list-ul"></i>
+            </button>
+          </div>
+
+          <!-- Bottom-Left Google Branding Watermark (Just like screenshot) -->
+          <div class="map-google-watermark">
+            <span class="google-logo-text"><span style="color:#4285f4">G</span><span style="color:#ea4335">o</span><span style="color:#fbbc05">o</span><span style="color:#4285f4">g</span><span style="color:#34a853">l</span><span style="color:#ea4335">e</span></span>
+            <span class="map-legal-text">Dữ liệu bản đồ &copy; 2026 Google &bull; Báo cáo một lỗi bản đồ</span>
+          </div>
+
+          <!-- Slide-out Side Drawer for Facilities List -->
+          <div id="map-facilities-drawer" class="map-side-drawer">
+            <div class="drawer-header">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="live-dot-pulse"></span>
+                <strong style="font-size: 1rem; color: #0f172a;">Cụm Sân Thể Thao Quanh Đây (<span id="map-drawer-count">0</span>)</strong>
+              </div>
+              <button class="btn-icon" onclick="app.toggleMapFacilitiesSidebar()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="drawer-list" id="map-drawer-facilities-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Selected Court Bottom Preview Card -->
+          <div id="map-facility-preview-card" class="map-preview-popup" style="display: none;">
+            <!-- Rendered when marker clicked -->
+          </div>
+        </section>
+
+
         <!-- Field Owner Dashboard Overview -->
         <section id="view-ui-09" class="screen-view">
           <div class="page-header">
