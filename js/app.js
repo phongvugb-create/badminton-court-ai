@@ -1377,6 +1377,11 @@ class BadmintonAIApp {
     }
     if (pin) {
       const counterScale = (1 / this.mapZoomScale).toFixed(3);
+      pin.style.transform = `translate(-50%, -50%) scale(${counterScale})`;
+    }
+    if (text) {
+      text.textContent = `${Math.round(this.mapZoomScale * 100)}%`;
+    }
   }
 
   /* ------------------------------------------------------------------------

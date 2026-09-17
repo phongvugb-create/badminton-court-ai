@@ -1345,5 +1345,24 @@
   <script src="js/data.js"></script>
   <script src="js/gemini.js"></script>
   <script src="js/app.js"></script>
+  
+  <!-- Failsafe auto-dismiss splash screen -->
+  <script>
+    (function() {
+      function dismissSplash() {
+        var splash = document.getElementById('app-splash-screen');
+        if (splash && splash.style.display !== 'none') {
+          splash.classList.add('fade-out');
+          setTimeout(function() {
+            splash.style.display = 'none';
+          }, 400);
+        }
+      }
+      setTimeout(dismissSplash, 1200);
+      window.addEventListener('load', function() {
+        setTimeout(dismissSplash, 800);
+      });
+    })();
+  </script>
 </body>
 </html>
