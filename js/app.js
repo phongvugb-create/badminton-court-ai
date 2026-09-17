@@ -2381,27 +2381,23 @@ class BadmintonAIApp {
       if (loginForm) loginForm.style.display = 'block';
       if (registerForm) registerForm.style.display = 'none';
       if (loginBtn) {
-        loginBtn.className = 'btn active';
-        loginBtn.style.background = '';
-        loginBtn.style.color = '';
+        loginBtn.className = 'auth-tab-btn active';
+        loginBtn.style.cssText = '';
       }
       if (registerBtn) {
-        registerBtn.className = 'btn';
-        registerBtn.style.background = 'transparent';
-        registerBtn.style.color = 'var(--text-muted)';
+        registerBtn.className = 'auth-tab-btn';
+        registerBtn.style.cssText = '';
       }
     } else {
       if (loginForm) loginForm.style.display = 'none';
       if (registerForm) registerForm.style.display = 'block';
       if (registerBtn) {
-        registerBtn.className = 'btn active';
-        registerBtn.style.background = '';
-        registerBtn.style.color = '';
+        registerBtn.className = 'auth-tab-btn active';
+        registerBtn.style.cssText = '';
       }
       if (loginBtn) {
-        loginBtn.className = 'btn';
-        loginBtn.style.background = 'transparent';
-        loginBtn.style.color = 'var(--text-muted)';
+        loginBtn.className = 'auth-tab-btn';
+        loginBtn.style.cssText = '';
       }
     }
   }

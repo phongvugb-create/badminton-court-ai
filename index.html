@@ -137,14 +137,14 @@
           </div>
 
           <!-- Centered Login & Register Card -->
-          <div class="glass-card" style="max-width: 480px; margin: 0 auto; padding: 2rem;">
+          <div class="glass-card" style="max-width: 480px; margin: 0 auto; padding: 2rem; background: #ffffff; border: 1.5px solid #e2e8f0; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
             
-            <!-- Tab Switcher: Login / Register -->
-            <div style="display: flex; gap: 0.5rem; background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: var(--radius-md); margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
-              <button class="btn active" id="auth-tab-login" onclick="app.switchAuthTab('login')" style="flex: 1; font-weight: 700;">
+            <!-- Tab Switcher: Login / Register (Clean & High Contrast) -->
+            <div class="auth-tabs-container">
+              <button type="button" class="auth-tab-btn active" id="auth-tab-login" onclick="app.switchAuthTab('login')">
                 <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
               </button>
-              <button class="btn" id="auth-tab-register" onclick="app.switchAuthTab('register')" style="flex: 1; font-weight: 700; background: transparent; color: var(--text-muted);">
+              <button type="button" class="auth-tab-btn" id="auth-tab-register" onclick="app.switchAuthTab('register')">
                 <i class="fa-solid fa-user-plus"></i> Đăng Ký Khách Hàng
               </button>
             </div>
@@ -152,7 +152,7 @@
             <!-- Form 1: LOGIN FORM -->
             <form id="form-auth-login" onsubmit="app.handleLogin(event)">
               <div style="text-align: center; margin-bottom: 1.5rem;">
-                <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 0.5rem;">
+                <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 0.5rem; background: #167946; color: #ffffff; box-shadow: 0 4px 12px rgba(22, 121, 70, 0.3);">
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 20a2 2 0 0 0 2-2v-1a2 2 0 0 0-4 0v1a2 2 0 0 0 2 2z" fill="#ffffff"/>
                     <path d="M10 17L5 4h14l-5 13"/>
@@ -161,42 +161,42 @@
                     <path d="M12 4v13"/>
                   </svg>
                 </div>
-                <h3 style="font-size: 1.35rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px;">BADMINTON.AI</h3>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Hệ thống quản lý sân cầu lông thông minh AI</p>
+                <h3 style="font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; color: #0f172a;">BADMINTON.AI</h3>
+                <p style="font-size: 0.85rem; color: #64748b; margin: 0; font-weight: 500;">Hệ thống quản lý sân thể thao thông minh AI</p>
               </div>
 
               <div class="form-group">
-                <label class="form-label"><i class="fa-solid fa-phone text-primary"></i> Số điện thoại / Username</label>
-                <input type="text" id="login-phone" class="form-control" value="" placeholder="Nhập SĐT..." required>
+                <label class="form-label"><i class="fa-solid fa-phone" style="color: #167946;"></i> Số điện thoại / Username</label>
+                <input type="text" id="login-phone" class="form-control" value="" placeholder="Nhập số điện thoại đăng nhập..." required>
               </div>
 
               <div class="form-group" style="margin-bottom: 0.75rem;">
-                <label class="form-label"><i class="fa-solid fa-lock text-primary"></i> Mật khẩu</label>
+                <label class="form-label"><i class="fa-solid fa-lock" style="color: #167946;"></i> Mật khẩu</label>
                 <div style="position: relative;">
                   <input type="password" id="login-password" class="form-control" value="" placeholder="Nhập mật khẩu..." required style="padding-right: 2.5rem;">
-                  <button type="button" onclick="app.togglePasswordVisibility('login-password', this)" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;" title="Hiện/Ẩn Mật khẩu">
+                  <button type="button" onclick="app.togglePasswordVisibility('login-password', this)" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; cursor: pointer; font-size: 1rem;" title="Hiện/Ẩn Mật khẩu">
                     <i class="fa-solid fa-eye"></i>
                   </button>
                 </div>
               </div>
 
               <div style="text-align: right; margin-bottom: 1.25rem;">
-                <a href="#" onclick="app.openForgotPasswordModal(); return false;" style="font-size: 0.8rem; color: var(--accent-cyan); text-decoration: none; font-weight: 600;">
+                <a href="#" onclick="app.openForgotPasswordModal(); return false;" style="font-size: 0.82rem; color: #0284c7; text-decoration: none; font-weight: 700;">
                   <i class="fa-solid fa-key"></i> Quên mật khẩu? Lấy lại bằng mã SMS OTP
                 </a>
               </div>
 
               <div class="form-group">
-                <label class="form-label"><i class="fa-solid fa-user-gear text-primary"></i> Chọn Vai Trò Đăng Nhập</label>
-                <select id="login-role-select" class="form-control" onchange="app.handleLoginRoleSelectChange(this.value)" style="background-color: #0f172a; color: #f8fafc; font-weight: 600;">
-                  <option value="CUSTOMER" style="background-color: #0f172a; color: #f8fafc;">👤 Khách Hàng</option>
-                  <option value="OWNER" style="background-color: #0f172a; color: #f8fafc;">🏢 Chủ Sân</option>
-                  <option value="STAFF" style="background-color: #0f172a; color: #f8fafc;">🧾 Nhân Viên Quầy</option>
-                  <option value="ADMIN" style="background-color: #0f172a; color: #f8fafc;">🔑 Quản Trị Viên</option>
+                <label class="form-label"><i class="fa-solid fa-user-gear" style="color: #167946;"></i> Chọn Vai Trò Đăng Nhập</label>
+                <select id="login-role-select" class="form-control" onchange="app.handleLoginRoleSelectChange(this.value)">
+                  <option value="CUSTOMER">👤 Khách Hàng</option>
+                  <option value="OWNER">🏢 Chủ Sân</option>
+                  <option value="STAFF">🧾 Thu Ngân Quầy</option>
+                  <option value="ADMIN">🔑 Quản Trị Viên</option>
                 </select>
               </div>
 
-              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.25rem; padding: 0.75rem; font-size: 0.95rem; font-weight: 700;">
+              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.25rem; padding: 0.85rem; font-size: 1rem; font-weight: 800; border-radius: 10px; box-shadow: 0 4px 14px rgba(22, 121, 70, 0.35);">
                 <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Hệ Thống Ngay
               </button>
             </form>

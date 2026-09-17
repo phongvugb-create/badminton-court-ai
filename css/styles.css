@@ -581,15 +581,13 @@ body {
   color: var(--accent-blue);
 }
 
-/* UI Cards & Glassmorphism */
+/* UI Cards & Glassmorphism (Crisp, High-Contrast White Cards) */
 .glass-card {
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  box-shadow: var(--shadow-md);
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   margin-bottom: 1.25rem;
 }
 
@@ -718,41 +716,89 @@ body {
   border-radius: var(--radius-sm);
 }
 
-/* Forms & Inputs */
+/* Forms & Inputs (Crisp, High-Contrast White Background) */
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.15rem;
 }
 
 .form-label {
   display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 0.35rem;
-  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  color: #334155;
 }
 
 .form-control {
   width: 100%;
-  padding: 0.65rem 0.9rem;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid var(--border-color);
+  padding: 0.72rem 1rem;
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1;
   border-radius: var(--radius-md);
-  color: var(--text-main);
+  color: #0f172a !important;
   font-family: inherit;
-  font-size: 0.9rem;
-  transition: var(--transition-fast);
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1;
 }
 
 .form-control:focus {
   outline: none;
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  border-color: #167946;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3.5px rgba(22, 121, 70, 0.18);
 }
 
 .form-control option {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  padding: 8px 12px;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  padding: 10px 12px;
+}
+
+/* Auth Tabs Container (Login / Register Switcher) */
+.auth-tabs-container {
+  display: flex;
+  gap: 0.5rem;
+  background: #f1f5f9;
+  padding: 5px;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  color: #64748b;
+}
+
+.auth-tab-btn.active {
+  background: #ffffff;
+  color: #167946;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.auth-tab-btn:hover:not(.active) {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.6);
 }
 
 /* Login Role Cards Grid & Interactive Selection */
