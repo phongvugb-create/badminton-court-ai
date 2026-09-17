@@ -47,31 +47,34 @@
 
   <div id="app">
     <!-- Top Navigation Bar -->
+    <!-- Top Sports Camo Navigation Bar -->
     <header class="top-navbar">
-      <a href="#" class="brand-logo" onclick="app.switchRole('CUSTOMER'); return false;">
-        <div class="brand-icon">
-          <!-- Logo Quả Cầu Lông Độc Quyền (Badminton Shuttlecock AI SVG) -->
-          <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 7L13 22H19L23 7L16 3L9 7Z" fill="url(#shuttleGrad)" opacity="0.9"/>
-            <path d="M9 7L13 22M23 7L19 22M16 3V22" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M10.5 11.5H21.5M11.8 16.5H20.2" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M13 22C13 24.8 14.3 27 16 27C17.7 27 19 24.8 19 22H13Z" fill="#10b981" stroke="#ffffff" stroke-width="1.8"/>
-            <path d="M26 3L27 6L30 7L27 8L26 11L25 8L22 7L25 6L26 3Z" fill="#f59e0b"/>
-            <defs>
-              <linearGradient id="shuttleGrad" x1="16" y1="3" x2="16" y2="22" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#10b981"/>
-                <stop offset="1" stop-color="#06b6d4"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <div>
-          <span style="font-weight: 800; letter-spacing: 0.5px;">BADMINTON</span><span style="color: var(--primary); font-weight: 800;">.AI</span>
-          <div style="font-size: 0.65rem; color: var(--text-dim); font-weight: 600; margin-top: -3px; letter-spacing: 0.2px;">Hệ Thống Quản Lý Sân Cầu Lông AI</div>
-        </div>
-      </a>
+      <!-- Left Side: Sports Logo + Date + Pill Buttons (Đăng nhập, Đăng kí) -->
+      <div class="top-header-left">
+        <a href="#" class="brand-logo-sports" onclick="app.switchRole('CUSTOMER'); return false;" title="Trang chủ thể thao AI">
+          <div class="sports-logo-circle">
+            <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 4C10.268 4 4 10.268 4 18C4 25.732 10.268 32 18 32C25.732 32 32 25.732 32 18C32 10.268 25.732 4 18 4Z" fill="#167946"/>
+              <path d="M13 25C13 18 23 15 23 11C23 8.5 21 7 18 7C14.5 7 13.2 9.2 12.8 11.5" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="18" cy="18" r="3.5" fill="#a7f3d0"/>
+              <path d="M22 24L26 27" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </a>
 
-      <!-- Quick Role Switcher Toolbar -->
+        <div id="top-header-date" class="top-header-date">Thứ năm, 17/09/2026</div>
+
+        <div class="header-auth-pills" id="header-auth-pills-group">
+          <button class="btn-pill-auth btn-pill-login" onclick="app.switchAuthTab('login'); app.navigateTo('ui-01')">
+            Đăng nhập
+          </button>
+          <button class="btn-pill-auth btn-pill-register" onclick="app.switchAuthTab('register'); app.navigateTo('ui-01')">
+            Đăng kí
+          </button>
+        </div>
+      </div>
+
+      <!-- Center: Role Switcher Toolbar -->
       <div class="role-switcher-container">
         <button class="role-btn active" id="role-btn-customer" onclick="app.switchRole('CUSTOMER')">
           <i class="fa-solid fa-user-check"></i> Khách Hàng
@@ -80,38 +83,35 @@
           <i class="fa-solid fa-building-user"></i> Chủ Sân
         </button>
         <button class="role-btn" id="role-btn-staff" onclick="app.switchRole('STAFF')">
-          <i class="fa-solid fa-cash-register"></i> Thu Ngân Quầy
+          <i class="fa-solid fa-cash-register"></i> Thu Ngân
         </button>
         <button class="role-btn" id="role-btn-admin" onclick="app.switchRole('ADMIN')">
-          <i class="fa-solid fa-user-shield"></i> Quản Trị Viên
+          <i class="fa-solid fa-user-shield"></i> Quản Trị
         </button>
       </div>
 
-      <!-- Header User Actions -->
-      <div class="nav-actions">
-        <button class="icon-btn" id="header-csdl-btn" onclick="app.navigateTo('ui-20')" title="Xem CSDL Web 9 Bảng (Chỉ dành cho Admin)" style="display: none; border-color: var(--primary); color: var(--primary); align-items: center; gap: 5px; padding: 0 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1);">
-          <i class="fa-solid fa-database"></i> <span>CSDL WEB</span>
+      <!-- Right Side: User Actions & Red Star Badge -->
+      <div class="top-header-right">
+        <button class="icon-btn" id="header-csdl-btn" onclick="app.navigateTo('ui-20')" title="Xem CSDL Web 9 Bảng (Admin)" style="display: none; border-color: #ffffff; color: #ffffff; background: rgba(255,255,255,0.2);">
+          <i class="fa-solid fa-database"></i>
         </button>
         <button class="icon-btn" onclick="app.toggleTheme()" title="Đổi giao diện Sáng/Tối">
           <i class="fa-solid fa-moon" id="theme-icon"></i>
         </button>
-        <button class="icon-btn" onclick="app.toggleGeminiDrawer()" title="Hỏi Trợ Lý Badminton AI" style="border-color: var(--accent-purple);">
-          <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-purple);"></i>
+        <button class="icon-btn" onclick="app.toggleGeminiDrawer()" title="Hỏi Trợ Lý AI" style="background: rgba(255,255,255,0.25);">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
         </button>
-        <button class="icon-btn" onclick="app.showToast('Thông báo: Bạn có 1 lịch đặt sân lúc 17:30 chiều nay!')" title="Thông báo">
-          <i class="fa-solid fa-bell"></i>
-          <span class="badge-dot"></span>
-        </button>
-        <div class="user-profile-badge" onclick="app.handleHeaderProfileClick()" title="Bấm để Đăng Nhập / Xem Hồ Sơ">
+        <div class="user-profile-badge" onclick="app.handleHeaderProfileClick()" title="Hồ Sơ Cá Nhân">
           <div class="avatar" id="header-avatar">👤</div>
-          <span class="user-info-text" id="header-user-name">Chưa Đăng Nhập</span>
+          <span class="user-info-text" id="header-user-name">Khách</span>
         </div>
-        <button class="btn btn-primary btn-sm" id="header-auth-btn" onclick="app.navigateTo('ui-01')" title="Đăng Nhập hoặc Đăng Ký Tài Khoản" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 20px; padding: 0 12px; font-size: 0.8rem; height: 36px;">
-          <i class="fa-solid fa-right-to-bracket"></i> <span>Đăng Nhập / Đăng Ký</span>
-        </button>
-        <button class="icon-btn text-danger" id="header-logout-btn" onclick="app.logout()" title="Đăng Xuất Hệ Thống" style="display: none; border-color: rgba(239, 68, 68, 0.4); color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+        <button class="icon-btn text-danger" id="header-logout-btn" onclick="app.logout()" title="Đăng Xuất" style="display: none; background: rgba(239, 68, 68, 0.3); border-color: #ef4444;">
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>
+        <!-- Red Star Badge from Screenshot -->
+        <div class="header-star-badge" onclick="app.showToast('⭐️ Bạn đang là Hội Viên Thân Thiết Alobo Sports!')" title="Hội Viên Ngôi Sao">
+          <i class="fa-solid fa-star"></i>
+        </div>
       </div>
     </header>
 
@@ -239,65 +239,142 @@
           </div>
         </section>
 
-        <!-- Customer Search & AI Recommendation -->
+        <!-- Customer Search & AI Recommendation (Alobo Sports View) -->
         <section id="view-ui-02" class="screen-view">
-          <div class="hero-youth-banner glass-card" style="background: linear-gradient(135deg, rgba(0, 230, 118, 0.12), rgba(0, 229, 255, 0.1), rgba(168, 85, 247, 0.12)); border: 1.5px solid rgba(0, 230, 118, 0.35); padding: 1.75rem; border-radius: var(--radius-lg); margin-bottom: 1.5rem; position: relative; overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; position: relative; z-index: 2;">
-              <div>
-                <span class="tag-badge tag-ai" style="margin-bottom: 0.5rem; display: inline-flex;"><i class="fa-solid fa-robot"></i> Haversine GPS AI • Bán Kính 10KM ⚡</span>
-                <h1 class="hero-title-text" style="font-size: 1.8rem; font-weight: 800; line-height: 1.25; margin-top: 0.25rem;">Tìm Kiếm & Gợi Ý Sân Bằng AI</h1>
-                <p style="font-size: 0.92rem; color: var(--text-muted); margin-top: 0.5rem; max-width: 620px;">Gợi ý cụm sân thảm Yonex Pro gần bạn nhất dựa trên vị trí GPS và thuật toán học máy linh hoạt.</p>
-              </div>
-              <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="app.requestGPSLocation()"><i class="fa-solid fa-location-crosshairs"></i> Định Vị GPS Sân Gần Nhất</button>
-                <button class="btn btn-accent" onclick="app.navigateTo('ui-06')"><i class="fa-solid fa-fire"></i> Săn Kèo Ghép ELO</button>
-              </div>
+          <!-- 1. White Floating Search & Quick Nav Bar (Screenshot style) -->
+          <div class="floating-sports-bar">
+            <div class="sports-mini-logo">
+              <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
+                <path d="M18 4C10.268 4 4 10.268 4 18C4 25.732 10.268 32 18 32C25.732 32 32 25.732 32 18C32 10.268 25.732 4 18 4Z" fill="#167946"/>
+                <path d="M13 25C13 18 23 15 23 11C23 8.5 21 7 18 7C14.5 7 13.2 9.2 12.8 11.5" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="18" cy="18" r="3" fill="#a7f3d0"/>
+              </svg>
             </div>
-          </div>
-
-          <div class="glass-card">
-            <div class="court-search-box">
-              <input type="text" id="search-keyword" class="form-control" placeholder="Tìm theo tên sân, đường, xã/phường...">
-              <select id="search-district" class="form-control">
-                <option value="">Tất cả Xã/Phường (Thủ Đô Hà Nội)</option>
-                <option value="Hàng Bạc">Phường Hàng Bạc (Hoàn Kiếm)</option>
-                <option value="Hàng Đào">Phường Hàng Đào (Hoàn Kiếm)</option>
-                <option value="Tràng Tiền">Phường Tràng Tiền (Hoàn Kiếm)</option>
-                <option value="Điện Biên">Phường Điện Biên (Ba Đình)</option>
-                <option value="Kim Mã">Phường Kim Mã (Ba Đình)</option>
-                <option value="Đội Cấn">Phường Đội Cấn (Ba Đình)</option>
-                <option value="Văn Miếu">Phường Văn Miếu (Đống Đa)</option>
-                <option value="Láng Hạ">Phường Láng Hạ (Đống Đa)</option>
-                <option value="Ô Chợ Dừa">Phường Ô Chợ Dừa (Đống Đa)</option>
-                <option value="Bách Khoa">Phường Bách Khoa (Hai Bà Trưng)</option>
-                <option value="Lê Đại Hành">Phường Lê Đại Hành (Hai Bà Trưng)</option>
-                <option value="Dịch Vọng">Phường Dịch Vọng (Cầu Giấy)</option>
-                <option value="Mỹ Đình">Phường Mỹ Đình (Nam Từ Liêm)</option>
-                <option value="Mễ Trì">Phường Mễ Trì (Nam Từ Liêm)</option>
-                <option value="Nhân Chính">Phường Nhân Chính (Thanh Xuân)</option>
-                <option value="Quảng An">Phường Quảng An (Tây Hồ)</option>
-                <option value="Thụy Khuê">Phường Thụy Khuê (Tây Hồ)</option>
-                <option value="Văn Quán">Phường Văn Quán (Hà Đông)</option>
-                <option value="Hoàng Liệt">Phường Hoàng Liệt (Hoàng Mai)</option>
-                <option value="Đông Anh">Xã Đông Anh</option>
-                <option value="Gia Lâm">Xã Gia Lâm</option>
-                <option value="Thanh Trì">Xã Thanh Trì</option>
-                <option value="Hoài Đức">Xã Hoài Đức</option>
-                <option value="Sóc Sơn">Xã Sóc Sơn</option>
-              </select>
-              <select id="search-sort" class="form-control">
-                <option value="ai">Sắp xếp: AI Gợi Ý Tốt Nhất</option>
-                <option value="distance">Khoảng cách gần nhất</option>
-                <option value="rating">Đánh giá cao nhất</option>
-              </select>
-              <button class="btn btn-primary" onclick="app.filterFacilities()">
-                <i class="fa-solid fa-magnifying-glass"></i> Tìm Sân
+            
+            <div class="search-pill-input-wrap">
+              <input type="text" id="search-keyword" class="search-pill-input" placeholder="Tìm kiếm" oninput="app.filterFacilities()">
+              <button type="button" class="search-filter-icon" onclick="app.toggleSearchFilterDropdown()" title="Bộ lọc khu vực & sắp xếp">
+                <i class="fa-solid fa-sliders"></i>
+              </button>
+            </div>
+            
+            <div class="search-divider"></div>
+            
+            <div class="quick-nav-actions">
+              <button class="quick-nav-tab" onclick="app.openFacilitiesMap()">
+                <i class="fa-solid fa-map"></i> <span>Bản đồ</span>
+              </button>
+              <button class="quick-nav-tab" onclick="app.navigateTo('ui-05')">
+                <i class="fa-solid fa-calendar-check"></i> <span>Sân đã đặt</span>
+              </button>
+              <button class="quick-nav-tab" id="quick-tab-fav" onclick="app.toggleFilterFavorites()">
+                <i class="fa-solid fa-heart"></i> <span>Yêu thích</span>
               </button>
             </div>
           </div>
 
+          <!-- Collapsible Filter Drawer (Hidden by default, toggled via sliders icon) -->
+          <div id="advanced-filters-panel" class="glass-card" style="display: none; padding: 1rem; margin-bottom: 1.25rem; border-color: #167946; background: #ffffff;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem; align-items: center;">
+              <select id="search-district" class="form-control" onchange="app.filterFacilities()">
+                <option value="">Tất cả Xã/Phường / Khu vực</option>
+                <option value="Hoàng Mai">Quận Hoàng Mai (Tân Khai, Định Công)</option>
+                <option value="Cầu Giấy">Quận Cầu Giấy (Dịch Vọng, Yên Hòa)</option>
+                <option value="Hoàn Kiếm">Quận Hoàn Kiếm (Hàng Bạc, Tràng Tiền)</option>
+                <option value="Ba Đình">Quận Ba Đình (Điện Biên, Kim Mã)</option>
+                <option value="Đống Đa">Quận Đống Đa (Láng Hạ, Ô Chợ Dừa)</option>
+                <option value="Nam Từ Liêm">Quận Nam Từ Liêm (Mỹ Đình, Mễ Trì)</option>
+                <option value="Thanh Xuân">Quận Thanh Xuân (Nhân Chính)</option>
+                <option value="Tây Hồ">Quận Tây Hồ (Quảng An, Thụy Khuê)</option>
+                <option value="Hà Đông">Quận Hà Đông (Văn Quán)</option>
+                <option value="Hải Phòng">Hải Phòng</option>
+                <option value="Thanh Hóa">Thanh Hóa</option>
+              </select>
+              <select id="search-sort" class="form-control" onchange="app.filterFacilities()">
+                <option value="distance">Sắp xếp: Khoảng cách gần nhất</option>
+                <option value="rating">Đánh giá cao nhất</option>
+                <option value="ai">AI Gợi Ý Tốt Nhất</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="app.filterFacilities()">
+                <i class="fa-solid fa-filter"></i> Lọc Kết Quả
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Alobo Academy Sports Hero Banner (Screenshot style) -->
+          <div class="sports-hero-banner">
+            <div class="banner-camo-bg"></div>
+            <div class="banner-content-grid">
+              <!-- Left: 3D Athletic Characters -->
+              <div class="banner-players-visual">
+                <div class="banner-players-badge-stack">
+                  <div class="player-avatar-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(245, 158, 11, 0.35));" title="Vận Động Viên Thể Lực">
+                    <span>🏃‍♀️</span>
+                    <div style="font-size: 0.65rem; font-weight: 800; color: #fff; margin-top: 4px;">POWER</div>
+                  </div>
+                  <div class="player-avatar-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(6, 182, 212, 0.35)); transform: translateY(-8px);" title="Vận Động Viên Đập Cầu Smashing">
+                    <span>🏸</span>
+                    <div style="font-size: 0.65rem; font-weight: 800; color: #a7f3d0; margin-top: 4px;">PRO SMASH</div>
+                  </div>
+                  <div class="player-avatar-card" style="background: linear-gradient(135deg, rgba(234, 88, 12, 0.3), rgba(245, 158, 11, 0.4));" title="Vận Động Viên Pickleball">
+                    <span>🎾</span>
+                    <div style="font-size: 0.65rem; font-weight: 800; color: #fef08a; margin-top: 4px;">CHAMPION</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Center: Main Headline -->
+              <div class="banner-center-title">
+                <span class="badge-ra-mat"><i class="fa-solid fa-sparkles"></i> RA MẮT</span>
+                <h2 class="banner-main-brand">ALOBO ACADEMY</h2>
+                <div class="banner-main-sub">TÌM KIẾM LỚP HỌC VÀ ĐĂNG KÝ KHOÁ HỌC GẦN BẠN</div>
+                <div style="display: flex; gap: 8px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
+                  <button class="btn btn-sm" onclick="app.requestGPSLocation()" style="background: #ffffff; color: #167946; font-weight: 700; border-radius: 9999px; font-size: 0.8rem; padding: 5px 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                    <i class="fa-solid fa-location-crosshairs"></i> Sân Gần Nhất (GPS)
+                  </button>
+                  <button class="btn btn-sm" onclick="app.navigateTo('ui-06')" style="background: rgba(255,255,255,0.2); color: #ffffff; font-weight: 700; border-radius: 9999px; font-size: 0.8rem; padding: 5px 14px; border: 1px solid rgba(255,255,255,0.4);">
+                    <i class="fa-solid fa-fire"></i> Săn Kèo ELO
+                  </button>
+                </div>
+              </div>
+
+              <!-- Right: Feature Cards Stack -->
+              <div class="banner-features-column">
+                <div class="banner-feature-item">
+                  <i class="fa-solid fa-graduation-cap banner-feature-icon"></i>
+                  <div>
+                    <div class="banner-feature-text">LỚP HỌC ĐA DẠNG</div>
+                    <div class="banner-feature-sub">Tìm kiếm dễ dàng</div>
+                  </div>
+                </div>
+                <div class="banner-feature-item">
+                  <i class="fa-solid fa-bell banner-feature-icon"></i>
+                  <div>
+                    <div class="banner-feature-text">QUẢN LÝ & NHẮC NHỞ LỊCH HỌC</div>
+                    <div class="banner-feature-sub">Nhắc giờ ra sân thông minh</div>
+                  </div>
+                </div>
+                <div class="banner-feature-item">
+                  <i class="fa-solid fa-circle-check banner-feature-icon"></i>
+                  <div>
+                    <div class="banner-feature-text">KẾT NỐI TRUNG TÂM UY TÍN</div>
+                    <div class="banner-feature-sub">Uy tín hàng đầu khu vực</div>
+                  </div>
+                </div>
+                <div class="banner-feature-item">
+                  <i class="fa-solid fa-medal banner-feature-icon"></i>
+                  <div>
+                    <div class="banner-feature-text">HLV CHUYÊN NGHIỆP</div>
+                    <div class="banner-feature-sub">Đào tạo nâng trình tốc độ</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Modern Sports Court Cards Grid -->
           <div id="facilities-grid-container" class="facility-cards-grid">
-            <!-- Rendered by JS -->
+            <!-- Rendered dynamically by app.renderCustomerFacilities() -->
           </div>
         </section>
 
@@ -1136,6 +1213,32 @@
 
   <!-- Toast Container -->
   <div id="toast-container"></div>
+
+  <!-- FIXED SPORTS BOTTOM NAVIGATION BAR (Exact screenshot design) -->
+  <nav class="sports-bottom-bar" id="sports-bottom-nav">
+    <a href="#" class="bottom-bar-item active" id="bottom-tab-home" onclick="app.navigateTo('ui-02'); app.updateBottomNavActive('home'); return false;">
+      <i class="fa-solid fa-house"></i>
+      <span>Trang chủ</span>
+    </a>
+    <a href="#" class="bottom-bar-item" id="bottom-tab-map" onclick="app.openFacilitiesMap(); app.updateBottomNavActive('map'); return false;">
+      <i class="fa-solid fa-location-dot"></i>
+      <span>Bản đồ</span>
+    </a>
+    <div class="bottom-bar-center" onclick="app.navigateTo('ui-03'); app.updateBottomNavActive('explore');">
+      <button type="button" class="bottom-center-btn" title="Khám phá đặt sân">
+        <i class="fa-solid fa-file-lines"></i>
+      </button>
+      <span class="bottom-center-label">Khám phá</span>
+    </div>
+    <a href="#" class="bottom-bar-item" id="bottom-tab-trending" onclick="app.navigateTo('ui-06'); app.updateBottomNavActive('trending'); return false;">
+      <i class="fa-solid fa-fire"></i>
+      <span>Nổi bật</span>
+    </a>
+    <a href="#" class="bottom-bar-item" id="bottom-tab-account" onclick="app.handleHeaderProfileClick(); app.updateBottomNavActive('account'); return false;">
+      <i class="fa-solid fa-user"></i>
+      <span>Tài khoản</span>
+    </a>
+  </nav>
 
   <!-- Include App Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

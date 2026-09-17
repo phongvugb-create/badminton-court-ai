@@ -16,6 +16,10 @@ class BadmintonAIApp {
     this.holdTimerSeconds = 600; // 10 minutes (600s)
     this.isAIDynamicPriceActive = true;
     
+    // Favorites & Quick Filters
+    this.favorites = new Set([101, 102]);
+    this.isFavoritesFilterActive = false;
+
     // Chat & Active Room
     this.activeRoom = MockData.matchmaking_rooms[0];
 
@@ -26,6 +30,7 @@ class BadmintonAIApp {
 
   init() {
     this.initSplashScreen();
+    this.updateTopDateDisplay();
     this.updateHeaderUserUI();
     this.renderSidebarNav();
     this.navigateTo(this.currentView);
@@ -45,22 +50,34 @@ class BadmintonAIApp {
     this.initLeafletMap();
   }
 
+  updateTopDateDisplay() {
+    const dateEl = document.getElementById('top-header-date');
+    if (!dateEl) return;
+    const days = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+    const now = new Date();
+    const dayName = days[now.getDay()];
+    const dateStr = String(now.getDate()).padStart(2, '0');
+    const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+    const yearStr = now.getFullYear();
+    dateEl.textContent = `${dayName}, ${dateStr}/${monthStr}/${yearStr}`;
+  }
+
   updateHeaderUserUI() {
     const avatarEl = document.getElementById('header-avatar');
     const nameEl = document.getElementById('header-user-name');
     const logoutBtn = document.getElementById('header-logout-btn');
-    const authBtn = document.getElementById('header-auth-btn');
+    const authPills = document.getElementById('header-auth-pills-group');
 
     if (this.currentUser) {
       if (avatarEl) avatarEl.textContent = this.currentUser.avatar || '👤';
       if (nameEl) nameEl.textContent = this.currentUser.name;
       if (logoutBtn) logoutBtn.style.display = 'inline-flex';
-      if (authBtn) authBtn.style.display = 'none';
+      if (authPills) authPills.style.display = 'none';
     } else {
       if (avatarEl) avatarEl.textContent = '👤';
-      if (nameEl) nameEl.textContent = 'Chưa Đăng Nhập';
+      if (nameEl) nameEl.textContent = 'Khách';
       if (logoutBtn) logoutBtn.style.display = 'none';
-      if (authBtn) authBtn.style.display = 'inline-flex';
+      if (authPills) authPills.style.display = 'flex';
     }
   }
 
@@ -264,6 +281,11 @@ class BadmintonAIApp {
       }
     });
 
+    if (screenId === 'ui-02') this.updateBottomNavActive('home');
+    else if (screenId === 'ui-03') this.updateBottomNavActive('explore');
+    else if (screenId === 'ui-06') this.updateBottomNavActive('trending');
+    else if (screenId === 'ui-01' || screenId === 'ui-08') this.updateBottomNavActive('account');
+
     if (screenId === 'ui-09') this.renderOwnerDashboardOrders();
     if (screenId === 'ui-10') this.initLeafletMap();
     if (screenId === 'ui-13') this.renderOwnerStaff();
@@ -277,43 +299,161 @@ class BadmintonAIApp {
   }
 
   /* ------------------------------------------------------------------------
-     2. UI 02: CUSTOMER SEARCH & AI GPS RECOMMENDATION
+     2. UI 02: CUSTOMER SEARCH & SPORTS FACILITIES (ALOBO STYLE)
      ------------------------------------------------------------------------ */
-  renderCustomerFacilities(filteredList = MockData.facilities.filter(f => f.is_approved)) {
+  renderCustomerFacilities(filteredList = null) {
     const container = document.getElementById('facilities-grid-container');
+    if (!container) return;
+
+    let list = filteredList !== null ? filteredList : MockData.facilities.filter(f => f.is_approved);
+
+    if (this.isFavoritesFilterActive) {
+      list = list.filter(f => this.favorites.has(f.id));
+    }
+
     let html = '';
 
-    filteredList.forEach(fac => {
+    list.forEach(fac => {
+      const isFav = this.favorites.has(fac.id);
+      const distance = fac.distance || '5.2km';
+      const hours = fac.open_hours || `${fac.open_time} - ${fac.close_time}`;
+      const logoText = fac.club_logo || fac.name.split(' ').slice(0, 2).map(w => w[0]).join('');
+      const logoBg = fac.club_avatar_bg || '#fef3c7';
+      const logoColor = fac.club_avatar_color || '#d97706';
+
       html += `
-        <div class="facility-card">
-          <div style="position: relative;">
-            <img src="${fac.img}" alt="${fac.name}" class="facility-img">
-            <span class="ai-recommend-badge"><i class="fa-solid fa-robot"></i> Gợi Ý AI 98% Match</span>
-            <span class="distance-tag"><i class="fa-solid fa-location-dot"></i> ~1.8 km</span>
+        <div class="sports-court-card" onclick="app.selectFacilityForBooking(${fac.id})">
+          <!-- Card Media Header -->
+          <div class="court-card-media">
+            <img src="${fac.img}" alt="${fac.name}" class="court-card-img" onerror="this.src='images/court1.jpg'">
+            
+            <!-- Badges Top Left -->
+            <div class="court-card-badges-left">
+              <span class="badge-pill badge-rating"><i class="fa-solid fa-star"></i> ${fac.rating}</span>
+              <span class="badge-pill badge-single-day">Đơn ngày</span>
+              <span class="badge-pill badge-event">Sự kiện</span>
+            </div>
+
+            <!-- Action Icons Top Right -->
+            <div class="court-card-actions-right">
+              <button type="button" class="circle-action-btn ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); app.toggleFavoriteFacility(${fac.id})" title="${isFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}">
+                <i class="${isFav ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
+              </button>
+              <button type="button" class="circle-action-btn" onclick="event.stopPropagation(); app.openGoogleMapsDirections(${fac.id})" title="Chỉ đường Google Maps">
+                <i class="fa-solid fa-route"></i>
+              </button>
+            </div>
           </div>
-          <div class="facility-body">
-            <div>
-              <div class="facility-name">${fac.name}</div>
-              <div class="facility-address"><i class="fa-solid fa-map-pin"></i> ${fac.address}</div>
+
+          <!-- Card Body Section -->
+          <div class="court-card-body">
+            <div class="court-club-logo" style="background: ${logoBg}; color: ${logoColor};">
+              <span>${logoText}</span>
             </div>
-            <div class="facility-meta">
-              <span><i class="fa-solid fa-star text-primary"></i> ${fac.rating} (${fac.reviews_count} đánh giá)</span>
-              <span><i class="fa-solid fa-door-open text-primary"></i> ${fac.courts_count} Sân con</span>
+
+            <div class="court-info-main">
+              <h3 class="court-card-name" title="${fac.name}">${fac.name}</h3>
+              <div class="court-card-address">
+                <span class="court-dist-highlight">[${distance}]</span>
+                <span class="court-addr-text" title="${fac.address}">${fac.address}</span>
+              </div>
+              <div class="court-card-hours">
+                <i class="fa-regular fa-clock"></i> ${hours}
+              </div>
             </div>
-            <div style="display: flex; gap: 0.5rem; margin-top: 0.85rem;">
-              <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="app.selectFacilityForBooking(${fac.id})">
-                <i class="fa-solid fa-calendar-check"></i> Đặt Sân
-              </button>
-              <button class="btn btn-secondary btn-sm" onclick="app.openGoogleMapsDirections(${fac.id})" title="Xem chỉ đường qua Google Maps">
-                <i class="fa-solid fa-diamond-turn-right text-primary"></i> Maps
-              </button>
-            </div>
+
+            <button type="button" class="btn-booking-amber" onclick="event.stopPropagation(); app.selectFacilityForBooking(${fac.id})">
+              ĐẶT LỊCH
+            </button>
           </div>
         </div>
       `;
     });
 
+    if (list.length === 0) {
+      html = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1.5rem; background: #ffffff; border-radius: 12px; border: 1.5px dashed #cbd5e1;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏸</div>
+          <h4 style="color: #0f172a; font-weight: 800; font-size: 1.1rem; margin-bottom: 4px;">Không tìm thấy sân phù hợp</h4>
+          <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1rem;">Vui lòng thử từ khóa khác hoặc tắt chế độ lọc danh sách yêu thích</p>
+          <button class="btn btn-primary btn-sm" onclick="app.resetFacilitiesFilter()">
+            <i class="fa-solid fa-rotate-left"></i> Xem Tất Cả Sân
+          </button>
+        </div>
+      `;
+    }
+
     container.innerHTML = html;
+  }
+
+  toggleFavoriteFacility(facilityId) {
+    if (this.favorites.has(facilityId)) {
+      this.favorites.delete(facilityId);
+      this.showToast('Đã xóa khỏi danh sách Yêu thích');
+    } else {
+      this.favorites.add(facilityId);
+      this.showToast('❤️ Đã thêm sân vào danh sách Yêu thích!');
+    }
+    this.renderCustomerFacilities();
+  }
+
+  toggleFilterFavorites() {
+    this.isFavoritesFilterActive = !this.isFavoritesFilterActive;
+    const tabEl = document.getElementById('quick-tab-fav');
+    if (tabEl) {
+      if (this.isFavoritesFilterActive) {
+        tabEl.style.background = 'rgba(22, 121, 70, 0.15)';
+        tabEl.style.fontWeight = '700';
+        this.showToast('Đang lọc danh sách sân Yêu thích của bạn');
+      } else {
+        tabEl.style.background = 'transparent';
+        tabEl.style.fontWeight = '600';
+      }
+    }
+    this.renderCustomerFacilities();
+  }
+
+  toggleSearchFilterDropdown() {
+    const panel = document.getElementById('advanced-filters-panel');
+    if (panel) {
+      const isHidden = panel.style.display === 'none';
+      panel.style.display = isHidden ? 'block' : 'none';
+    }
+  }
+
+  resetFacilitiesFilter() {
+    this.isFavoritesFilterActive = false;
+    const searchInput = document.getElementById('search-keyword');
+    const districtSelect = document.getElementById('search-district');
+    const favTab = document.getElementById('quick-tab-fav');
+    if (searchInput) searchInput.value = '';
+    if (districtSelect) districtSelect.value = '';
+    if (favTab) favTab.style.background = 'transparent';
+    this.renderCustomerFacilities();
+  }
+
+  openFacilitiesMap() {
+    this.navigateTo('ui-02');
+    this.showToast('🗺️ Mở chế độ xem vị trí bản đồ các cụm sân');
+    // Scroll or open map modal if exists
+    const mapSection = document.getElementById('facility-map');
+    if (mapSection) {
+      mapSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  updateBottomNavActive(tabKey) {
+    document.querySelectorAll('.bottom-bar-item').forEach(item => item.classList.remove('active'));
+    const tabMap = {
+      'home': 'bottom-tab-home',
+      'map': 'bottom-tab-map',
+      'trending': 'bottom-tab-trending',
+      'account': 'bottom-tab-account'
+    };
+    if (tabMap[tabKey]) {
+      const el = document.getElementById(tabMap[tabKey]);
+      if (el) el.classList.add('active');
+    }
   }
 
   openGoogleMapsDirections(facilityId) {
@@ -333,8 +473,9 @@ class BadmintonAIApp {
   }
 
   filterFacilities() {
-    const keyword = document.getElementById('search-keyword').value.toLowerCase();
-    const district = document.getElementById('search-district').value;
+    const keyword = (document.getElementById('search-keyword')?.value || '').toLowerCase();
+    const district = document.getElementById('search-district')?.value || '';
+    const sortBy = document.getElementById('search-sort')?.value || 'distance';
 
     let result = MockData.facilities.filter(f => f.is_approved);
     if (keyword) {
@@ -344,16 +485,21 @@ class BadmintonAIApp {
       result = result.filter(f => f.address.includes(district));
     }
 
+    if (sortBy === 'distance') {
+      result.sort((a, b) => parseFloat(a.distance || 99) - parseFloat(b.distance || 99));
+    } else if (sortBy === 'rating') {
+      result.sort((a, b) => b.rating - a.rating);
+    }
+
     this.renderCustomerFacilities(result);
-    this.showToast(`Đã tìm thấy ${result.length} cụm sân phù hợp!`);
   }
 
   requestGPSLocation() {
     this.showToast("Đang kết nối GPS định vị tọa độ hiện tại (10.8456 N, 106.7925 E)...");
     setTimeout(() => {
-      this.showToast("AI đã dùng thuật toán Haversine sắp xếp Top sân gần bạn nhất trong bán kính 10km!");
+      this.showToast("AI đã dùng thuật toán Haversine sắp xếp Top sân gần bạn nhất!");
       this.renderCustomerFacilities();
-    }, 800);
+    }, 600);
   }
 
   selectFacilityForBooking(facilityId) {

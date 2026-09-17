@@ -3,45 +3,49 @@
    ========================================================================== */
 
 :root {
-  /* Color Palette - Modern Dark Theme (Default: Cyber Youth Sports Vibe) */
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
-  --bg-card: rgba(20, 29, 47, 0.75);
-  --bg-card-hover: rgba(30, 43, 68, 0.88);
-  --border-color: rgba(255, 255, 255, 0.12);
-  --border-focus: #00e676;
+  /* Color Palette - Modern Sports Green Theme (Alobo / Court Rental Style) */
+  --bg-primary: #f3f6f4;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #ffffff;
+  --border-color: #e2e8f0;
+  --border-focus: #167946;
   
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
   
-  /* Brand Accents - Youth Energy & AI Neon Glow */
-  --primary: #00e676; /* Electric Emerald Green */
-  --primary-hover: #00c853;
-  --primary-glow: rgba(0, 230, 118, 0.35);
+  /* Brand Accents - Emerald Sports Green & Amber Booking */
+  --primary: #167946; /* Sport Emerald Green */
+  --primary-hover: #125e36;
+  --primary-glow: rgba(22, 121, 70, 0.25);
   
-  --accent-cyan: #00e5ff; /* AI Neon Cyan */
-  --accent-purple: #a855f7; /* ELO Matchmaking Vivid Violet */
-  --accent-amber: #ff9100; /* Energetic Amber */
-  --accent-rose: #ff1744; /* Vivid Red/Rose */
-  --accent-blue: #2979ff; /* Electric Blue */
+  --accent-amber: #e09b2d; /* Gold Amber for ĐẶT LỊCH button */
+  --accent-amber-hover: #c98622;
+  --accent-cyan: #0284c7; /* Sky Blue */
+  --accent-purple: #9333ea; /* Purple for Events */
+  --accent-rose: #e11d48; /* Rose / Red for Distance */
+  --accent-blue: #2563eb;
   
-  /* Status Colors */
-  --status-available: #00e676;
-  --status-held: #ff9100;
-  --status-booked: #ff1744;
-  --status-maintenance: #64748b;
+  /* Status & Badges */
+  --status-available: #16a34a;
+  --status-held: #e09b2d;
+  --status-booked: #e11d48;
+  --status-maintenance: #94a3b8;
+  
+  --badge-single-day: #00c853; /* Đơn ngày green */
+  --badge-event: #d946ef; /* Sự kiện pink/magenta */
   
   /* Typography & Geometry */
   --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-full: 9999px;
   
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.35);
-  --shadow-glow: 0 0 25px rgba(0, 230, 118, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.07);
+  --shadow-glow: 0 0 20px rgba(22, 121, 70, 0.2);
   
   --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -214,10 +218,7 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(circle at 10% 10%, rgba(0, 230, 118, 0.12) 0%, transparent 45%),
-    radial-gradient(circle at 90% 90%, rgba(0, 229, 255, 0.1) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.06) 0%, transparent 60%);
+  padding-bottom: 74px; /* Space for fixed bottom navigation bar */
 }
 
 /* App Container Layout */
@@ -227,20 +228,138 @@ body {
   min-height: 100vh;
 }
 
-/* Top Navigation Bar */
+/* Top Sports Camo Navigation Bar */
 .top-navbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(17, 24, 39, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0.75rem 1.5rem;
+  background: #167946;
+  background: linear-gradient(135deg, #106337 0%, #167946 50%, #1b8a50 100%);
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(255,255,255,0.07) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(0,0,0,0.12) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='200' viewBox='0 0 800 200' opacity='0.25'%3E%3Cpath d='M0 120 C 150 160 250 80 400 130 C 550 180 650 110 800 150 L 800 0 L 0 0 Z' fill='%2322c55e'/%3E%3Cpath d='M0 70 C 200 110 320 20 520 80 C 680 130 750 60 800 80 L 800 0 L 0 0 Z' fill='%2315803d'/%3E%3Cpath d='M0 160 C 180 200 350 140 500 180 C 650 220 720 160 800 170 L 800 200 L 0 200 Z' fill='%230f5128'/%3E%3C/svg%3E");
+  background-size: cover, cover, 800px 200px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.6rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(16, 99, 55, 0.2);
+}
+
+.top-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.brand-logo-sports {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sports-logo-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.sports-logo-circle:hover {
+  transform: scale(1.05);
+}
+
+.top-header-date {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+/* Header Pill Buttons for Login & Register */
+.header-auth-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-pill-auth {
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 6px 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  text-decoration: none;
+  border: none;
+}
+
+.btn-pill-login {
+  background: #ffffff;
+  color: #167946;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.btn-pill-login:hover {
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.btn-pill-register {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+}
+
+.btn-pill-register:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Header Right Actions */
+.top-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-star-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  cursor: pointer;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.header-star-badge:hover {
+  transform: scale(1.1);
 }
 
 .brand-logo {
@@ -249,75 +368,71 @@ body {
   gap: 0.75rem;
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--text-main);
+  color: #ffffff;
   text-decoration: none;
 }
 
 .brand-icon {
-  width: 42px;
-  height: 42px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.25));
-  border: 1.5px solid rgba(16, 185, 129, 0.5);
-  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
-  transition: transform 0.25 ease, box-shadow 0.25s ease;
-}
-
-.brand-logo:hover .brand-icon {
-  transform: scale(1.05);
-  box-shadow: 0 0 22px rgba(16, 185, 129, 0.6);
+  color: #167946;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.25s ease;
 }
 
 .role-switcher-container {
   display: flex;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-full);
-  padding: 4px;
-  gap: 4px;
+  padding: 3px;
+  gap: 3px;
 }
 
 .role-btn {
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: var(--radius-full);
   border: none;
   background: transparent;
-  color: var(--text-muted);
-  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .role-btn:hover {
-  color: var(--text-main);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .role-btn.active {
-  background: var(--primary);
-  color: #ffffff;
-  box-shadow: 0 2px 8px var(--primary-glow);
+  background: #ffffff;
+  color: #167946;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  font-weight: 700;
 }
 
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .icon-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  color: var(--text-main);
-  width: 38px;
-  height: 38px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -328,46 +443,50 @@ body {
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.28);
+  border-color: #ffffff;
 }
 
 .badge-dot {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 5px;
+  right: 5px;
   width: 8px;
   height: 8px;
-  background: var(--accent-rose);
+  background: #ef4444;
   border-radius: 50%;
+  border: 1.5px solid #ffffff;
 }
 
 .user-profile-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  padding: 4px 12px 4px 6px;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 4px 10px 4px 5px;
   border-radius: var(--radius-full);
   cursor: pointer;
+  color: #ffffff;
 }
 
 .avatar {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+  background: #ffffff;
+  color: #167946;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
 .user-info-text {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  color: #ffffff;
 }
 
 /* Main Content Area */
@@ -750,119 +869,560 @@ body {
   border-radius: 4px;
 }
 
-/* Court Search & Cards Grid */
-.court-search-box {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
-  gap: 0.75rem;
+/* ==========================================================================
+   SPORTS LIGHT THEME & ALOBO STYLE COMPONENTS (Matched to Screenshot)
+   ========================================================================== */
+
+/* 1. White Floating Search & Quick Nav Bar */
+.floating-sports-bar {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 8px 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 1.25rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.floating-sports-bar:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+.sports-mini-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.search-pill-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.search-pill-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.95rem;
+  color: #1e293b;
+  font-family: inherit;
+}
+
+.search-pill-input::placeholder {
+  color: #94a3b8;
+}
+
+.search-filter-icon {
+  background: none;
+  border: none;
+  color: #475569;
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: color 0.2s;
+}
+
+.search-filter-icon:hover {
+  color: var(--primary);
+}
+
+.search-divider {
+  width: 1.5px;
+  height: 24px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.quick-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.quick-nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #167946;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.quick-nav-tab:hover {
+  background: rgba(22, 121, 70, 0.08);
+  transform: translateY(-1px);
+}
+
+.quick-nav-tab i {
+  font-size: 0.95rem;
+}
+
+/* 2. Alobo Academy / Sports Hero Banner */
+.sports-hero-banner {
+  background: linear-gradient(135deg, #106337 0%, #167946 55%, #19884f 100%);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 8px 24px rgba(22, 121, 70, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  min-height: 220px;
+  display: flex;
   align-items: center;
 }
 
-.facility-cards-grid {
+.banner-camo-bg {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 20% 80%, rgba(0, 0, 0, 0.15) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='300' viewBox='0 0 600 300' opacity='0.2'%3E%3Cpath d='M0 180 Q 150 240 300 160 T 600 200 L 600 0 L 0 0 Z' fill='%23ffffff'/%3E%3Cpath d='M0 90 Q 220 180 440 80 T 600 120 L 600 0 L 0 0 Z' fill='%23a7f3d0'/%3E%3C/svg%3E");
+  background-size: cover;
+  pointer-events: none;
+}
+
+.banner-content-grid {
+  position: relative;
+  z-index: 2;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: 1fr 1.3fr 1.2fr;
+  align-items: center;
+  width: 100%;
+  padding: 1.25rem 2rem;
   gap: 1.5rem;
-  margin-top: 1.25rem;
 }
 
-.facility-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease;
+.banner-players-visual {
   display: flex;
-  flex-direction: column;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-}
-
-.facility-card:hover {
-  border-color: var(--primary);
-  transform: translateY(-6px) scale(1.01);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 0 20px var(--primary-glow);
-}
-
-.facility-card > div:first-child {
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
   position: relative;
 }
 
-.facility-img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  background: #1e293b;
-  display: block;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+.banner-players-badge-stack {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
 }
 
-.facility-card:hover .facility-img {
-  transform: scale(1.06);
-}
-
-.distance-tag {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(10, 14, 26, 0.82);
+.player-avatar-card {
+  width: 75px;
+  height: 110px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 5px 12px;
-  border-radius: var(--radius-full);
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--accent-cyan);
-  border: 1.5px solid rgba(0, 229, 255, 0.4);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.ai-recommend-badge {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
-  color: #041208;
-  padding: 5px 12px;
-  border-radius: var(--radius-full);
-  font-size: 0.73rem;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-  box-shadow: 0 4px 15px var(--primary-glow);
-}
-
-.facility-body {
-  padding: 1.2rem;
-  flex: 1;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-}
-
-.facility-name {
-  font-size: 1.18rem;
-  font-weight: 800;
-  margin-bottom: 0.35rem;
-  line-height: 1.35;
-  color: var(--text-main);
-}
-
-.facility-address {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 0.85rem;
-  line-height: 1.4;
-}
-
-.facility-meta {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
+  justify-content: center;
+  font-size: 2.2rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  transition: transform 0.25s;
+}
+
+.player-avatar-card:hover {
+  transform: translateY(-4px);
+}
+
+.banner-center-title {
+  text-align: center;
+}
+
+.badge-ra-mat {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+}
+
+.banner-main-brand {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+}
+
+.banner-main-sub {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fef08a;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.banner-features-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.banner-feature-item {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  padding: 8px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.banner-feature-item:hover {
+  transform: translateX(4px);
+}
+
+.banner-feature-icon {
+  font-size: 1.1rem;
+  color: #167946;
+  flex-shrink: 0;
+}
+
+.banner-feature-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.banner-feature-sub {
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* 3. Modern Sports Court Cards Grid (100% matched to screenshot) */
+.facility-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.sports-court-card {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.sports-court-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.09);
+  border-color: #cbd5e1;
+}
+
+/* Card Media Header */
+.court-card-media {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.court-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.sports-court-card:hover .court-card-img {
+  transform: scale(1.05);
+}
+
+/* Badges Top Left */
+.court-card-badges-left {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+.badge-pill {
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  line-height: 1.2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.badge-rating {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.badge-rating i {
+  color: #f59e0b;
+  font-size: 0.72rem;
+}
+
+.badge-single-day {
+  background: #00c853;
+  color: #ffffff;
+}
+
+.badge-event {
+  background: #d946ef;
+  color: #ffffff;
+}
+
+/* Action Buttons Top Right */
+.court-card-actions-right {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.circle-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #334155;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.circle-action-btn:hover {
+  transform: scale(1.1);
+  color: #167946;
+}
+
+.circle-action-btn.active i {
+  color: #ef4444;
+  font-weight: 900;
+}
+
+/* Card Body Section */
+.court-card-body {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+}
+
+.court-club-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.1;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.court-info-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.court-card-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.court-card-address {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.court-dist-highlight {
+  color: #ea580c;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.court-addr-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.court-card-hours {
+  font-size: 0.75rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Amber/Gold Action Button: ĐẶT LỊCH */
+.btn-booking-amber {
+  background: #e09b2d;
+  background: linear-gradient(135deg, #e5a93b, #d97706);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(224, 155, 45, 0.35);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-booking-amber:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(224, 155, 45, 0.45);
+}
+
+/* 4. Fixed Sports Bottom Navigation Bar */
+.sports-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 1000;
+  padding: 0 1rem;
+}
+
+.bottom-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: var(--text-muted);
-  border-top: 1px solid var(--border-color);
-  padding-top: 0.85rem;
-  margin-top: auto;
+  transition: color 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+}
+
+.bottom-bar-item i {
+  font-size: 1.15rem;
+}
+
+.bottom-bar-item:hover {
+  color: #167946;
+}
+
+.bottom-bar-item.active {
+  color: #167946;
+  font-weight: 700;
+}
+
+.bottom-bar-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  top: -14px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.bottom-center-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2.5px solid #167946;
+  color: #167946;
+  font-size: 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(22, 121, 70, 0.25);
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+  border: 2.5px solid #167946;
+  cursor: pointer;
+}
+
+.bottom-center-btn:hover {
+  transform: scale(1.08);
+  background: #167946;
+  color: #ffffff;
+}
+
+.bottom-center-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
 }
 
 /* Time Slot Matrix Grid */
