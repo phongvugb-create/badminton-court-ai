@@ -84,46 +84,6 @@ body.light-theme .hero-title-text {
   -webkit-text-fill-color: transparent;
 }
 
-body.light-theme .top-navbar {
-  background: rgba(255, 255, 255, 0.92);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-}
-
-body.light-theme .brand-logo {
-  color: #0f172a;
-}
-
-body.light-theme .role-switcher-container {
-  background: rgba(15, 23, 42, 0.06);
-  border-color: rgba(15, 23, 42, 0.1);
-}
-
-body.light-theme .role-btn {
-  color: #475569;
-}
-
-body.light-theme .role-btn:hover {
-  color: #0f172a;
-}
-
-body.light-theme .role-btn.active {
-  background: linear-gradient(135deg, #00c853, #00a844);
-  color: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 200, 83, 0.3);
-}
-
-body.light-theme .icon-btn,
-body.light-theme .user-profile-badge {
-  background: rgba(15, 23, 42, 0.04);
-  border-color: rgba(15, 23, 42, 0.1);
-  color: #0f172a;
-}
-
-body.light-theme .icon-btn:hover,
-body.light-theme .user-profile-badge:hover {
-  background: rgba(15, 23, 42, 0.08);
-}
-
 body.light-theme .sidebar {
   background: #ffffff;
   border-right: 1px solid rgba(15, 23, 42, 0.08);
@@ -228,41 +188,40 @@ body {
   min-height: 100vh;
 }
 
-/* Top Sports Camo Navigation Bar */
+/* Top Sports Camo Navigation Bar (High Contrast, Deep Vibrant Green) */
 .top-navbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #167946;
-  background: linear-gradient(135deg, #106337 0%, #167946 50%, #1b8a50 100%);
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(255,255,255,0.07) 0%, transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(0,0,0,0.12) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='200' viewBox='0 0 800 200' opacity='0.25'%3E%3Cpath d='M0 120 C 150 160 250 80 400 130 C 550 180 650 110 800 150 L 800 0 L 0 0 Z' fill='%2322c55e'/%3E%3Cpath d='M0 70 C 200 110 320 20 520 80 C 680 130 750 60 800 80 L 800 0 L 0 0 Z' fill='%2315803d'/%3E%3Cpath d='M0 160 C 180 200 350 140 500 180 C 650 220 720 160 800 170 L 800 200 L 0 200 Z' fill='%230f5128'/%3E%3C/svg%3E");
-  background-size: cover, cover, 800px 200px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 0.6rem 1.5rem;
+  background-color: #0f6838;
+  background: 
+    radial-gradient(ellipse at 15% 40%, rgba(22, 134, 73, 0.9) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 65%, rgba(10, 68, 36, 0.95) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 10%, rgba(34, 197, 94, 0.35) 0%, transparent 60%),
+    linear-gradient(135deg, #0c4d29 0%, #106b3a 40%, #157e45 100%);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.15);
+  padding: 0.65rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   color: #ffffff;
-  box-shadow: 0 4px 16px rgba(16, 99, 55, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .top-header-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 1.1rem;
+  flex-wrap: nowrap;
 }
 
 .brand-logo-sports {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
   text-decoration: none;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .sports-logo-circle {
@@ -273,35 +232,37 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
   flex-shrink: 0;
   transition: transform 0.2s ease;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
 }
 
 .sports-logo-circle:hover {
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .top-header-date {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: #ffffff;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.3px;
   white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
-/* Header Pill Buttons for Login & Register */
+/* Header Pill Buttons for Login & Register (High Contrast) */
 .header-auth-pills {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .btn-pill-auth {
   border-radius: var(--radius-full);
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 6px 18px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 7px 20px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
@@ -309,184 +270,186 @@ body {
   justify-content: center;
   white-space: nowrap;
   text-decoration: none;
-  border: none;
+  letter-spacing: 0.2px;
 }
 
 .btn-pill-login {
   background: #ffffff;
-  color: #167946;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  color: #0d562e;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  border: none;
 }
 
 .btn-pill-login:hover {
-  background: #f1f5f9;
-  transform: translateY(-1px);
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.35);
 }
 
 .btn-pill-register {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border: 2px solid #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .btn-pill-register:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: #ffffff;
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-/* Header Right Actions */
-.top-header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.header-star-badge {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #ef4444;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
-  cursor: pointer;
-  transition: transform 0.2s;
-  flex-shrink: 0;
-}
-
-.header-star-badge:hover {
-  transform: scale(1.1);
-}
-
-.brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: #ffffff;
-  text-decoration: none;
-}
-
-.brand-icon {
-  width: 40px;
-  height: 40px;
-  background: #ffffff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #167946;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: transform 0.25s ease;
-}
-
+/* Header Center: Role Switcher Toolbar (Crystal Clear & Glowing) */
 .role-switcher-container {
   display: flex;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
   border-radius: var(--radius-full);
-  padding: 3px;
-  gap: 3px;
+  padding: 4px;
+  gap: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
 .role-btn {
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-full);
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.8rem;
-  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+
+.role-btn i {
+  font-size: 0.88rem;
 }
 
 .role-btn:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .role-btn.active {
   background: #ffffff;
-  color: #167946;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  font-weight: 700;
+  color: #0d562e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  font-weight: 800;
+  text-shadow: none;
 }
 
-.nav-actions {
+/* Header Right Side (Action Buttons, Profile, VIP Star) */
+.top-header-right {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 .icon-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
   color: #ffffff;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: all 0.2s ease;
   position: relative;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: #ffffff;
+  color: #0d562e;
   border-color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .badge-dot {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 8px;
-  height: 8px;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
   background: #ef4444;
   border-radius: 50%;
-  border: 1.5px solid #ffffff;
+  border: 2px solid #ffffff;
 }
 
 .user-profile-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 4px 10px 4px 5px;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  padding: 4px 12px 4px 5px;
   border-radius: var(--radius-full);
   cursor: pointer;
   color: #ffffff;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.user-profile-badge:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
 }
 
 .avatar {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #ffffff;
-  color: #167946;
+  color: #0d562e;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .user-info-text {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* Red Star VIP Badge from Screenshot */
+.header-star-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.5);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+}
+
+.header-star-badge:hover {
+  transform: scale(1.12);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.7);
 }
 
 /* Main Content Area */
