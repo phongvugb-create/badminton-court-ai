@@ -53,10 +53,11 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     except Exception:
                         current_data = {}
 
-                # Merge users safely: match by phone or id, keep all users from both
+                merged_database = {**current_data}
+
+                # 1. Merge users: match by phone, preserve all users from both
                 merged_users = []
                 user_phones = set()
-                # Prioritize existing or incoming
                 for u in current_data.get("users", []):
                     if u.get("phone") and u.get("phone") not in user_phones:
                         user_phones.add(u.get("phone"))
@@ -66,22 +67,48 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                         user_phones.add(u.get("phone"))
                         merged_users.append(u)
                     else:
-                        # Update existing user if needed
                         for idx, eu in enumerate(merged_users):
                             if eu.get("phone") == u.get("phone"):
                                 merged_users[idx] = {**eu, **u}
+                merged_database["users"] = merged_users
 
-                # Set combined users
-                incoming_data["users"] = merged_users
+                # 2. Merge facilities: match by id
+                merged_facilities = []
+                fac_ids = set()
+                for f in current_data.get("facilities", []):
+                    if f.get("id") and f.get("id") not in fac_ids:
+                        fac_ids.add(f.get("id"))
+                        merged_facilities.append(f)
+                for f in incoming_data.get("facilities", []):
+                    if f.get("id") not in fac_ids:
+                        fac_ids.add(f.get("id"))
+                        merged_facilities.append(f)
+                    else:
+                        for idx, ef in enumerate(merged_facilities):
+                            if ef.get("id") == f.get("id"):
+                                merged_facilities[idx] = {**ef, **f}
+                merged_database["facilities"] = merged_facilities
+
+                # 3. Merge other tables: courts, bookings, booking_orders, etc
+                other_keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders']
+                for k in other_keys:
+                    if k in incoming_data and isinstance(incoming_data[k], list) and len(incoming_data[k]) > 0:
+                        merged_database[k] = incoming_data[k]
+                    elif k in current_data:
+                        merged_database[k] = current_data[k]
 
                 # Save merged data
                 with open(DATA_FILE, "w", encoding="utf-8") as f:
-                    json.dump(incoming_data, f, ensure_ascii=False, indent=2)
+                    json.dump(merged_database, f, ensure_ascii=False, indent=2)
 
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
-                self.wfile.write(json.dumps({"success": True, "users_count": len(merged_users)}).encode("utf-8"))
+                self.wfile.write(json.dumps({
+                    "success": True, 
+                    "users_count": len(merged_users),
+                    "facilities_count": len(merged_facilities)
+                }).encode("utf-8"))
             except Exception as e:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json; charset=utf-8")

@@ -1364,15 +1364,31 @@ function loadMockDataFromLocalStorage() {
 
 function applyDataToMockData(sourceData) {
   if (!sourceData) return;
-  const keys = ['facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
+  const keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
   keys.forEach(k => {
-    if (sourceData[k] && Array.isArray(sourceData[k])) {
+    if (sourceData[k] && Array.isArray(sourceData[k]) && sourceData[k].length > 0) {
       MockData[k] = sourceData[k];
     }
   });
 
-  // Hop nhat danh sach nguoi dung (users) thong minh giua server va client
-  if (sourceData.users && Array.isArray(sourceData.users)) {
+  // 1. Hop nhat danh sach co so san (facilities) thong minh
+  if (sourceData.facilities && Array.isArray(sourceData.facilities) && sourceData.facilities.length > 0) {
+    const existingFacIds = new Set(MockData.facilities.map(f => f.id));
+    sourceData.facilities.forEach(fac => {
+      if (!existingFacIds.has(fac.id)) {
+        MockData.facilities.push(fac);
+        existingFacIds.add(fac.id);
+      } else {
+        const idx = MockData.facilities.findIndex(item => item.id === fac.id);
+        if (idx !== -1) {
+          MockData.facilities[idx] = { ...MockData.facilities[idx], ...fac };
+        }
+      }
+    });
+  }
+
+  // 2. Hop nhat danh sach nguoi dung (users) thong minh giua server va client
+  if (sourceData.users && Array.isArray(sourceData.users) && sourceData.users.length > 0) {
     const existingPhones = new Set(MockData.users.map(u => u.phone));
     sourceData.users.forEach(u => {
       if (!existingPhones.has(u.phone)) {
@@ -1426,16 +1442,22 @@ async function fetchCentralServerDatabase() {
     const res = await fetch(CENTRAL_API_URL);
     if (res.ok) {
       const serverData = await res.json();
-      if (serverData && serverData.users && serverData.users.length > 0) {
-        const prevCount = MockData.users.length;
+      if (serverData && (serverData.users || serverData.facilities)) {
+        const prevUsersCount = MockData.users.length;
+        const prevFacsCount = MockData.facilities.length;
+        
         applyDataToMockData(serverData);
         localStorage.setItem('badminton_mock_data', JSON.stringify(MockData));
         
-        // Re-render neu co thay doi
-        if (window.app && (prevCount !== MockData.users.length || window.app.currentView === 'ui-20' || window.app.currentView === 'ui-19')) {
-          if (window.app.renderAdminUsers) window.app.renderAdminUsers();
-          if (window.app.renderDatabaseInspector) window.app.renderDatabaseInspector();
-          if (window.app.renderAdminOverviewFacilities) window.app.renderAdminOverviewFacilities();
+        // Re-render moi giao dien neu co du lieu thay doi
+        if (window.app) {
+          const hasChanges = (prevUsersCount !== MockData.users.length) || (prevFacsCount !== MockData.facilities.length);
+          if (hasChanges || window.app.currentView === 'ui-20' || window.app.currentView === 'ui-19' || window.app.currentView === 'ui-02') {
+            if (window.app.renderAdminUsers) window.app.renderAdminUsers();
+            if (window.app.renderDatabaseInspector) window.app.renderDatabaseInspector();
+            if (window.app.renderAdminOverviewFacilities) window.app.renderAdminOverviewFacilities();
+            if (window.app.renderCustomerFacilities) window.app.renderCustomerFacilities();
+          }
         }
       } else if (MockData.users && MockData.users.length > 0) {
         // Neu server chua co du lieu, day toan bo du lieu hien tai len server
@@ -1452,10 +1474,11 @@ window.addEventListener('storage', (e) => {
   if (e.key === 'badminton_mock_data') {
     loadMockDataFromLocalStorage();
     if (window.app) {
-      if (app.currentView === 'ui-19') app.renderAdminUsers();
-      if (app.currentView === 'ui-20') app.renderDatabaseInspector();
-      if (app.currentView === 'ui-14') app.renderAdminOverviewFacilities();
-      if (app.currentView === 'ui-17') app.renderAdminApprovals();
+      if (app.renderAdminUsers) app.renderAdminUsers();
+      if (app.renderDatabaseInspector) app.renderDatabaseInspector();
+      if (app.renderAdminOverviewFacilities) app.renderAdminOverviewFacilities();
+      if (app.renderCustomerFacilities) app.renderCustomerFacilities();
+      if (app.renderAdminApprovals) app.renderAdminApprovals();
     }
   }
 });
