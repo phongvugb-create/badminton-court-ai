@@ -316,9 +316,9 @@
                     <span>🏸</span>
                     <div style="font-size: 0.65rem; font-weight: 800; color: #a7f3d0; margin-top: 4px;">PRO SMASH</div>
                   </div>
-                  <div class="player-avatar-card" style="background: linear-gradient(135deg, rgba(234, 88, 12, 0.3), rgba(245, 158, 11, 0.4));" title="Vận Động Viên Pickleball">
-                    <span>🎾</span>
-                    <div style="font-size: 0.65rem; font-weight: 800; color: #fef08a; margin-top: 4px;">CHAMPION</div>
+                  <div class="player-avatar-card" style="background: linear-gradient(135deg, rgba(234, 88, 12, 0.3), rgba(245, 158, 11, 0.4));" title="Vận Động Viên Phản Tạt & Phòng Thủ Cầu Lông">
+                    <span>🏸</span>
+                    <div style="font-size: 0.65rem; font-weight: 800; color: #fef08a; margin-top: 4px;">DEFENSE PRO</div>
                   </div>
                 </div>
               </div>
@@ -616,39 +616,27 @@
               </button>
             </div>
 
-            <!-- Horizontal Scrollable Sport Filter Badges (Exact pills from screenshot) -->
+            <!-- Horizontal Scrollable Badminton Filter Badges -->
             <div class="map-sport-chips-scroll">
-              <button type="button" class="sport-chip active" data-sport="all" onclick="app.filterMapSport('all', this)">
-                <span class="sport-chip-icon" style="background: #0284c7; color: #fff;"><i class="fa-solid fa-layer-group"></i></span>
-                <span>Tất cả</span>
+              <button type="button" class="sport-chip active" data-badminton="all" onclick="app.filterMapBadminton('all', this)">
+                <span class="sport-chip-icon" style="background: #167946; color: #fff;"><i class="fa-solid fa-layer-group"></i></span>
+                <span>Tất cả sân cầu</span>
               </button>
-              <button type="button" class="sport-chip" data-sport="pickleball" onclick="app.filterMapSport('pickleball', this)">
-                <span class="sport-chip-icon" style="background: #0ea5e9; color: #fff;">🎾</span>
-                <span>Pickleball</span>
-              </button>
-              <button type="button" class="sport-chip" data-sport="badminton" onclick="app.filterMapSport('badminton', this)">
+              <button type="button" class="sport-chip" data-badminton="standard" onclick="app.filterMapBadminton('standard', this)">
                 <span class="sport-chip-icon" style="background: #16a34a; color: #fff;">🏸</span>
-                <span>Cầu lông</span>
+                <span>Thảm Yonex Pro</span>
               </button>
-              <button type="button" class="sport-chip" data-sport="football" onclick="app.filterMapSport('football', this)">
-                <span class="sport-chip-icon" style="background: #15803d; color: #fff;">⚽</span>
-                <span>Bóng đá</span>
+              <button type="button" class="sport-chip" data-badminton="vip" onclick="app.filterMapBadminton('vip', this)">
+                <span class="sport-chip-icon" style="background: #0284c7; color: #fff;">⭐</span>
+                <span>Thảm Enlio VIP</span>
               </button>
-              <button type="button" class="sport-chip" data-sport="basketball" onclick="app.filterMapSport('basketball', this)">
-                <span class="sport-chip-icon" style="background: #ea580c; color: #fff;">🏀</span>
-                <span>Bóng rổ</span>
+              <button type="button" class="sport-chip" data-badminton="ac" onclick="app.filterMapBadminton('ac', this)">
+                <span class="sport-chip-icon" style="background: #06b6d4; color: #fff;">❄️</span>
+                <span>Có máy lạnh</span>
               </button>
-              <button type="button" class="sport-chip" data-sport="tennis" onclick="app.filterMapSport('tennis', this)">
-                <span class="sport-chip-icon" style="background: #b45309; color: #fff;">🎾</span>
-                <span>Quần vợt</span>
-              </button>
-              <button type="button" class="sport-chip" data-sport="multi" onclick="app.filterMapSport('multi', this)">
-                <span class="sport-chip-icon" style="background: #be123c; color: #fff;">🏟️</span>
-                <span>Đa năng</span>
-              </button>
-              <button type="button" class="sport-chip" data-sport="other" onclick="app.filterMapSport('other', this)">
-                <span class="sport-chip-icon" style="background: #6366f1; color: #fff;">🎯</span>
-                <span>Typti</span>
+              <button type="button" class="sport-chip" data-badminton="near" onclick="app.filterMapBadminton('near', this)">
+                <span class="sport-chip-icon" style="background: #ea580c; color: #fff;">📍</span>
+                <span>Gần tôi (< 5km)</span>
               </button>
             </div>
           </div>
@@ -775,40 +763,42 @@
 
           <div class="glass-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
-              <h3><i class="fa-solid fa-map-location-dot text-primary"></i> Bản Đồ Ghim Tọa Độ GPS Cụm Sân (Latitude & Longitude)</h3>
+              <div>
+                <h3><i class="fa-solid fa-map-location-dot text-primary"></i> Bản Đồ Ghim Vị Trí Sân Google Maps (GPS Realtime)</h3>
+                <p style="font-size: 0.82rem; color: #64748b; margin: 0;">Bản đồ đồng bộ dữ liệu vệ tinh & đường phố Google Maps. Kéo ghim đỏ hoặc bấm trực tiếp để đổi tọa độ.</p>
+              </div>
               <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <button class="btn btn-secondary btn-sm" onclick="app.zoomMapIn()" title="Phóng to bản đồ (Zoom In)">
-                  <i class="fa-solid fa-magnifying-glass-plus text-primary"></i> Phóng To (+)
+                <button class="btn btn-secondary btn-sm" onclick="app.toggleOwnerMapTileLayer()" title="Chuyển đổi Vệ tinh / Đường phố">
+                  <i class="fa-solid fa-layer-group text-primary"></i> Vệ Tinh / Đường Phố
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="app.zoomMapOut()" title="Thu nhỏ bản đồ (Zoom Out)">
-                  <i class="fa-solid fa-magnifying-glass-minus text-primary"></i> Thu Nhỏ (-)
-                </button>
-                <button class="btn btn-secondary btn-sm" onclick="app.resetMapZoom()" title="Về vị trí & kích thước mặc định">
-                  <i class="fa-solid fa-rotate-left"></i> Đặt Lại
+                <button class="btn btn-secondary btn-sm" onclick="app.locateOwnerGPS()" title="Lấy GPS hiện tại của cơ sở">
+                  <i class="fa-solid fa-crosshairs text-primary"></i> Định Vị GPS Tôi
                 </button>
               </div>
             </div>
 
             <!-- Address Search Bar for Map -->
-            <form onsubmit="app.searchMapAddress(event)" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-              <input type="text" id="map-search-address-input" class="form-control" placeholder="🔍 Nhập tên đường, địa chỉ hoặc quận/huyện tại TP.HCM (VD: 123 Lê Văn Việt, TP. Thủ Đức)..." required>
+            <form onsubmit="app.searchOwnerMapAddress(event)" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <input type="text" id="map-search-address-input" class="form-control" placeholder="🔍 Nhập địa chỉ cụ thể của sân cầu lông (VD: 102 Láng Hạ, Đống Đa, Hà Nội)..." required>
               <button type="submit" class="btn btn-primary btn-sm" style="white-space: nowrap;">
-                <i class="fa-solid fa-magnifying-glass"></i> Tìm Vị Trí
+                <i class="fa-solid fa-magnifying-glass"></i> Tìm & Ghim Vị Trí
               </button>
             </form>
 
-            <!-- Leaflet Interactive Real Map Container -->
-            <div id="leaflet-map-container" style="width: 100%; height: 360px; border-radius: var(--radius-md); border: 2px solid var(--primary); z-index: 1; position: relative;"></div>
-
-            <!-- Fallback Visual Map Box with Wheel & Click Zooming -->
-            <div class="map-sim-box" id="owner-gps-map-box" onclick="app.pickGPSLocation(event)" onwheel="app.handleMapWheel(event)" style="margin-top: 0.5rem; cursor: crosshair; position: relative; overflow: hidden; display: none;" title="Bấm vào vị trí bất kỳ hoặc cuộn chuột để thu phóng & ghim tọa độ">
-              <div id="map-zoom-wrapper" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; transform-origin: center center; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
-                <div class="map-pin" id="owner-map-pin" style="top: 40%; left: 52%;" title="Cụm Sân Smashing Arena (10.8456, 106.7925)"></div>
+            <!-- Google Maps Interactive Container for Owner -->
+            <div style="position: relative; width: 100%; height: 420px; border-radius: 12px; overflow: hidden; border: 2px solid #167946; box-shadow: 0 6px 20px rgba(0,0,0,0.12);">
+              <div id="owner-google-map-container" style="width: 100%; height: 100%; z-index: 1;"></div>
+              
+              <!-- Google Watermark -->
+              <div class="map-google-watermark" style="bottom: 8px; left: 8px;">
+                <span class="google-logo-text"><span style="color:#4285f4">G</span><span style="color:#ea4335">o</span><span style="color:#fbbc05">o</span><span style="color:#4285f4">g</span><span style="color:#34a853">l</span><span style="color:#ea4335">e</span></span>
+                <span class="map-legal-text">Dữ liệu bản đồ &copy; 2026 Google</span>
               </div>
             </div>
 
-            <div style="margin-top: 8px; background: rgba(0,0,0,0.6); padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; border: 1px solid var(--border-color); color: #fff;">
-              📍 Tọa độ GPS được chọn: <strong id="owner-gps-coords-text" style="color: var(--primary); font-size: 0.95rem;">10.8456 N, 106.7925 E</strong> — <span style="color: var(--accent-cyan); font-weight: bold;">📍 Bấm bản đồ hoặc kéo nút ghim đỏ để đổi vị trí!</span>
+            <div style="margin-top: 10px; background: #f8fafc; padding: 10px 16px; border-radius: 8px; font-size: 0.88rem; border: 1.5px solid #e2e8f0; color: #0f172a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div>📍 Tọa độ GPS đã chọn: <strong id="owner-gps-coords-text" style="color: #167946; font-size: 1rem;">21.0153 N, 105.8152 E</strong></div>
+              <span style="color: #0284c7; font-weight: 600; font-size: 0.82rem;"><i class="fa-solid fa-circle-info"></i> Bấm hoặc kéo nút ghim đỏ để cập nhật vị trí đón khách!</span>
             </div>
           </div>
 

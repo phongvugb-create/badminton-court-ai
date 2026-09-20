@@ -1114,13 +1114,32 @@ class BadmintonAIApp {
           <td>${court.base_price.toLocaleString('vi-VN')}đ/h</td>
           <td><span class="tag-badge ${isActive ? 'tag-ai' : 'tag-pos'}">${court.status}</span></td>
           <td>
-            <button class="btn btn-secondary btn-sm" onclick="app.openEditCourtModal(${court.id})" title="Chỉnh Sửa Sân"><i class="fa-solid fa-pen"></i></button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary btn-sm" onclick="app.openEditCourtModal(${court.id})" title="Chỉnh Sửa Sân"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="app.deleteCourt(${court.id})" title="Xóa Sân Thi Đấu"><i class="fa-solid fa-trash-can"></i> Xóa</button>
+            </div>
           </td>
         </tr>
       `;
     });
 
     if (tbody) tbody.innerHTML = html;
+  }
+
+  deleteCourt(courtId) {
+    const court = MockData.courts.find(c => c.id === courtId);
+    if (!court) return;
+
+    if (confirm(`⚠️ Bạn có chắc chắn muốn xóa "${court.name}" khỏi danh mục quản lý không?`)) {
+      // Remove court from MockData
+      MockData.courts = MockData.courts.filter(c => c.id !== courtId);
+      // Also remove associated slots
+      MockData.time_slots = MockData.time_slots.filter(s => s.court_id !== courtId);
+      
+      this.renderOwnerCourts();
+      this.renderSlotMatrix();
+      this.showToast(`🗑️ Đã xóa thành công sân "${court.name}"!`, "success");
+    }
   }
 
   pickGPSLocation(e) {
@@ -1164,160 +1183,171 @@ class BadmintonAIApp {
   }
 
   initLeafletMap() {
-    const container = document.getElementById('leaflet-map-container');
-    const fallbackBox = document.getElementById('owner-gps-map-box');
+    this.initOwnerGoogleMap();
+  }
 
-    if (typeof L === 'undefined') {
-      if (container) container.style.display = 'none';
-      if (fallbackBox) fallbackBox.style.display = 'block';
+  initOwnerGoogleMap() {
+    const container = document.getElementById('owner-google-map-container');
+    if (!container) return;
+
+    if (this.ownerGoogleMap) {
+      setTimeout(() => this.ownerGoogleMap.invalidateSize(), 200);
       return;
     }
 
-    if (container) container.style.display = 'block';
-    if (fallbackBox) fallbackBox.style.display = 'none';
+    // Default center at central Hanoi badminton arena (102 Láng Hạ: 21.0153, 105.8152)
+    const initialLat = 21.0153;
+    const initialLng = 105.8152;
 
-    if (this.leafletMap) {
-      setTimeout(() => this.leafletMap.invalidateSize(), 200);
-      return;
-    }
-
-    // Khởi tạo bản đồ tương tác thực tế Leaflet (Sử dụng Esri World Street Map siêu nét, miễn phí 100%, không API key, không watermark)
-    this.leafletMap = L.map('leaflet-map-container', {
-      center: [10.8456, 106.7925],
+    this.ownerGoogleMap = L.map('owner-google-map-container', {
+      center: [initialLat, initialLng],
       zoom: 15,
       zoomControl: true
     });
 
-    const primaryTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: '&copy; Esri, OpenStreetMap'
+    // Primary Google Roads Layer
+    this.ownerGoogleRoadsLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: '&copy; Google Maps'
     });
 
-    const fallbackTiles = L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+    // Google Satellite Layer
+    this.ownerGoogleSatelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: '&copy; Google Maps Satellite'
+    });
+
+    // Fallback OpenStreetMap
+    this.ownerOsmFallbackLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: ['a', 'b', 'c'],
       attribution: '&copy; OpenStreetMap'
     });
 
-    primaryTiles.addTo(this.leafletMap);
+    this.ownerMapTileType = 'roads';
+    this.ownerGoogleRoadsLayer.addTo(this.ownerGoogleMap);
 
-    let tileFallbackActivated = false;
-    primaryTiles.on('tileerror', () => {
-      if (!tileFallbackActivated && this.leafletMap) {
-        tileFallbackActivated = true;
-        this.leafletMap.removeLayer(primaryTiles);
-        fallbackTiles.addTo(this.leafletMap);
+    let ownerTileFallback = false;
+    this.ownerGoogleRoadsLayer.on('tileerror', () => {
+      if (!ownerTileFallback && this.ownerGoogleMap) {
+        ownerTileFallback = true;
+        this.ownerGoogleMap.removeLayer(this.ownerGoogleRoadsLayer);
+        this.ownerOsmFallbackLayer.addTo(this.ownerGoogleMap);
       }
     });
 
-    // Ghim đỏ tương tác dạng Marker Icon
-    const customIcon = L.divIcon({
-      className: 'leaflet-custom-marker',
-      html: '<div style="width: 24px; height: 24px; background: #ef4444; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 0 15px rgba(239, 68, 68, 0.9), 0 0 25px rgba(239, 68, 68, 0.6); transform: translate(-50%, -50%); animation: mapPinPulse 1.8s infinite;"></div>',
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
+    // Red Google Pin Marker for Court Location
+    const customPin = L.divIcon({
+      className: 'owner-google-pin',
+      html: `
+        <div style="display: flex; flex-direction: column; align-items: center; cursor: grab;">
+          <div style="width: 38px; height: 38px; border-radius: 50% 50% 50% 0; background: #dc2626; border: 2.5px solid #ffffff; box-shadow: 0 4px 14px rgba(0,0,0,0.35); transform: rotate(-45deg); display: flex; align-items: center; justify-content: center;">
+            <span style="transform: rotate(45deg); font-size: 16px; color: #fff;">🏸</span>
+          </div>
+          <div style="width: 10px; height: 10px; border-radius: 50%; background: rgba(0,0,0,0.35); margin-top: -3px; filter: blur(1px);"></div>
+        </div>
+      `,
+      iconSize: [38, 46],
+      iconAnchor: [19, 46]
     });
 
-    this.leafletMarker = L.marker([10.8456, 106.7925], {
-      icon: customIcon,
+    this.ownerMarker = L.marker([initialLat, initialLng], {
+      icon: customPin,
       draggable: true
-    }).addTo(this.leafletMap);
+    }).addTo(this.ownerGoogleMap);
 
-    this.leafletMap.on('click', (e) => {
+    this.ownerMarker.bindPopup("🏸 <strong>Vị trí đón khách của Sân Cầu Lông</strong><br><small style='color: #64748b;'>Kéo hoặc bấm vị trí mới để đổi tọa độ</small>").openPopup();
+
+    this.ownerGoogleMap.on('click', (e) => {
       const { lat, lng } = e.latlng;
-      this.leafletMarker.setLatLng([lat, lng]);
+      this.ownerMarker.setLatLng([lat, lng]);
       this.updateGPSCoordsDisplay(lat, lng);
     });
 
-    this.leafletMarker.on('dragend', (e) => {
+    this.ownerMarker.on('dragend', (e) => {
       const { lat, lng } = e.target.getLatLng();
       this.updateGPSCoordsDisplay(lat, lng);
     });
 
-    setTimeout(() => this.leafletMap.invalidateSize(), 250);
+    setTimeout(() => this.ownerGoogleMap.invalidateSize(), 250);
   }
 
-  moveMapToCoords(lat, lng, zoom = 16) {
-    if (this.leafletMap) {
-      this.leafletMap.setView([lat, lng], zoom);
-      if (this.leafletMarker) {
-        this.leafletMarker.setLatLng([lat, lng]);
+  toggleOwnerMapTileLayer() {
+    if (!this.ownerGoogleMap) return;
+
+    if (this.ownerMapTileType === 'roads') {
+      this.ownerGoogleMap.removeLayer(this.ownerGoogleRoadsLayer);
+      if (this.ownerGoogleMap.hasLayer(this.ownerOsmFallbackLayer)) {
+        this.ownerGoogleMap.removeLayer(this.ownerOsmFallbackLayer);
       }
-      this.updateGPSCoordsDisplay(lat, lng);
+      this.ownerGoogleSatelliteLayer.addTo(this.ownerGoogleMap);
+      this.ownerMapTileType = 'satellite';
+      this.showToast("🛰️ Đã đổi bản đồ quản lý sang Vệ Tinh Google!");
+    } else {
+      this.ownerGoogleMap.removeLayer(this.ownerGoogleSatelliteLayer);
+      this.ownerGoogleRoadsLayer.addTo(this.ownerGoogleMap);
+      this.ownerMapTileType = 'roads';
+      this.showToast("🗺️ Đã đổi bản đồ quản lý sang Đường Phố Google!");
     }
   }
 
-  async searchMapAddress(e) {
+  locateOwnerGPS() {
+    if (!this.ownerGoogleMap) return;
+
+    if (navigator.geolocation) {
+      this.showToast("📡 Đang lấy tọa độ GPS chính xác...");
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          this.ownerGoogleMap.setView([lat, lng], 16, { animate: true });
+          if (this.ownerMarker) {
+            this.ownerMarker.setLatLng([lat, lng]);
+          }
+          this.updateGPSCoordsDisplay(lat, lng);
+          this.showToast("🎯 Đã định vị chính xác cơ sở sân của bạn!");
+        },
+        () => {
+          this.ownerGoogleMap.setView([21.0153, 105.8152], 16);
+          this.showToast("📍 Vị trí trung tâm: Đống Đa, Hà Nội");
+        }
+      );
+    } else {
+      this.ownerGoogleMap.setView([21.0153, 105.8152], 16);
+    }
+  }
+
+  async searchOwnerMapAddress(e) {
     if (e) e.preventDefault();
     const input = document.getElementById('map-search-address-input');
     if (!input || !input.value.trim()) return;
 
     const query = input.value.trim();
-    this.showToast(`🔍 Đang tìm vị trí địa chỉ: "${query}"...`);
+    this.showToast(`🔍 Đang tìm địa chỉ: "${query}"...`);
 
-    // Các xã/phường & khu vực tại Thủ Đô Hà Nội
-    const districtCoords = {
-      'cầu giấy': { lat: 21.0333, lng: 105.7994, name: 'Phường Dịch Vọng (Cầu Giấy)' },
-      'dịch vọng': { lat: 21.0333, lng: 105.7994, name: 'Phường Dịch Vọng (Cầu Giấy)' },
-      'hoàn kiếm': { lat: 21.0285, lng: 105.8542, name: 'Quận Hoàn Kiếm' },
-      'hàng bạc': { lat: 21.0338, lng: 105.8525, name: 'Phường Hàng Bạc (Hoàn Kiếm)' },
-      'tràng tiền': { lat: 21.0252, lng: 105.8561, name: 'Phường Tràng Tiền' },
-      'ba đình': { lat: 21.0341, lng: 105.8265, name: 'Quận Ba Đình' },
-      'điện biên': { lat: 21.0315, lng: 105.8398, name: 'Phường Điện Biên (Ba Đình)' },
-      'đống đa': { lat: 21.0125, lng: 105.8252, name: 'Quận Đống Đa' },
-      'láng hạ': { lat: 21.0153, lng: 105.8152, name: 'Phường Láng Hạ (Đống Đa)' },
-      'văn miếu': { lat: 21.0272, lng: 105.8356, name: 'Phường Văn Miếu' },
-      'mỹ đình': { lat: 21.0285, lng: 105.7682, name: 'Phường Mỹ Đình (Nam Từ Liêm)' },
-      'bách khoa': { lat: 21.0028, lng: 105.8475, name: 'Phường Bách Khoa (Hai Bà Trưng)' },
-      'nhân chính': { lat: 21.0062, lng: 105.8085, name: 'Phường Nhân Chính (Thanh Xuân)' },
-      'quảng an': { lat: 21.0645, lng: 105.8241, name: 'Phường Quảng An (Tây Hồ)' },
-      'văn quán': { lat: 20.9812, lng: 105.7891, name: 'Phường Văn Quán (Hà Đông)' },
-      'đông anh': { lat: 21.1412, lng: 105.8451, name: 'Xã Đông Anh' },
-      'gia lâm': { lat: 21.0454, lng: 105.9125, name: 'Xã Gia Lâm' },
-      'thanh trì': { lat: 20.9521, lng: 105.8412, name: 'Xã Thanh Trì' }
-    };
-
-    const qLower = query.toLowerCase();
-
-    // Khớp nhanh tên quận/khu vực
-    for (const key in districtCoords) {
-      if (qLower === key || qLower.includes(key)) {
-        const item = districtCoords[key];
-        this.moveMapToCoords(item.lat, item.lng, 15);
-        this.showToast(`🎯 Tìm thấy khu vực: ${item.name}!`);
-        return;
-      }
-    }
-
-    // Tra cứu qua OpenStreetMap Nominatim Geocoding API
     try {
       const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Hà Nội, Việt Nam')}`;
       const resp = await fetch(searchUrl);
       const data = await resp.json();
 
       if (data && data.length > 0) {
-        const result = data[0];
-        const lat = parseFloat(result.lat);
-        const lng = parseFloat(result.lon);
-        this.moveMapToCoords(lat, lng, 16);
-        const displayName = result.display_name.split(',')[0];
-        this.showToast(`🎯 Đã định vị: ${displayName}!`);
-      } else {
-        // Fallback: Tìm kiếm không đính kèm hậu tố
-        const rawResp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-        const rawData = await rawResp.json();
-        if (rawData && rawData.length > 0) {
-          const lat = parseFloat(rawData[0].lat);
-          const lng = parseFloat(rawData[0].lon);
-          this.moveMapToCoords(lat, lng, 16);
-          this.showToast(`🎯 Đã định vị: ${rawData[0].display_name.split(',')[0]}!`);
-        } else {
-          this.showToast(`⚠️ Không tìm thấy địa chỉ "${query}". Hãy thử gõ thêm tên quận hoặc đường!`);
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        if (this.ownerGoogleMap) {
+          this.ownerGoogleMap.setView([lat, lng], 16, { animate: true });
         }
+        if (this.ownerMarker) {
+          this.ownerMarker.setLatLng([lat, lng]);
+        }
+        this.updateGPSCoordsDisplay(lat, lng);
+        this.showToast(`🎯 Đã ghim vị trí: ${data[0].display_name.split(',')[0]}!`);
+      } else {
+        this.showToast(`⚠️ Không tìm thấy địa chỉ "${query}". Hãy thử gõ thêm tên quận hoặc đường!`);
       }
     } catch (err) {
-      console.warn("Lỗi tra cứu Nominatim:", err);
-      this.showToast(`⚠️ Lỗi mạng tra cứu địa chỉ. Bạn vẫn có thể bấm/kéo nút ghim trên bản đồ!`);
+      console.warn("Geocoding error:", err);
+      this.showToast(`⚠️ Lỗi tìm kiếm địa chỉ. Bạn có thể bấm trực tiếp lên bản đồ Google để ghim!`);
     }
   }
 
@@ -1326,62 +1356,7 @@ class BadmintonAIApp {
     if (coordsText) {
       coordsText.textContent = `${lat.toFixed(4)} N, ${lng.toFixed(4)} E`;
     }
-    this.showToast(`📍 Đã ghim vị trí GPS mới: ${lat.toFixed(4)} N, ${lng.toFixed(4)} E!`);
-  }
-
-  zoomMapIn() {
-    if (this.leafletMap) {
-      this.leafletMap.zoomIn();
-      return;
-    }
-    if (!this.mapZoomScale) this.mapZoomScale = 1.0;
-    this.mapZoomScale = Math.min(this.mapZoomScale + 0.25, 3.0);
-    this.updateMapZoomUI();
-  }
-
-  zoomMapOut() {
-    if (this.leafletMap) {
-      this.leafletMap.zoomOut();
-      return;
-    }
-    if (!this.mapZoomScale) this.mapZoomScale = 1.0;
-    this.mapZoomScale = Math.max(this.mapZoomScale - 0.25, 0.75);
-    this.updateMapZoomUI();
-  }
-
-  resetMapZoom() {
-    if (this.leafletMap) {
-      this.leafletMap.setView([10.8456, 106.7925], 15);
-      return;
-    }
-    this.mapZoomScale = 1.0;
-    this.updateMapZoomUI();
-  }
-
-  handleMapWheel(e) {
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      this.zoomMapIn();
-    } else {
-      this.zoomMapOut();
-    }
-  }
-
-  updateMapZoomUI() {
-    const wrapper = document.getElementById('map-zoom-wrapper');
-    const pin = document.getElementById('owner-map-pin');
-    const text = document.getElementById('map-zoom-level-text');
-
-    if (wrapper) {
-      wrapper.style.transform = `scale(${this.mapZoomScale})`;
-    }
-    if (pin) {
-      const counterScale = (1 / this.mapZoomScale).toFixed(3);
-      pin.style.transform = `translate(-50%, -50%) scale(${counterScale})`;
-    }
-    if (text) {
-      text.textContent = `${Math.round(this.mapZoomScale * 100)}%`;
-    }
+    this.showToast(`📍 Đã cập nhật tọa độ GPS mới: ${lat.toFixed(4)} N, ${lng.toFixed(4)} E!`);
   }
 
   /* ------------------------------------------------------------------------
@@ -1528,39 +1503,43 @@ class BadmintonAIApp {
     this.sportsMarkerGroup.clearLayers();
 
     const facilities = MockData.facilities.filter(f => f.is_approved !== false);
-    const filter = this.currentMapSportFilter;
+    const filter = this.currentMapBadmintonFilter || 'all';
 
     let visibleCount = 0;
     const drawerListContainer = document.getElementById('map-drawer-facilities-list');
     let drawerHtml = '';
 
     facilities.forEach(fac => {
-      const sport = fac.sport_type || 'badminton';
-      if (filter !== 'all' && filter !== sport) return;
+      // Filter exclusively by badminton attributes
+      if (filter === 'standard') {
+        const hasYonex = (fac.badges && fac.badges.some(b => b.toLowerCase().includes('yonex'))) || fac.name.toLowerCase().includes('yonex');
+        if (!hasYonex) return;
+      } else if (filter === 'vip') {
+        const hasVip = (fac.badges && fac.badges.some(b => b.toLowerCase().includes('enlio') || b.toLowerCase().includes('vip'))) || fac.name.toLowerCase().includes('vip');
+        if (!hasVip) return;
+      } else if (filter === 'ac') {
+        const hasAC = (fac.badges && fac.badges.some(b => b.toLowerCase().includes('máy lạnh') || b.toLowerCase().includes('ac'))) || fac.name.toLowerCase().includes('arena') || fac.name.toLowerCase().includes('hub');
+        if (!hasAC) return;
+      } else if (filter === 'near') {
+        const distNum = parseFloat(fac.distance) || 5.0;
+        if (distNum > 5.0) return;
+      }
 
       visibleCount++;
 
-      // Create Custom Pin Icon
-      let iconEmoji = fac.sport_icon || '🏸';
-      let pinClass = 'badminton';
-      if (sport === 'pickleball') { pinClass = 'pickleball'; iconEmoji = '🎾'; }
-      else if (sport === 'football') { pinClass = 'football'; iconEmoji = '⚽'; }
-      else if (sport === 'basketball') { pinClass = 'basketball'; iconEmoji = '🏀'; }
-      else if (sport === 'tennis') { pinClass = 'tennis'; iconEmoji = '🎾'; }
-      else if (sport === 'multi') { pinClass = 'multi'; iconEmoji = '🏟️'; }
-
+      // Pure Badminton Pin Icon
       const pinHtml = `
-        <div class="sports-map-marker ${pinClass}" title="${fac.name}">
-          <span class="sports-map-marker-icon">${iconEmoji}</span>
+        <div class="sports-map-marker badminton" title="${fac.name}">
+          <span class="sports-map-marker-icon">🏸</span>
         </div>
       `;
 
       const customIcon = L.divIcon({
         className: 'custom-sports-pin',
         html: pinHtml,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+        popupAnchor: [0, -34]
       });
 
       const marker = L.marker([fac.latitude, fac.longitude], { icon: customIcon });
@@ -1585,7 +1564,7 @@ class BadmintonAIApp {
             <p style="font-size: 0.75rem; color: #64748b; margin: 2px 0 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${fac.address}</p>
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem;">
               <span style="color: #16a34a; font-weight: 700;">📍 ${fac.distance || 'Gần bạn'}</span>
-              <span style="color: #f59e0b; font-weight: 700;">⭐ ${fac.rating}</span>
+              <span style="color: #f59e0b; font-weight: 700;">⭐ ${fac.rating} (🏸 Cầu lông)</span>
             </div>
           </div>
         </div>
@@ -1596,18 +1575,29 @@ class BadmintonAIApp {
     if (countEl) countEl.textContent = visibleCount;
 
     if (drawerListContainer) {
-      drawerListContainer.innerHTML = drawerHtml || '<p style="text-align: center; color: #64748b; padding: 2rem;">Không tìm thấy sân phù hợp môn này.</p>';
+      drawerListContainer.innerHTML = drawerHtml || '<p style="text-align: center; color: #64748b; padding: 2rem;">Không tìm thấy sân cầu lông phù hợp bộ lọc.</p>';
     }
   }
 
-  filterMapSport(sportType, btn) {
-    this.currentMapSportFilter = sportType;
+  filterMapBadminton(category, btn) {
+    this.currentMapBadmintonFilter = category;
 
     document.querySelectorAll('.sport-chip').forEach(c => c.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
     this.renderGoogleSportsMarkers();
-    this.showToast(`Lọc bản đồ môn: ${sportType === 'all' ? 'Tất cả các môn' : sportType.toUpperCase()}`);
+    const labelMap = {
+      'all': 'Tất cả sân cầu lông',
+      'standard': 'Thảm Yonex Pro',
+      'vip': 'Thảm Enlio VIP',
+      'ac': 'Sân có điều hòa máy lạnh',
+      'near': 'Sân gần tôi (< 5km)'
+    };
+    this.showToast(`🏸 Bộ lọc: ${labelMap[category] || category}`);
+  }
+
+  filterMapSport(sportType, btn) {
+    this.filterMapBadminton(sportType, btn);
   }
 
   handleMapSearch(e) {

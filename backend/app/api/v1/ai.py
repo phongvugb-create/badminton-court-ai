@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter
 from app.schemas.all_schemas import AIChatRequest, AIChatResponse
 from app.ai.gemini_bot import ask_gemini_badminton

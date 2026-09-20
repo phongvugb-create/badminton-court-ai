@@ -3,3 +3,6 @@
 .idea/
 *.log
 Thumbs.db
+__pycache__/
+*.pyc
+verify_syntax.py

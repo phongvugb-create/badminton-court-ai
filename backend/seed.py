@@ -14,6 +14,7 @@ async def seed_data():
 
     async with AsyncSessionLocal() as session:
         # Check if already seeded
+        # pyrefly: ignore [missing-import]
         from sqlalchemy import select
         res = await session.execute(select(User))
         if res.scalars().first():

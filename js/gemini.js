@@ -60,8 +60,8 @@ class GeminiAIAssistant {
 
       QUY TẮC BẮT BUỘC KHI TRẢ LỜI:
       1. TRẢ LỜI ĐÚNG TRỌNG TÂM: Khi khách hỏi về một cụm sân cụ thể hoặc địa điểm/quận cụ thể, CHỈ TRẢ LỜI ĐÚNG THÔNG TIN CỦA CỤM SÂN ĐÓ (Tên sân, Địa chỉ chính xác, Giờ mở/đóng cửa, Số sân, Bảng giá 120k từ 5h-17h và 160k từ 18h-22h). KHÔNG liệt kê tràn lan các sân ở quận khác.
-      2. GIỚI HẠN ĐỊA LÝ KHU VỰC: Hệ thống BADMINTON.AI CHỈ hỗ trợ đặt sân và tư vấn các cụm sân tại khu vực THÀNH PHỐ HỒ CHÍ MINH (TP.HCM). Nếu người dùng hỏi về sân ở các TỈNH / THÀNH PHỐ KHÁC ngoài TP.HCM (như Hà Nội, Đà Nẵng, Bình Dương, Đồng Nai, Vũng Tàu, Cần Thơ, Nha Trang, Đà Lạt...), bạn BẮT BUỘC TỪ CHỐI TƯ VẤN và trả lời:
-         "Dạ xin lỗi bạn, hiện tại hệ thống BADMINTON.AI chỉ hỗ trợ đặt sân và tư vấn các cụm sân cầu lông tại khu vực TP. Hồ Chí Minh thôi ạ! 📍"
+      2. GIỚI HẠN ĐỊA LÝ KHU VỰC: Hệ thống BADMINTON.AI CHỈ hỗ trợ đặt sân và tư vấn các cụm sân tại khu vực THỦ ĐÔ HÀ NỘI. Nếu người dùng hỏi về sân ở các TỈNH / THÀNH PHỐ KHÁC ngoài Hà Nội (như TP.HCM, Đà Nẵng, Hải Phòng, Bình Dương, Đồng Nai, Vũng Tàu, Cần Thơ, Nha Trang, Đà Lạt...), bạn BẮT BUỘC TỪ CHỐI TƯ VẤN và trả lời:
+         "Dạ xin lỗi bạn, hiện tại hệ thống BADMINTON.AI chỉ hỗ trợ đặt sân và tư vấn các cụm sân cầu lông tại khu vực Hà Nội thôi ạ! 📍"
       3. Nếu câu hỏi KHÔNG LIÊN QUAN ĐẾN CẦU LÔNG HOẶC HỆ THỐNG SÂN CẦU LÔNG, trả lời đúng 1 câu nguyên văn:
          "Dạ xin lỗi bạn, câu hỏi này nằm ngoài phạm vi hỗ trợ của tôi. Tôi chỉ có thể tư vấn các vấn đề về đặt sân, dụng cụ và kỹ thuật cầu lông thôi ạ!"
       4. KHÔNG XUẤT CÚ PHÁP LATEX/MATH. Dùng emoji và định dạng Markdown **in đậm**.
@@ -80,21 +80,21 @@ class GeminiAIAssistant {
   isOtherProvinceQuery(prompt) {
     const p = prompt.toLowerCase();
     
-    // Nếu trong câu có nhắc đến TP.HCM / HCM / Sài Gòn thì ưu tiên hỗ trợ
-    if (p.includes('tphcm') || p.includes('tp.hcm') || p.includes('hồ chí minh') || p.includes('sài gòn') || p.includes('sai gon')) {
+    // Nếu trong câu có nhắc đến Hà Nội / HN thì là địa bàn chính
+    if (p.includes('hà nội') || p.includes('ha noi') || p.includes('hanoi') || p.includes('thủ đô')) {
       return false;
     }
 
     const otherLocations = [
-      'hà nội', 'ha noi', 'đà nẵng', 'da nang', 'bình dương', 'binh duong', 'đồng nai', 'dong nai',
+      'tphcm', 'tp.hcm', 'hồ chí minh', 'sài gòn', 'sai gon', 'thủ đức',
+      'đà nẵng', 'da nang', 'bình dương', 'binh duong', 'đồng nai', 'dong nai',
       'vũng tàu', 'vung tau', 'bà rịa', 'cần thơ', 'can tho', 'hải phòng', 'hai phong', 'nha trang',
       'đà lạt', 'da lat', 'lâm đồng', 'quảng ninh', 'hải dương', 'bắc ninh', 'thái nguyên', 'huế',
       'nghệ an', 'vinh', 'thanh hóa', 'nam định', 'thái bình', 'phú thọ', 'quảng nam', 'quy nhơn',
       'bình định', 'phú yên', 'phan thiết', 'bình thuận', 'tây ninh', 'long an', 'tiền giang',
       'mỹ tho', 'bến tre', 'vĩnh long', 'trà vinh', 'đồng tháp', 'an giang', 'long xuyên',
       'kiên giang', 'phú quốc', 'hậu giang', 'sóc trăng', 'bạc liêu', 'cà mau', 'tỉnh khác',
-      'thành phố khác', 'ngoài tphcm', 'ngoài hcm', 'ở bắc', 'ở trung', 'miền bắc', 'miền trung', 'miền tây',
-      'hà nam', 'hưng yên', 'hòa bình', 'lào cai', 'sapa', 'lạng sơn', 'cao bằng', 'tuyên quang'
+      'thành phố khác', 'ở nam', 'miền nam', 'miền tây', 'sài thành'
     ];
     return otherLocations.some(loc => p.includes(loc));
   }
