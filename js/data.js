@@ -1364,12 +1364,28 @@ function loadMockDataFromLocalStorage() {
 
 function applyDataToMockData(sourceData) {
   if (!sourceData) return;
-  const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
+  const keys = ['facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
   keys.forEach(k => {
     if (sourceData[k] && Array.isArray(sourceData[k])) {
       MockData[k] = sourceData[k];
     }
   });
+
+  // Hop nhat danh sach nguoi dung (users) thong minh giua server va client
+  if (sourceData.users && Array.isArray(sourceData.users)) {
+    const existingPhones = new Set(MockData.users.map(u => u.phone));
+    sourceData.users.forEach(u => {
+      if (!existingPhones.has(u.phone)) {
+        MockData.users.push(u);
+        existingPhones.add(u.phone);
+      } else {
+        const idx = MockData.users.findIndex(item => item.phone === u.phone);
+        if (idx !== -1) {
+          MockData.users[idx] = { ...MockData.users[idx], ...u };
+        }
+      }
+    });
+  }
 }
 
 function saveMockDataToLocalStorage() {
@@ -1391,11 +1407,14 @@ function saveMockDataToLocalStorage() {
 // Gui du lieu len Server tap trung
 async function syncDataToCentralServer(payload) {
   try {
-    await fetch(CENTRAL_API_URL, {
+    const res = await fetch(CENTRAL_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+    if (res.ok) {
+      console.log('⚡ Central server synced successfully');
+    }
   } catch (err) {
     // Neu chua chay server.py thi van chay muot ma offline qua localStorage
   }
@@ -1408,16 +1427,18 @@ async function fetchCentralServerDatabase() {
     if (res.ok) {
       const serverData = await res.json();
       if (serverData && serverData.users && serverData.users.length > 0) {
+        const prevCount = MockData.users.length;
         applyDataToMockData(serverData);
-        localStorage.setItem('badminton_mock_data', JSON.stringify(serverData));
-        if (window.app) {
-          if (app.currentView === 'ui-19') app.renderAdminUsers();
-          if (app.currentView === 'ui-20') app.renderDatabaseInspector();
-          if (app.currentView === 'ui-14') app.renderAdminOverviewFacilities();
-          if (app.currentView === 'ui-17') app.renderAdminApprovals();
+        localStorage.setItem('badminton_mock_data', JSON.stringify(MockData));
+        
+        // Re-render neu co thay doi
+        if (window.app && (prevCount !== MockData.users.length || window.app.currentView === 'ui-20' || window.app.currentView === 'ui-19')) {
+          if (window.app.renderAdminUsers) window.app.renderAdminUsers();
+          if (window.app.renderDatabaseInspector) window.app.renderDatabaseInspector();
+          if (window.app.renderAdminOverviewFacilities) window.app.renderAdminOverviewFacilities();
         }
       } else if (MockData.users && MockData.users.length > 0) {
-        // Neu server chua co data thi day data hien tai len
+        // Neu server chua co du lieu, day toan bo du lieu hien tai len server
         saveMockDataToLocalStorage();
       }
     }
