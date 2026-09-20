@@ -297,7 +297,25 @@ class BadmintonAIApp {
     if (screenId === 'ui-19') this.renderAdminUsers();
     if (screenId === 'ui-20') this.renderDatabaseInspector();
 
+    // Auto close mobile sidebar after navigation
+    this.toggleMobileSidebar(false);
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  toggleMobileSidebar(forceState = null) {
+    const sidebar = document.getElementById('main-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (!sidebar) return;
+
+    const shouldOpen = forceState !== null ? forceState : !sidebar.classList.contains('mobile-open');
+    if (shouldOpen) {
+      sidebar.classList.add('mobile-open');
+      if (backdrop) backdrop.classList.add('active');
+    } else {
+      sidebar.classList.remove('mobile-open');
+      if (backdrop) backdrop.classList.remove('active');
+    }
   }
 
   /* ------------------------------------------------------------------------

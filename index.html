@@ -49,8 +49,11 @@
     <!-- Top Navigation Bar -->
     <!-- Top Sports Camo Navigation Bar -->
     <header class="top-navbar">
-      <!-- Left Side: Sports Logo + Date + Pill Buttons (Đăng nhập, Đăng kí) -->
+      <!-- Left Side: Mobile Menu Button + Sports Logo + Date + Pill Buttons (Đăng nhập, Đăng kí) -->
       <div class="top-header-left">
+        <button class="mobile-menu-toggle-btn" id="mobile-menu-toggle-btn" onclick="app.toggleMobileSidebar()" title="Mở danh mục menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
         <a href="#" class="brand-logo-sports" onclick="app.switchRole('CUSTOMER'); return false;" title="Trang chủ thể thao AI">
           <div class="sports-logo-circle">
             <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -115,11 +118,19 @@
       </div>
     </header>
 
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="app.toggleMobileSidebar(false)"></div>
+
     <!-- Main Workspace Area -->
     <div class="main-wrapper">
       <!-- Dynamic Sidebar Navigation -->
       <aside class="sidebar" id="main-sidebar">
-        <div class="sidebar-title" id="sidebar-role-title">PHÂN HỆ KHÁCH HÀNG</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; padding: 0 0.75rem;">
+          <div class="sidebar-title" id="sidebar-role-title" style="margin-bottom: 0; padding: 0;">PHÂN HỆ KHÁCH HÀNG</div>
+          <button class="sidebar-mobile-close" onclick="app.toggleMobileSidebar(false)" title="Đóng menu">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
         <nav id="sidebar-nav-list">
           <!-- Rendered dynamically by JavaScript -->
         </nav>

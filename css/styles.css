@@ -2709,4 +2709,288 @@ body {
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+/* ==========================================================================
+   MOBILE RESPONSIVE SYSTEM (Hoàn thiện giao diện điện thoại thông minh)
+   ========================================================================== */
 
+/* Nút toggle menu hamburger trên điện thoại */
+.mobile-menu-toggle-btn {
+  display: none;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Nút đóng sidebar trên mobile */
+.sidebar-mobile-close {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* Lớp phủ mờ (Backdrop) khi mở sidebar trên điện thoại */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1040;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.sidebar-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ĐIỀU CHỈNH GIAO DIỆN KHI MÀN HÌNH NHỎ HƠN 992px (Tablet & Mobile) */
+@media screen and (max-width: 992px) {
+  .mobile-menu-toggle-btn {
+    display: flex;
+  }
+
+  .sidebar-mobile-close {
+    display: block;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+  }
+
+  /* Chuyển sidebar sang dạng Offcanvas Drawer trượt từ bên trái */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    z-index: 1050;
+    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.35);
+    background: var(--bg-secondary);
+    transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow-y: auto;
+    padding-top: 1.25rem;
+  }
+
+  .sidebar.mobile-open {
+    left: 0;
+  }
+
+  /* Cho phép nội dung trang chiếm trọn 100% chiều rộng */
+  .main-wrapper {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .page-container {
+    padding: 1rem 0.85rem 5.5rem 0.85rem;
+    max-width: 100%;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Top Navbar co giãn gọn gàng */
+  .top-navbar {
+    padding: 0.5rem 0.85rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .top-header-left {
+    gap: 0.6rem;
+  }
+
+  .top-header-date {
+    display: none; /* Ẩn ngày dài trên mobile để tiết kiệm diện tích */
+  }
+
+  .role-switcher-container {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: auto;
+    padding: 3px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .role-switcher-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .role-btn {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .user-info-text {
+    display: none; /* Chỉ giữ avatar để header gọn */
+  }
+
+  .header-star-badge {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+
+  /* Thanh tìm kiếm nổi bật trên điện thoại */
+  .floating-sports-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .search-divider {
+    display: none;
+  }
+
+  .quick-nav-actions {
+    display: flex;
+    justify-content: space-around;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 8px;
+    gap: 0.5rem;
+  }
+
+  .quick-nav-tab {
+    padding: 4px 6px;
+    font-size: 0.8rem;
+  }
+
+  /* Hero Banner Alobo Academy tự động co cột trên mobile */
+  .sports-hero-banner {
+    min-height: auto;
+    padding: 0;
+  }
+
+  .banner-content-grid {
+    grid-template-columns: 1fr;
+    padding: 1.25rem 1rem;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .banner-players-visual {
+    order: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .banner-players-badge-stack {
+    justify-content: center;
+  }
+
+  .player-avatar-card {
+    width: 65px;
+    height: 85px;
+    font-size: 1.6rem;
+  }
+
+  .banner-center-title {
+    order: 2;
+  }
+
+  .banner-main-brand {
+    font-size: 1.6rem;
+  }
+
+  .banner-main-sub {
+    font-size: 0.8rem;
+  }
+
+  .banner-features-column {
+    display: none; /* Ẩn cột phụ trên mobile để đỡ chật */
+  }
+
+  /* Lưới danh sách sân con hiển thị 1 cột chuẩn mobile */
+  .facility-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  .court-card-banner-wrap {
+    height: 180px;
+  }
+
+  .court-card-body {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .court-card-name {
+    font-size: 0.9rem;
+  }
+
+  /* Bảng CSDL và quản lý cuộn ngang mượt mà trên mobile */
+  .glass-card {
+    padding: 1rem;
+    overflow-x: auto;
+  }
+
+  .custom-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  /* Fixed Bottom Bar tối ưu kích thước ngón tay bấm */
+  .sports-bottom-bar {
+    height: 58px;
+    padding: 0 0.5rem;
+  }
+
+  .bottom-bar-item {
+    font-size: 0.68rem;
+    gap: 2px;
+  }
+
+  .bottom-bar-item i {
+    font-size: 1.1rem;
+  }
+}
+
+/* ĐIỀU CHỈNH RIÊNG CHO MÀN HÌNH NHỎ (Dưới 480px - iPhone, Android) */
+@media screen and (max-width: 480px) {
+  .btn-pill-auth {
+    padding: 5px 12px;
+    font-size: 0.78rem;
+  }
+
+  .banner-main-brand {
+    font-size: 1.4rem;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+}
