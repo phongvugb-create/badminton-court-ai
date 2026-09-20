@@ -1332,7 +1332,13 @@ class BadmintonAIApp {
       });
 
       const marker = L.marker([fac.latitude, fac.longitude], { icon: customIcon });
-      marker.bindPopup(`<strong>${fac.name}</strong><br><small style="color:#64748b;">${fac.address}</small><br><span style="color:#16a34a; font-weight:700;">⭐ ${fac.rating} • ${fac.distance || 'Gần bạn'}</span>`);
+      
+      // Khi chủ sân bấm vào logo chiếc vợt 🏸
+      marker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        this.showOwnerFacilityDetail(fac);
+        this.ownerGoogleMap.panTo([fac.latitude, fac.longitude], { animate: true });
+      });
 
       this.ownerSportsMarkerGroup.addLayer(marker);
 
@@ -1357,6 +1363,116 @@ class BadmintonAIApp {
     if (drawerListContainer) {
       drawerListContainer.innerHTML = drawerHtml || '<p style="text-align: center; color: #64748b; padding: 2rem;">Không tìm thấy sân cầu lông phù hợp bộ lọc.</p>';
     }
+  }
+
+  showOwnerFacilityDetail(fac) {
+    // 1. Render popup nổi bên trong map
+    const previewPopup = document.getElementById('owner-facility-preview-card');
+    if (previewPopup) {
+      previewPopup.innerHTML = `
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <img src="${fac.img}" alt="${fac.name}" style="width: 76px; height: 76px; border-radius: 10px; object-fit: cover; border: 1.5px solid #e2e8f0; flex-shrink: 0;" onerror="this.src='images/court1.jpg'">
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <h4 style="margin: 0 0 4px; font-size: 0.95rem; font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fac.name}</h4>
+              <button onclick="app.hideOwnerFacilityDetail()" style="background: none; border: none; font-size: 1.1rem; color: #94a3b8; cursor: pointer; padding: 0 0 0 8px;">&times;</button>
+            </div>
+            <p style="font-size: 0.75rem; color: #64748b; margin: 0 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              <i class="fa-solid fa-location-dot" style="color: #167946;"></i> ${fac.address}
+            </p>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+              <span style="font-size: 0.78rem; font-weight: 700; color: #dc2626;">💰 ${fac.price_range || '120.000đ/giờ'}</span>
+              <button class="btn btn-sm" onclick="app.confirmDeleteFacility(${fac.id}, '${fac.name.replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-size: 0.75rem; padding: 3px 10px; border-radius: 6px; font-weight: 700; cursor: pointer;">
+                <i class="fa-solid fa-trash-can"></i> Xóa Sân Này
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      previewPopup.style.display = 'block';
+    }
+
+    // 2. Render hộp thông tin chi tiết đầy đủ ở ngay bên dưới bản đồ
+    const detailBox = document.getElementById('owner-selected-facility-detail-card');
+    if (detailBox) {
+      const badgesHtml = (fac.badges || []).map(b => `<span style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: 600;">${b}</span>`).join(' ');
+
+      detailBox.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="background: #167946; color: #fff; padding: 3px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">MÃ SÂN #${fac.id}</span>
+              <h3 style="margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: 800;">🏸 ${fac.name}</h3>
+              <span style="color: #f59e0b; font-weight: 700; font-size: 0.88rem;">⭐ ${fac.rating} (${fac.reviews_count || 50}+ đánh giá)</span>
+            </div>
+            <p style="margin: 4px 0 0; font-size: 0.85rem; color: #64748b;">
+              <i class="fa-solid fa-location-dot" style="color: #167946;"></i> <strong>Địa chỉ:</strong> ${fac.address}
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-sm" onclick="app.focusMapToFacility(${fac.latitude}, ${fac.longitude})" style="background: #ecfdf5; color: #167946; border: 1px solid #bbf7d0;">
+              <i class="fa-solid fa-crosshairs"></i> Phóng Tới Sân
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="app.confirmDeleteFacility(${fac.id}, '${fac.name.replace(/'/g, "\\'")}')" style="background: #dc2626; color: #ffffff; border: none; font-weight: 700; padding: 6px 14px; border-radius: 8px; box-shadow: 0 4px 12px rgba(220,38,38,0.25);">
+              <i class="fa-solid fa-trash-can"></i> XÓA SÂN NÀY KHỎI HỆ THỐNG
+            </button>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: #f8fafc; padding: 12px 16px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.85rem;">
+          <div><strong>⏱️ Giờ mở cửa:</strong> <span style="color: #0f172a; font-weight: 600;">${fac.open_hours || fac.open_time + ' - ' + fac.close_time}</span></div>
+          <div><strong>🏸 Quy mô:</strong> <span style="color: #167946; font-weight: 700;">${fac.courts_count || 3} Sân con thi đấu</span></div>
+          <div><strong>💵 Giá thuê niêm yết:</strong> <span style="color: #dc2626; font-weight: 700;">${fac.price_range || '120.000đ/giờ'}</span></div>
+          <div><strong>📍 Tọa độ GPS:</strong> <span style="font-family: monospace; color: #0369a1; font-weight: 600;">${fac.latitude.toFixed(4)} N, ${fac.longitude.toFixed(4)} E</span></div>
+        </div>
+
+        <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-size: 0.82rem; color: #64748b; font-weight: 600;">Tiện ích & Thảm:</span>
+          ${badgesHtml}
+        </div>
+      `;
+      detailBox.style.display = 'block';
+      detailBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    this.showToast(`🏸 Đã chọn sân: ${fac.name}`);
+  }
+
+  hideOwnerFacilityDetail() {
+    const previewPopup = document.getElementById('owner-facility-preview-card');
+    if (previewPopup) previewPopup.style.display = 'none';
+
+    const detailBox = document.getElementById('owner-selected-facility-detail-card');
+    if (detailBox) detailBox.style.display = 'none';
+  }
+
+  focusMapToFacility(lat, lng) {
+    if (this.ownerGoogleMap) {
+      this.ownerGoogleMap.setView([lat, lng], 16, { animate: true });
+    }
+  }
+
+  confirmDeleteFacility(facId, facName) {
+    const confirmed = confirm(`⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA SÂN:\n\n"${facName}"\n\nSau khi xóa, cụm sân này sẽ được gỡ bỏ hoàn toàn khỏi bản đồ và hệ thống đặt sân của bạn!`);
+    if (!confirmed) return;
+
+    // Xóa khỏi MockData.facilities
+    const idx = MockData.facilities.findIndex(f => f.id === facId);
+    if (idx !== -1) {
+      MockData.facilities.splice(idx, 1);
+    }
+
+    // Ẩn bảng chi tiết
+    this.hideOwnerFacilityDetail();
+
+    // Re-render lại các marker trên bản đồ
+    this.renderOwnerSportsMarkers();
+    if (this.googleSportsMap) {
+      this.renderGoogleSportsMarkers();
+    }
+    this.renderCustomerFacilities();
+
+    this.showToast(`🗑️ Đã xóa thành công sân "${facName}" khỏi hệ thống!`);
   }
 
   filterOwnerMapBadminton(category, btn) {
@@ -1388,7 +1504,7 @@ class BadmintonAIApp {
 
     this.ownerGoogleMap.setView([fac.latitude, fac.longitude], 16, { animate: true });
     this.toggleOwnerFacilitiesSidebar();
-    this.showToast(`📍 Đang xem sân: ${fac.name}`);
+    this.showOwnerFacilityDetail(fac);
   }
 
   toggleOwnerMapTileLayer() {

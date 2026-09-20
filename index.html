@@ -859,11 +859,21 @@
                   <!-- Rendered dynamically -->
                 </div>
               </div>
+
+              <!-- Selected Facility Card (Floating inside Map) -->
+              <div id="owner-facility-preview-card" class="map-preview-popup" style="display: none;">
+                <!-- Rendered dynamically when racket marker clicked -->
+              </div>
+            </div>
+
+            <!-- Detailed Facility Inspection & Action Box (Directly below Map) -->
+            <div id="owner-selected-facility-detail-card" style="display: none; background: #ffffff; border-top: 2px solid #167946; padding: 16px 20px; animation: fadeIn 0.3s ease;">
+              <!-- Rendered by JS -->
             </div>
 
             <div style="background: #f8fafc; padding: 12px 18px; border-top: 1px solid #e2e8f0; font-size: 0.88rem; color: #0f172a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
               <div>📍 Tọa độ GPS đón khách hiện tại: <strong id="owner-gps-coords-text" style="color: #167946; font-size: 1.05rem;">21.0153 N, 105.8152 E</strong></div>
-              <span style="color: #0284c7; font-weight: 600; font-size: 0.82rem;"><i class="fa-solid fa-circle-info"></i> Bấm bất kỳ đâu trên bản đồ hoặc kéo ghim đỏ lớn để cập nhật vị trí đón khách!</span>
+              <span style="color: #0284c7; font-weight: 600; font-size: 0.82rem;"><i class="fa-solid fa-circle-info"></i> Bấm logo chiếc vợt 🏸 để xem thông tin chi tiết và xóa sân! Kéo ghim đỏ lớn để đổi vị trí GPS.</span>
             </div>
           </div>
 
