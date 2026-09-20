@@ -284,7 +284,6 @@ class BadmintonAIApp {
 
     if (screenId === 'ui-02') this.updateBottomNavActive('home');
     else if (screenId === 'ui-map') this.updateBottomNavActive('map');
-    else if (screenId === 'ui-03') this.updateBottomNavActive('explore');
     else if (screenId === 'ui-06') this.updateBottomNavActive('trending');
     else if (screenId === 'ui-01' || screenId === 'ui-08') this.updateBottomNavActive('account');
 
@@ -908,20 +907,20 @@ class BadmintonAIApp {
       <form onsubmit="app.saveNewFacility(event)" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
         <div class="form-group">
           <label class="form-label">Tên Cụm Sân Cầu Lông</label>
-          <input type="text" id="add-fac-name" class="form-control" placeholder="VD: Sân Cầu Lông Tân Phú Cyber Arena" required>
+          <input type="text" id="add-fac-name" class="form-control" placeholder="VD: Sân Cầu Lông Cầu Giấy Pro Arena" required>
         </div>
         <div class="form-group">
           <label class="form-label">Địa Chỉ Chi Nhánh (Số nhà, Đường, Phường, Quận)</label>
-          <input type="text" id="add-fac-address" class="form-control" placeholder="VD: 55 Lê Trọng Tấn, Sơn Kỳ, Tân Phú, TP.HCM" required>
+          <input type="text" id="add-fac-address" class="form-control" placeholder="VD: 102 Phố Láng Hạ, Phường Láng Hạ, Quận Đống Đa, Hà Nội" required>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
             <label class="form-label">Vĩ Độ (Latitude)</label>
-            <input type="text" id="add-fac-lat" class="form-control" value="10.8012" required>
+            <input type="text" id="add-fac-lat" class="form-control" value="21.0153" required>
           </div>
           <div class="form-group">
             <label class="form-label">Kinh Độ (Longitude)</label>
-            <input type="text" id="add-fac-lng" class="form-control" value="106.6211" required>
+            <input type="text" id="add-fac-lng" class="form-control" value="105.8152" required>
           </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
