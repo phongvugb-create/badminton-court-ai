@@ -13,36 +13,54 @@ class GeminiAIAssistant {
       Bạn là Smashing AI Assistant - Trợ lý Trí Tuệ Nhân Tạo chính thức của Hệ thống Quản lý & Cho Thuê Sân Cầu Lông BADMINTON.AI.
 
       DỮ LIỆU THỰC TẾ CHI TIẾT TỪNG CỤM SÂN TRÊN HỆ THỐNG THỦ ĐÔ HÀ NỘI (MOCKDATA.FACILITIES):
-      1. Sân Cầu Lông AI Badminton Arena Cầu Giấy
-         - Địa chỉ: 123 Đường Cầu Giấy, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội
-         - Giờ mở cửa: 06:00 - 23:00 | Số lượng: 8 sân con (thảm Yonex Pro chuẩn) | Đánh giá: 4.9⭐ (128 đánh giá)
-      2. Cụm Sân Thể Thao Pro Badminton Center Hoàn Kiếm
-         - Địa chỉ: 45 Phố Hàng Bạc, Phường Hàng Bạc, Quận Hoàn Kiếm, Hà Nội
-         - Giờ mở cửa: 05:30 - 22:30 | Số lượng: 6 sân con | Đánh giá: 4.7⭐ (95 đánh giá)
-      3. Sân Cầu Lông Tràng Tiền Star Arena
-         - Địa chỉ: 88 Phố Tràng Tiền, Phường Tràng Tiền, Quận Hoàn Kiếm, Hà Nội
-         - Giờ mở cửa: 06:00 - 22:00 | Số lượng: 4 sân con | Đánh giá: 4.6⭐ (64 đánh giá)
-      4. Đống Đa Sport Hub Badminton Arena
-         - Địa chỉ: 102 Phố Láng Hạ, Phường Láng Hạ, Quận Đống Đa, Hà Nội
-         - Giờ mở cửa: 05:00 - 23:00 | Số lượng: 10 sân con | Đánh giá: 4.9⭐ (142 đánh giá)
-      5. Smash Zone Cyber Badminton Mỹ Đình
-         - Địa chỉ: 15 Lê Đức Thọ, Phường Mỹ Đình, Quận Nam Từ Liêm, Hà Nội
-         - Giờ mở cửa: 06:00 - 23:30 | Số lượng: 8 sân con | Đánh giá: 4.8⭐ (88 đánh giá)
-      6. CLB Cầu Lông Ba Đình Star Arena
-         - Địa chỉ: 178 Điện Biên Phủ, Phường Điện Biên, Quận Ba Đình, Hà Nội
-         - Giờ mở cửa: 05:30 - 23:00 | Số lượng: 12 sân con | Đánh giá: 4.8⭐ (116 đánh giá)
-      7. Nhà Thi Đấu Cầu Lông Bách Khoa Yonex Pro
-         - Địa chỉ: 219 Phố Lê Thanh Nghị, Phường Bách Khoa, Quận Hai Bà Trưng, Hà Nội
-         - Giờ mở cửa: 06:00 - 22:30 | Số lượng: 10 sân con | Đánh giá: 4.9⭐ (175 đánh giá)
-      8. Thanh Xuân Sport Center & Fuji Badminton Club
-         - Địa chỉ: 159 Lê Văn Lương, Phường Nhân Chính, Quận Thanh Xuân, Hà Nội
-         - Giờ mở cửa: 05:30 - 23:00 | Số lượng: 14 sân con (Quy mô lớn nhất) | Đánh giá: 4.9⭐ (210 đánh giá)
-      9. CLB Cầu Lông Tây Hồ Arena - Quảng An
-         - Địa chỉ: 48 Đặng Thai Mai, Phường Quảng An, Quận Tây Hồ, Hà Nội
-         - Giờ mở cửa: 06:00 - 22:30 | Số lượng: 8 sân con | Đánh giá: 4.7⭐ (92 đánh giá)
-      10. Hà Đông Cyber Badminton Club - Văn Quán
-         - Địa chỉ: 215 Trần Phú, Phường Văn Quán, Quận Hà Đông, Hà Nội
-         - Giờ mở cửa: 05:00 - 23:30 | Số lượng: 12 sân con | Đánh giá: 4.9⭐ (185 đánh giá)
+      1. Sân Cầu Lông AI Badminton Arena Cầu Giấy - 123 Đường Cầu Giấy | 8 sân | 4.9⭐
+      2. CLB Cầu Lông Đống Đa Sport Hub - 102 Láng Hạ, Đống Đa | 10 sân | 4.9⭐
+      3. Sân Cầu Lông Tràng Tiền Star Arena - 88 Tràng Tiền, Hoàn Kiếm | 4 sân | 4.6⭐
+      4. Nhà Thi Đấu Cầu Lông Bách Khoa Yonex Pro - 219 Lê Thanh Nghị, Hai Bà Trưng | 10 sân | 4.9⭐
+      5. Smash Zone Cyber Badminton Mỹ Đình - 15 Lê Đức Thọ, Nam Từ Liêm | 8 sân | 4.8⭐
+      6. CLB Cầu Lông Ba Đình Star Arena - 178 Điện Biên Phủ, Ba Đình | 12 sân | 4.8⭐
+      7. Thanh Xuân Sport Center & Fuji Club - 159 Lê Văn Lương, Thanh Xuân | 14 sân | 4.9⭐
+      8. CLB Cầu Lông Tây Hồ Arena - 48 Đặng Thai Mai, Tây Hồ | 8 sân | 4.7⭐
+      9. Hà Đông Cyber Badminton Club - 215 Trần Phú, Hà Đông | 12 sân | 4.9⭐
+      10. Sân Cầu Lông Cầu Giấy Pro Arena - 35 Dịch Vọng Hậu, Cầu Giấy | 8 sân | 4.8⭐
+      11. CLB Cầu Lông Hoàng Gia Cổ Nhuế - 18 Cổ Nhuế, Bắc Từ Liêm | 6 sân | 4.9⭐
+      12. Sân Cầu Lông Quần Ngựa Liễu Giai - 30 Văn Cao, Ba Đình | 8 sân | 4.7⭐
+      13. CLB Cầu Lông Định Công Arena - KĐT Định Công, Hoàng Mai | 8 sân | 4.8⭐
+      14. Sân Cầu Lông Ciputra Club - KĐT Ciputra, Bắc Từ Liêm | 12 sân | 5.0⭐
+      15. Sân Cầu Lông Long Biên Riverside Pro - Đường Cổ Linh, Long Biên | 10 sân | 4.8⭐
+      16. Sân cầu lông Đại học Công Đoàn - 169 Tây Sơn, Đống Đa | 2 sân | Giá: 80.000đ/h
+      17. Sân cầu lông Trung Kính - Ngõ 218 Trung Kính, Cầu Giấy | 3 sân | Giá: 70.000đ/h
+      18. Sân cầu lông Quang Trung 178 đường Láng - 178 Đường Láng, Đống Đa | 3 sân | Giá: 50.000 - 80.000đ/h
+      19. Sân cầu lông 105 Láng Hạ - 105 Láng Hạ, Đống Đa | 1 sân | Giá: 90.000đ/h
+      20. Sân cầu lông Ban Cơ Yếu Chính Phủ - 105 Nguyễn Chí Thanh, Đống Đa | 2 sân | Giá: 90.000đ/h
+      21. Sân cầu lông Học Viện Ngân Hàng – Ambition - 12 Chùa Bộc, Đống Đa | 3 sân | Giá: 80.000 - 100.000đ/h
+      22. Sân cầu lông Ngoại Thương - 91 Chùa Láng, Đống Đa | 3 sân | Giá: 90.000đ/h
+      23. Sân cầu lông Fleet - Ngõ 1194 Đường Láng, Đống Đa | 1 sân | Giá: 100.000đ/h
+      24. Sân cầu lông Bộ Công An - 47 Phạm Văn Đồng, Cầu Giấy | 5 sân | Giá: 80.000 - 110.000đ/h
+      25. Sân cầu lông Bệnh Viện Phụ Sản Hà Nội - 929 La Thành, Ba Đình | 3 sân | Giá: 50.000 - 80.000đ/h
+      26. Sân cầu lông Đại học Thủy Lợi - 175 Tây Sơn, Đống Đa | 4 sân | Giá: 50.000đ/h
+      27. Sân cầu lông Đại học Xây Dựng - 55 Giải Phóng, Hai Bà Trưng | 4 sân | Giá: 90.000đ/h
+      28. Sân cầu lông Đường Sông & Đường Sông 2 - Cảng Hà Nội / Lương Yên, Hai Bà Trưng | 2-4 sân | Giá: 50.000 - 90.000đ/h
+      29. Sân cầu lông Hồng Hà - Phố Hồng Hà, Hoàn Kiếm | 4 sân | Giá: 50.000 - 90.000đ/h
+      30. Trung Tâm TDTT Sân Cầu Lông 521 Minh Khai - 521 Minh Khai, Hai Bà Trưng | 7 sân | Giá: 40.000 - 80.000đ/h
+      31. Sân cầu lông Pháo đài Láng - Ngõ 102 Pháo Đài Láng, Đống Đa | 3 sân | Giá: 50.000 - 80.000đ/h
+      32. Sân cầu lông trường THPT Lý Thái Tổ - 165 Hoàng Ngân, Cầu Giấy | 3 sân | Giá: 50.000 - 80.000đ/h
+      33. Sân cầu lông 266 phố Vũ Hữu - 266 Vũ Hữu, Thanh Xuân / Nam Từ Liêm | 3 sân | Giá: 50.000 - 80.000đ/h
+      34. Sân CLB Cầu Lông TCSP Mẫu giáo - 387 Hoàng Quốc Việt, Cầu Giấy | 3 sân | Giá: 50.000 - 80.000đ/h
+      35. Sân cầu lông 134 Quan Nhân - 134 Quan Nhân, Thanh Xuân | 3 sân | Giá: 50.000 - 80.000đ/h
+      36. Sân cầu lông Hà Đông - Phố Tô Hiệu, Hà Đông | 3 sân | Giá: 80.000 - 120.000đ/h
+      37. Sân cầu lông La Khê – Hà Đông - KĐT Văn Khê, Hà Đông | 3 sân | Giá: 70.000 - 130.000đ/h
+      38. Sân cầu lông Nhà thi đấu Hà Đông - 182 Quang Trung, Hà Đông | 4 sân | Giá: 70.000 - 130.000đ/h
+      39. Sân cầu lông trường THCS Lê Quý Đôn - KĐT Dương Nội, Hà Đông | 3 sân | Giá: 80.000 - 130.000đ/h
+      40. Sân cầu lông trường Chuyên Nguyễn Huệ – Hà Đông - 560 Quang Trung, Hà Đông | 3 sân | Giá: 70.000 - 120.000đ/h
+      41. Sân cầu lông trường Tiểu học Nguyễn Quý Đức - Đại Mỗ, Nam Từ Liêm | 1 sân | Giá: 80.000 - 130.000đ/h
+      42. Sân cầu lông Việt Hưng - KĐT Việt Hưng, Long Biên | 3 sân | Giá: 70.000 - 130.000đ/h
+      43. Sân Trung tâm quản lý bay - Nguyễn Sơn, Long Biên | 2 sân | Giá: 70.000 - 120.000đ/h
+      44. Sân cầu lông Trường Hải - 1 Ngô Gia Tự, Long Biên | 2 sân | Giá: 50.000 - 80.000đ/h
+      45. Sân cầu lông Đoàn Kết – Thạch Bàn - Thạch Bàn, Long Biên | 3 sân | Giá: 70.000 - 130.000đ/h
+      46. Sân cầu lông trường Tiểu học Đoàn Khuê – Long Biên - KĐT Việt Hưng, Long Biên | 3 sân | Giá: 70.000 - 110.000đ/h
+      47. Sân cầu lông Thượng Thanh - Thượng Thanh, Long Biên | 3 sân | Giá: 70.000 - 130.000đ/h
+      48. Sân cầu lông trường Tiểu học Ngọc Lâm - 24 Hoàng Như Tiếp, Long Biên | 3 sân | Giá: 70.000 - 140.000đ/h
 
       BẢNG GIÁ THUÊ SÂN:
       - Khung giờ bình thường (05:00 sáng - 17:00 chiều): 120.000đ/giờ.
