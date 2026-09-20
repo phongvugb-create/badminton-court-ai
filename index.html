@@ -497,22 +497,96 @@
           </div>
         </section>
 
-        <!-- AI Matchmaking Room Finder -->
+        <!-- FEATURED & PROMOTIONAL EVENTS & AI MATCHMAKING -->
         <section id="view-ui-06" class="screen-view">
-          <div class="page-header">
+          
+          <div class="page-header" style="margin-bottom: 1.25rem;">
             <div>
               <h1 class="page-title">
-                <i class="fa-solid fa-users-viewfinder text-primary"></i> AI Matchmaking & Tìm Đối Thủ
-                <span class="tag-badge tag-ai"><i class="fa-solid fa-microchip"></i> Hệ Thống ELO Rating</span>
+                <i class="fa-solid fa-fire text-primary" style="color: #ea580c !important;"></i> Sự Kiện Nổi Bật & Ưu Đãi Thể Thao
+                <span class="tag-badge" style="background: rgba(234, 88, 12, 0.15); color: #ea580c; border: 1px solid rgba(234, 88, 12, 0.3);">
+                  <i class="fa-solid fa-bolt"></i> HOT 2026
+                </span>
               </h1>
-              <p class="page-subtitle">Tự động gợi ý và xếp phòng giao lưu phù hợp với trình độ ELO của bạn</p>
+              <p class="page-subtitle">Tổng hợp các chương trình ưu đãi, sự kiện giải đấu và phòng ghép giao lưu hấp dẫn nhất</p>
+            </div>
+          </div>
+
+          <!-- PROMOTIONAL 4-BANNER GRID (Replicating user screenshot) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-bottom: 2rem;">
+            
+            <!-- Banner 1: Giải Nhiệt Mùa Hè -->
+            <div style="position: relative; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.12); border: 2px solid #ea580c; cursor: pointer; aspect-ratio: 16/9; background: #000;" onclick="app.navigateTo('ui-02'); app.showToast('🏸 Sự kiện Giải Nhiệt Mùa Hè: Ưu đãi chỉ từ 110k/người!');">
+              <img src="images/banner_giai_nhiet_1789928164258.jpg" alt="Giải nhiệt mùa hè" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+              <div style="position: absolute; bottom: 12px; right: 14px; z-index: 2;">
+                <button class="btn btn-sm" style="background: #eab308; color: #78350f; font-weight: 800; border: none; padding: 6px 14px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); text-transform: uppercase; font-size: 0.8rem;">
+                  ĐẶT LỊCH NGAY
+                </button>
+              </div>
+              <div style="position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 2;">
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: #ffffff; opacity: 0.9;"></span>
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4);"></span>
+              </div>
+            </div>
+
+            <!-- Banner 2: Đừng Để Chấn Thương Kết Thúc Cuộc Chơi -->
+            <div style="position: relative; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.12); border: 2px solid #0284c7; cursor: pointer; aspect-ratio: 16/9; background: #000;" onclick="app.showToast('📞 Hotline Phục Hồi Chấn Thương Thể Thao: 1900 3181');">
+              <img src="images/banner_chan_thuong_1789928187433.jpg" alt="Đừng để chấn thương" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+              <div style="position: absolute; bottom: 12px; right: 14px; z-index: 2;">
+                <button class="btn btn-sm" style="background: #eab308; color: #78350f; font-weight: 800; border: none; padding: 6px 14px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); text-transform: uppercase; font-size: 0.8rem;">
+                  LIÊN HỆ NGAY
+                </button>
+              </div>
+              <div style="position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 2;">
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: #ffffff; opacity: 0.9;"></span>
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4);"></span>
+              </div>
+            </div>
+
+            <!-- Banner 3: Sân Thể Thao Chỉ Từ 100K -->
+            <div style="position: relative; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.12); border: 2px solid #eab308; cursor: pointer; aspect-ratio: 16/9; background: #000;" onclick="app.navigateTo('ui-02'); app.showToast('🎯 Khuyến mãi giờ vàng sân thể thao chỉ từ 100K/giờ!');">
+              <img src="images/banner_san_quan3_1789928211089.jpg" alt="Sân chỉ từ 100k" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+              <div style="position: absolute; bottom: 12px; right: 14px; z-index: 2;">
+                <button class="btn btn-sm" style="background: #eab308; color: #78350f; font-weight: 800; border: none; padding: 6px 14px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); text-transform: uppercase; font-size: 0.8rem;">
+                  ĐẶT LỊCH NGAY
+                </button>
+              </div>
+              <div style="position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 2;">
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: #ffffff; opacity: 0.9;"></span>
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4);"></span>
+              </div>
+            </div>
+
+            <!-- Banner 4: Sân Thể Thao Phạm Hùng Khung Giờ Social -->
+            <div style="position: relative; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.12); border: 2px solid #167946; cursor: pointer; aspect-ratio: 16/9; background: #000;" onclick="app.navigateTo('ui-02'); app.showToast('🏆 Sân Phạm Hùng: Khung giờ Social chỉ từ 50K/người!');">
+              <img src="images/banner_pham_hung_1789928235164.jpg" alt="Sân Phạm Hùng" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+              <div style="position: absolute; bottom: 12px; right: 14px; z-index: 2;">
+                <button class="btn btn-sm" style="background: #eab308; color: #78350f; font-weight: 800; border: none; padding: 6px 14px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); text-transform: uppercase; font-size: 0.8rem;">
+                  ĐẶT LỊCH NGAY
+                </button>
+              </div>
+              <div style="position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 2;">
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: #ffffff; opacity: 0.9;"></span>
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4);"></span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Section Divider & AI Matchmaking Rooms -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h2 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-users-viewfinder text-primary"></i> Phòng Ghép Kèo Cầu Lông AI (Matchmaking)
+              </h2>
+              <p style="font-size: 0.85rem; color: #64748b; margin: 2px 0 0;">Tìm đối thủ và bạn đánh tương đồng điểm ELO Rating để giao lưu rèn luyện</p>
             </div>
             <button class="btn btn-accent" onclick="app.openCreateRoomModal()">
               <i class="fa-solid fa-plus"></i> Tạo Phòng Ghép Mới
             </button>
           </div>
 
-          <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
             <div style="display: flex; align-items: center; gap: 1rem;">
               <div class="avatar" style="width: 48px; height: 48px; font-size: 1.2rem;">H</div>
               <div>
