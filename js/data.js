@@ -1347,22 +1347,29 @@ const MockData = {
   ]
 };
 
-// Luu va Tai du lieu tu dong vao LocalStorage de dong bo va khong bi mat du lieu khi F5 / mo tab moi
+// Luu va Tai du lieu tu dong vao LocalStorage & May chu Backend tap trung (Central Server)
+const CENTRAL_API_URL = "http://localhost:8085/api/database";
+
 function loadMockDataFromLocalStorage() {
   try {
     const savedData = localStorage.getItem('badminton_mock_data');
     if (savedData) {
       const parsed = JSON.parse(savedData);
-      const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
-      keys.forEach(k => {
-        if (parsed[k] && Array.isArray(parsed[k])) {
-          MockData[k] = parsed[k];
-        }
-      });
+      applyDataToMockData(parsed);
     }
   } catch (e) {
     console.warn('Could not load mock data from localStorage:', e);
   }
+}
+
+function applyDataToMockData(sourceData) {
+  if (!sourceData) return;
+  const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
+  keys.forEach(k => {
+    if (sourceData[k] && Array.isArray(sourceData[k])) {
+      MockData[k] = sourceData[k];
+    }
+  });
 }
 
 function saveMockDataToLocalStorage() {
@@ -1373,8 +1380,49 @@ function saveMockDataToLocalStorage() {
       if (MockData[k]) payload[k] = MockData[k];
     });
     localStorage.setItem('badminton_mock_data', JSON.stringify(payload));
+    
+    // Dong thoi tu dong gui du lieu len May chu Backend de dong bo tat ca trinh duyet
+    syncDataToCentralServer(payload);
   } catch (e) {
     console.warn('Could not save mock data to localStorage:', e);
+  }
+}
+
+// Gui du lieu len Server tap trung
+async function syncDataToCentralServer(payload) {
+  try {
+    await fetch(CENTRAL_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    // Neu chua chay server.py thi van chay muot ma offline qua localStorage
+  }
+}
+
+// Lay du lieu tu Server tap trung ve de dong bo voi bat ky trinh duyet nao (Brave, Chrome, Edge)
+async function fetchCentralServerDatabase() {
+  try {
+    const res = await fetch(CENTRAL_API_URL);
+    if (res.ok) {
+      const serverData = await res.json();
+      if (serverData && serverData.users && serverData.users.length > 0) {
+        applyDataToMockData(serverData);
+        localStorage.setItem('badminton_mock_data', JSON.stringify(serverData));
+        if (window.app) {
+          if (app.currentView === 'ui-19') app.renderAdminUsers();
+          if (app.currentView === 'ui-20') app.renderDatabaseInspector();
+          if (app.currentView === 'ui-14') app.renderAdminOverviewFacilities();
+          if (app.currentView === 'ui-17') app.renderAdminApprovals();
+        }
+      } else if (MockData.users && MockData.users.length > 0) {
+        // Neu server chua co data thi day data hien tai len
+        saveMockDataToLocalStorage();
+      }
+    }
+  } catch (err) {
+    // Server chua khoi chay thi dung localStorage
   }
 }
 
@@ -1393,5 +1441,12 @@ window.addEventListener('storage', (e) => {
 
 // Khoi tao load du lieu ngay khi nap file data.js
 loadMockDataFromLocalStorage();
+fetchCentralServerDatabase();
+
+// Tu dong dong bo theo chu ky 3 giay voi may chu de dam bao moi trinh duyet deu cap nhat tuc thi
+setInterval(() => {
+  fetchCentralServerDatabase();
+}, 3000);
+
 
 
