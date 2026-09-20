@@ -80,13 +80,11 @@ class GeminiAIAssistant {
       - Hộp Cầu Lông Thành Công 12 quả: 300.000đ/hộp.
       - Nước khoáng Pocari Sweat 500ml: 10.000đ/chai | Khăn lau mồ hôi: 10.000đ/cái.
 
-      QUY TẮC BẮT BUỘC KHI TRẢ LỜI:
-      1. TRẢ LỜI ĐÚNG TRỌNG TÂM: Khi khách hỏi về một cụm sân cụ thể hoặc địa điểm/quận cụ thể, CHỈ TRẢ LỜI ĐÚNG THÔNG TIN CỦA CỤM SÂN ĐÓ (Tên sân, Địa chỉ chính xác, Giờ mở/đóng cửa, Số sân, Bảng giá 120k từ 5h-17h và 160k từ 18h-22h). KHÔNG liệt kê tràn lan các sân ở quận khác.
-      2. GIỚI HẠN ĐỊA LÝ KHU VỰC: Hệ thống BADMINTON.AI CHỈ hỗ trợ đặt sân và tư vấn các cụm sân tại khu vực THỦ ĐÔ HÀ NỘI. Nếu người dùng hỏi về sân ở các TỈNH / THÀNH PHỐ KHÁC ngoài Hà Nội (như TP.HCM, Đà Nẵng, Hải Phòng, Bình Dương, Đồng Nai, Vũng Tàu, Cần Thơ, Nha Trang, Đà Lạt...), bạn BẮT BUỘC TỪ CHỐI TƯ VẤN và trả lời:
-         "Dạ xin lỗi bạn, hiện tại hệ thống BADMINTON.AI chỉ hỗ trợ đặt sân và tư vấn các cụm sân cầu lông tại khu vực Hà Nội thôi ạ! 📍"
-      3. Nếu câu hỏi KHÔNG LIÊN QUAN ĐẾN CẦU LÔNG HOẶC HỆ THỐNG SÂN CẦU LÔNG, trả lời đúng 1 câu nguyên văn:
-         "Dạ xin lỗi bạn, câu hỏi này nằm ngoài phạm vi hỗ trợ của tôi. Tôi chỉ có thể tư vấn các vấn đề về đặt sân, dụng cụ và kỹ thuật cầu lông thôi ạ!"
-      4. KHÔNG XUẤT CÚ PHÁP LATEX/MATH. Dùng emoji và định dạng Markdown **in đậm**.
+      QUY TẮC PHẢN HỒI THÔNG MINH (GEMINI AI ASSISTANT):
+      1. THÂN THIỆN, LINH HOẠT & THÔNG MINH NHƯ MỘT TRỢ LÝ THỰC THỤ: Bạn có thể chào hỏi, trò chuyện tự nhiên, giải đáp mọi thắc mắc của người dùng (từ kỹ thuật chơi, chọn vợt, chiến thuật cầu lông, sức khỏe, thể thao nói chung đến các câu hỏi giao tiếp đời sống thông thường).
+      2. ĐỐI VỚI HỆ THỐNG SÂN: Bạn nắm rõ toàn bộ hệ thống 48+ cụm sân cầu lông tại Hà Nội của BADMINTON.AI, bảng giá (120k/h thường, 160k/h giờ cao điểm 18-22h), chính sách AI Dynamic Pricing, cách tính điểm ELO và các loại vợt cho thuê.
+      3. ĐỐI VỚI CÂU HỎI CHUNG / NGOÀI CẦU LÔNG: Trả lời nhiệt tình, thông minh, lịch sự và hữu ích như một trợ lý AI chuẩn Google Gemini; không từ chối thô cứng, có thể khéo léo gắn kết nhẹ nhàng với tinh thần thể thao thể lực nếu phù hợp.
+      4. ĐỊNH DẠNG: Trình bày rõ ràng, dùng bullet points, emoji sinh động và Markdown **in đậm** (không dùng cú pháp LaTeX).
     `;
   }
 
@@ -139,14 +137,6 @@ class GeminiAIAssistant {
   }
 
   async generateResponse(userPrompt) {
-    if (this.isOtherProvinceQuery(userPrompt)) {
-      return "Dạ xin lỗi bạn, hiện tại hệ thống **BADMINTON.AI** tập trung hỗ trợ đặt sân và tư vấn các cụm sân cầu lông tại khu vực **Thủ Đô Hà Nội** ạ! 📍\n\nNếu bạn cần tìm sân cầu lông ở các phường/xã Hà Nội (như Cầu Giấy, Hoàn Kiếm, Đống Đa, Ba Đình, Mỹ Đình, Thanh Xuân, Tây Hồ, Hà Đông, Đông Anh, Gia Lâm...), bạn hãy cho mình biết nhé!";
-    }
-
-    if (!this.isBadmintonRelated(userPrompt)) {
-      return "Dạ xin lỗi bạn, câu hỏi này nằm ngoài phạm vi hỗ trợ của tôi. Tôi chỉ có thể tư vấn các vấn đề về đặt sân, dụng cụ và kỹ thuật cầu lông thôi ạ!";
-    }
-
     const currentKey = this.getAPIKey();
     if (!currentKey) {
       return this.getFallbackResponse(userPrompt);
@@ -201,12 +191,11 @@ class GeminiAIAssistant {
   }
 
   getFallbackResponse(prompt) {
-    if (this.isOtherProvinceQuery(prompt)) {
-      return "Dạ xin lỗi bạn, hiện tại hệ thống **BADMINTON.AI** chỉ hỗ trợ đặt sân và tư vấn các cụm sân cầu lông tại khu vực **TP. Hồ Chí Minh** thôi ạ! 📍\n\nNếu bạn cần tìm sân cầu lông ở khu vực TP.HCM (như TP. Thủ Đức, Quận 1, Phú Nhuận, Tân Bình, Gò Vấp, Bình Thạnh, Quận 7, Quận 10...), bạn hãy cho mình biết nhé!";
-    }
+    const p = prompt.toLowerCase().trim();
 
-    if (!this.isBadmintonRelated(prompt)) {
-      return "Dạ xin lỗi bạn, câu hỏi này nằm ngoài phạm vi hỗ trợ của tôi. Tôi chỉ có thể tư vấn các vấn đề về đặt sân, dụng cụ và kỹ thuật cầu lông thôi ạ!";
+    // Phản hồi thân thiện cho câu chào
+    if (p === 'xin chào' || p === 'chào' || p === 'hello' || p === 'hi' || p.startsWith('chào bạn') || p.startsWith('xin chào')) {
+      return "👋 Xin chào bạn! Rất vui được hỗ trợ bạn hôm nay. Tôi là **Trợ lý Trí Tuệ Nhân Tạo Google Gemini AI** của hệ thống sân cầu lông BADMINTON.AI.\n\nTôi có thể giúp gì cho bạn? Bạn có thể hỏi tôi về bất kỳ thông tin nào: gợi ý sân gần bạn, hướng dẫn chọn vợt, chiến thuật thi đấu, luật chơi hay bất kỳ câu hỏi nào bạn đang thắc mắc nhé! 🏸✨";
     }
 
     const p = prompt.toLowerCase();
@@ -348,7 +337,7 @@ class GeminiAIAssistant {
         "3. **Tối ưu doanh thu**: Giúp chủ sân tăng trung bình **+18.5% doanh thu hàng tháng**, đồng thời đảm bảo người chơi luôn có sân trống vào giờ linh hoạt!";
     }
 
-    return "🤖 **Smashing Badminton AI Assistant**:\nTôi là trợ lý AI chính thức của **BADMINTON.AI**! Giá thuê sân giờ bình thường (5h-17h) là **120.000đ/giờ**, giờ 18h - 22h là **160.000đ/giờ**. Bạn có thể hỏi tôi thông tin chi tiết từng sân (VD: 'Sân ở Phú Nhuận', 'Sân ở Thủ Đức', 'Sân Pro Badminton Center ở đâu?').";
+    return "🤖 **Google Gemini AI Assistant**:\nChào bạn! Tôi là trợ lý Trí Tuệ Nhân Tạo của hệ thống **BADMINTON.AI**. Tôi có thể hỗ trợ bạn giải đáp bất kỳ thắc mắc nào, từ đặt sân, tư vấn chọn vợt, chiến thuật thi đấu, điểm ELO, đến các câu hỏi giao lưu đời sống và thể thao. Hãy nhắn cho tôi bất kỳ điều gì bạn muốn tìm hiểu nhé! ✨🏸";
   }
 }
 
