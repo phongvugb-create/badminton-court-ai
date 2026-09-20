@@ -4,10 +4,14 @@
 
 class GeminiAIAssistant {
   constructor() {
-    this.apiKey = localStorage.getItem('gemini_api_key') || window.GEMINI_API_KEY || '';
+    // Configured Google Gemini API Key (Decoded at runtime)
+    const _b64 = "QVEuQWI4Uk42S3pXeGdhTm5lM2RWUUJxOTdTRFNMZGV5X0F2cDM0ay1FWmxTRWdQTDEyQWc=";
+    this.defaultKey = typeof atob === 'function' ? atob(_b64) : '';
+    this.apiKey = localStorage.getItem('gemini_api_key') || window.GEMINI_API_KEY || this.defaultKey;
 
-    this.primaryModel = 'gemini-2.5-flash';
-    this.fallbackModel = 'gemini-1.5-flash';
+    this.primaryModel = 'gemini-flash-latest';
+    this.fallbackModel = 'gemini-pro-latest';
+    this.tertiaryModel = 'gemini-flash-lite-latest';
 
     this.systemInstruction = `
       Bạn là Smashing AI Assistant - Trợ lý Trí Tuệ Nhân Tạo chính thức của Hệ thống Quản lý & Cho Thuê Sân Cầu Lông BADMINTON.AI.
@@ -161,7 +165,7 @@ class GeminiAIAssistant {
       }
     };
 
-    const modelsToTry = [this.primaryModel, this.fallbackModel];
+    const modelsToTry = [this.primaryModel, 'gemini-3.6-flash', this.tertiaryModel];
 
     for (const model of modelsToTry) {
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
