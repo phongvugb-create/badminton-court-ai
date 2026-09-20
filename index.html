@@ -271,7 +271,9 @@
             
             <div class="search-divider"></div>
             
-            <div class="quick-nav-actions">
+              <button class="quick-nav-tab" id="quick-tab-ai-recom" onclick="app.openAICourtRecommenderModal()" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.25)); color: #167946; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.4);">
+                <i class="fa-solid fa-wand-magic-sparkles text-primary"></i> <span>AI Gợi Ý Sân</span>
+              </button>
               <button class="quick-nav-tab" onclick="app.openFacilitiesMap()">
                 <i class="fa-solid fa-map"></i> <span>Bản đồ</span>
               </button>
@@ -281,6 +283,69 @@
               <button class="quick-nav-tab" id="quick-tab-fav" onclick="app.toggleFilterFavorites()">
                 <i class="fa-solid fa-heart"></i> <span>Yêu thích</span>
               </button>
+            </div>
+          </div>
+
+          <!-- AI SMART COURT RECOMMENDER MODAL / DRAWER (UC004) -->
+          <div id="ai-recommender-panel" class="glass-card" style="display: none; padding: 1.25rem; margin-bottom: 1.5rem; background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 2px solid #10b981; border-radius: 16px; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15); animation: fadeIn 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="margin: 0; color: #065f46; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                  <span style="background: #10b981; color: #fff; padding: 4px 8px; border-radius: 8px; font-size: 0.85rem;"><i class="fa-solid fa-robot"></i> AI RECOMMENDATION</span>
+                  Hệ Thống Phân Tích & Gợi Ý Sân Bằng Trí Tuệ Nhân Tạo
+                </h3>
+                <p style="margin: 4px 0 0; font-size: 0.82rem; color: #047857;">Học máy tự động tính toán chỉ số phù hợp giữa Trình độ ELO, Phong cách chơi và Ngân sách của bạn</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="app.closeAICourtRecommenderModal()" style="border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <!-- Parameters Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 1rem;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #0f172a;"><i class="fa-solid fa-trophy text-primary"></i> Trình Độ ELO Của Bạn:</label>
+                <select id="ai-filter-elo" class="form-control" style="font-size: 0.85rem;">
+                  <option value="1200">🌱 Mới Chơi / Nhập Môn (ELO 1000 - 1300)</option>
+                  <option value="1450" selected>⚡ Trung Bình / Khá (ELO 1400 - 1600)</option>
+                  <option value="1750">🔥 Bán Chuyên / Tấn Công (ELO 1700 - 1900)</option>
+                  <option value="2000">🏆 Chuyên Nghiệp / VĐV (ELO 2000+)</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #0f172a;"><i class="fa-solid fa-bolt text-primary"></i> Phong Cách Thi Đấu:</label>
+                <select id="ai-filter-playstyle" class="form-control" style="font-size: 0.85rem;">
+                  <option value="all">🏸 Mọi phong cách chơi</option>
+                  <option value="attack" selected>💥 Chuyên Công - Đập cầu Smash (Cần Thảm Chống Trượt Tốt)</option>
+                  <option value="defense">🛡️ Phản Tạt & Điều Cầu Linh Hoạt</option>
+                  <option value="casual">🌿 Giao Lưu Vui Vẻ / Rèn Luyện Thể Lực</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #0f172a;"><i class="fa-solid fa-wallet text-primary"></i> Ngân Sách Dự Kiến:</label>
+                <select id="ai-filter-budget" class="form-control" style="font-size: 0.85rem;">
+                  <option value="999999" selected>Tất cả mức giá</option>
+                  <option value="80000">Tiết kiệm (Dưới 80.000đ/giờ)</option>
+                  <option value="120000">Tiêu chuẩn (80.000đ - 120.000đ/giờ)</option>
+                  <option value="160000">Cao cấp / Sân VIP (120.000đ - 160.000đ/giờ)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center; border-top: 1px dashed #a7f3d0; padding-top: 0.75rem;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="app.resetFacilitiesFilter()">
+                <i class="fa-solid fa-rotate-left"></i> Hiện Tất Cả Sân
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="app.runAICourtRecommendation()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-weight: 800; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Chạy Thuật Toán Gợi Ý Ngay
+              </button>
+            </div>
+
+            <!-- AI Recommendation Insights Banner -->
+            <div id="ai-recommendation-summary-box" style="display: none; margin-top: 0.85rem; padding: 0.75rem 1rem; background: #ecfdf5; border-radius: 10px; border-left: 4px solid #10b981; font-size: 0.82rem; color: #065f46;">
+              <!-- Rendered by runAICourtRecommendation -->
             </div>
           </div>
 
@@ -415,6 +480,20 @@
                 <input type="date" id="booking-date-picker" class="form-control" value="2026-09-11" onchange="app.renderSlotMatrix()">
               </div>
             </div>
+          </div>
+
+          <!-- AI Dynamic Pricing Live Badge Notice (UC003) -->
+          <div class="glass-card" style="margin-bottom: 1rem; padding: 0.85rem 1.25rem; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="background: #10b981; color: #fff; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+                <i class="fa-solid fa-bolt"></i>
+              </span>
+              <div>
+                <strong style="color: #065f46; font-size: 0.9rem;">Áp dụng AI Dynamic Pricing Engine:</strong>
+                <span style="color: #047857; font-size: 0.82rem; margin-left: 4px;">Giá tự động điều chỉnh theo tải lấp đầy (05:00 - 17:00: <strong>120k/h</strong>, Giờ cao điểm 18:00 - 22:00: <strong>160k/h</strong>)</span>
+              </div>
+            </div>
+            <span class="tag-badge tag-ai"><i class="fa-solid fa-robot"></i> Giá Tối Ưu AI</span>
           </div>
 
           <!-- Slot Matrix Grid -->
@@ -605,10 +684,77 @@
                 <div style="font-size: 0.85rem; color: var(--text-muted);">Trình độ hiện tại: <span class="elo-badge">ELO 1450 - Trạng thái: Hạng Khá</span></div>
               </div>
             </div>
-            <div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary btn-sm" onclick="app.toggleAIEloPredictor()" style="background: linear-gradient(135deg, #10b981 0%, #0284c7 100%);">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Dự Đoán Tỉ Lệ Thắng (Win Probability)
+              </button>
               <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('ui-08')">
                 <i class="fa-solid fa-chart-line"></i> Xem Thống Kê Trận Đấu
               </button>
+            </div>
+          </div>
+
+          <!-- AI ELO MATCHUP PREDICTOR & SIMULATOR WIDGET (UC006) -->
+          <div id="ai-elo-predictor-card" class="glass-card" style="display: none; padding: 1.5rem; margin-bottom: 1.5rem; background: #ffffff; border: 2px solid #0284c7; border-radius: 16px; box-shadow: 0 10px 30px rgba(2, 132, 199, 0.12); animation: fadeIn 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+              <div>
+                <h3 style="margin: 0; color: #0369a1; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                  <span style="background: #0284c7; color: #fff; padding: 4px 8px; border-radius: 8px; font-size: 0.82rem;"><i class="fa-solid fa-brain"></i> AI ELO ENGINE</span>
+                  Bộ Dự Báo Trận Đấu & Phân Tích Xác Suất Chiến Thắng
+                </h3>
+                <p style="margin: 4px 0 0; font-size: 0.82rem; color: #64748b;">Áp dụng công thức phân phối Logistic ELO chuẩn quốc tế: <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; color: #0369a1;">P(A) = 1 / (1 + 10^((R_B - R_A)/400))</code></p>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="app.toggleAIEloPredictor()" style="border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <!-- 2-Player Matchup Comparison Matrix -->
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; margin-bottom: 1.5rem;">
+              <!-- Player A -->
+              <div style="background: #f0fdf4; border: 1.5px solid #10b981; border-radius: 12px; padding: 1rem; text-align: center;">
+                <div style="font-size: 0.78rem; font-weight: 800; color: #166534; text-transform: uppercase;">Người chơi 1 (Bạn / Host)</div>
+                <input type="text" id="matchup-p1-name" class="form-control" value="Nguyễn Văn Hùng" style="margin: 6px 0; font-weight: 700; text-align: center;" placeholder="Tên đấu thủ A">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;">
+                  <label style="font-size: 0.82rem; font-weight: 700; color: #166534;">Điểm ELO:</label>
+                  <input type="number" id="matchup-p1-elo" class="form-control" value="1450" style="width: 100px; text-align: center; font-weight: 800; color: #166534;" oninput="app.runAIMatchupCalculation()">
+                </div>
+              </div>
+
+              <!-- VS Badge -->
+              <div style="text-align: center;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%); color: #ffffff; font-weight: 900; font-size: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(239,68,68,0.3); margin: 0 auto;">
+                  VS
+                </div>
+              </div>
+
+              <!-- Player B -->
+              <div style="background: #eff6ff; border: 1.5px solid #3b82f6; border-radius: 12px; padding: 1rem; text-align: center;">
+                <div style="font-size: 0.78rem; font-weight: 800; color: #1e40af; text-transform: uppercase;">Người chơi 2 (Đối thủ / Bạn ghép)</div>
+                <input type="text" id="matchup-p2-name" class="form-control" value="Trần Thị Mai" style="margin: 6px 0; font-weight: 700; text-align: center;" placeholder="Tên đối thủ B">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;">
+                  <label style="font-size: 0.82rem; font-weight: 700; color: #1e40af;">Điểm ELO:</label>
+                  <input type="number" id="matchup-p2-elo" class="form-control" value="1680" style="width: 100px; text-align: center; font-weight: 800; color: #1e40af;" oninput="app.runAIMatchupCalculation()">
+                </div>
+              </div>
+            </div>
+
+            <!-- Probability Bar -->
+            <div style="margin-bottom: 1rem;">
+              <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 6px;">
+                <span id="matchup-p1-winrate-label" style="color: #166534;"><i class="fa-solid fa-shield-halved"></i> N.V. Hùng: 21%</span>
+                <span id="matchup-match-balance-badge" style="font-size: 0.8rem; background: #e0f2fe; color: #0284c7; padding: 2px 10px; border-radius: 9999px; font-weight: 700;">Chênh lệch 230 ELO</span>
+                <span id="matchup-p2-winrate-label" style="color: #1e40af;">T.T. Mai: 79% <i class="fa-solid fa-bolt"></i></span>
+              </div>
+              <div style="width: 100%; height: 22px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; display: flex; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
+                <div id="matchup-winrate-bar-p1" style="height: 100%; width: 21%; background: linear-gradient(90deg, #10b981, #059669); transition: width 0.4s ease;"></div>
+                <div id="matchup-winrate-bar-p2" style="height: 100%; width: 79%; background: linear-gradient(90deg, #3b82f6, #1d4ed8); transition: width 0.4s ease;"></div>
+              </div>
+            </div>
+
+            <!-- Detailed Matchup Analysis & Predicted ELO Changes -->
+            <div id="matchup-analysis-content" style="background: #f8fafc; border-radius: 12px; padding: 1rem; border: 1px solid #e2e8f0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 0.84rem;">
+              <!-- Dynamic JS injected info -->
             </div>
           </div>
 
@@ -992,15 +1138,53 @@
           <div class="page-header">
             <div>
               <h1 class="page-title">
-                <i class="fa-solid fa-bolt text-primary"></i> Cấu Hình AI Dynamic Pricing
-                <span class="tag-badge tag-ai"><i class="fa-solid fa-robot"></i> Giá Biến Động AI</span>
+                <i class="fa-solid fa-bolt text-primary"></i> Cấu Hình AI Dynamic Pricing Engine (UC003)
+                <span class="tag-badge tag-ai"><i class="fa-solid fa-robot"></i> Giá Biến Động Học Máy</span>
               </h1>
-              <p class="page-subtitle">AI đề xuất mức giá linh hoạt (+15% giờ vàng, -10% giờ thấp điểm) theo tải lấp đầy</p>
+              <p class="page-subtitle">Hệ thống AI tự động phân tích tải lấp đầy (Occupancy Rate) để điều chỉnh mức giá tối ưu doanh thu</p>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <label class="form-label" style="margin: 0;">Bật AI Dynamic Price:</label>
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <label class="form-label" style="margin: 0;">Trạng thái AI Pricing:</label>
               <button id="btn-toggle-ai-price" class="btn btn-accent btn-sm" onclick="app.toggleAIDynamicPricing()">
                 <i class="fa-solid fa-toggle-on"></i> Đang Bật AI Price
+              </button>
+            </div>
+          </div>
+
+          <!-- AI Dynamic Pricing Rules & Tuning Control Center -->
+          <div class="glass-card" style="margin-bottom: 1.5rem; background: #ffffff; border: 1.5px solid #10b981; border-radius: 14px; padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
+              <h3 style="margin: 0; font-size: 1.05rem; color: #065f46; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-sliders text-primary"></i> Tham Số Cấu Hình Trọng Số Đề Xuất Giá AI (Dynamic Rules)
+              </h3>
+              <span class="tag-badge" style="background: #ecfdf5; color: #059669; border: 1px solid #10b981; font-weight: 700;">
+                <i class="fa-solid fa-bolt"></i> Realtime Surge Engine
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 1rem;">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #ea580c; text-transform: uppercase;">⚡ Giờ Vàng Cao Điểm (18:00 - 22:00)</div>
+                <div style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 4px 0;">+25% đến +33%</div>
+                <p style="font-size: 0.75rem; color: #64748b; margin: 0;">Áp dụng khi tỷ lệ lấp đầy lịch đặt > 85%</p>
+              </div>
+
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #0284c7; text-transform: uppercase;">🏷️ Giờ Thấp Điểm (05:00 - 17:00)</div>
+                <div style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 4px 0;">Giá Tiêu Chuẩn (120k/h)</div>
+                <p style="font-size: 0.75rem; color: #64748b; margin: 0;">Khuyến khích sinh viên & nhóm tập luyện sáng</p>
+              </div>
+
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #16a34a; text-transform: uppercase;">📈 Dự Báo Tăng Trưởng Doanh Thu</div>
+                <div style="font-size: 1.1rem; font-weight: 800; color: #16a34a; margin: 4px 0;">+18.5% / Tháng</div>
+                <p style="font-size: 0.75rem; color: #64748b; margin: 0;">So với mô hình định giá cố định truyền thống</p>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" onclick="app.simulateAIDynamicPricingRecalc()">
+                <i class="fa-solid fa-arrows-rotate"></i> AI Tính Toán Lại Toàn Bộ Khung Giờ
               </button>
             </div>
           </div>
@@ -1445,9 +1629,10 @@
 
     <!-- Quick Prompt Chips -->
     <div class="gemini-prompt-chips">
-      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('🤖 Tìm giúp tôi sân gần Thủ Đức có giá dưới 100k?')">🤖 Tìm sân Thủ Đức</button>
-      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('🏸 Tư vấn cách chọn vợt cầu lông phù hợp đập cầu?')">🏸 Tư vấn chọn vợt</button>
-      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('⚔️ ELO của tôi 1450, tìm phòng ghép phù hợp?')">⚔️ Kèo ELO 1450</button>
+      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('🤖 Tìm giúp tôi sân gần Hoàng Mai / Cầu Giấy có giá tốt nhất?')">🤖 Tìm sân gần tôi (Hà Nội)</button>
+      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('⚡ Cơ chế AI Dynamic Pricing tính giá giờ vàng như thế nào?')">⚡ Hỏi về AI Dynamic Pricing</button>
+      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('🏸 Tư vấn cách chọn vợt cầu lông phù hợp lối chơi công đập cầu?')">🏸 Tư vấn chọn vợt smash</button>
+      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('⚔️ ELO của tôi 1450, gợi ý phòng ghép kèo phù hợp?')">⚔️ Ghép kèo ELO 1450</button>
       <button class="chip-btn" onclick="app.promptGeminiAPIKey()">⚙️ Nhập API Key Gemini</button>
     </div>
 

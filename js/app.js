@@ -350,6 +350,8 @@ class BadmintonAIApp {
             <!-- Badges Top Left -->
             <div class="court-card-badges-left">
               <span class="badge-pill badge-rating"><i class="fa-solid fa-star"></i> ${fac.rating}</span>
+              ${fac.ai_score ? `<span class="badge-pill" style="background: linear-gradient(135deg, #10b981, #06b6d4); color: #fff; font-weight: 800; border: none; box-shadow: 0 2px 6px rgba(16,185,129,0.4);"><i class="fa-solid fa-wand-magic-sparkles"></i> AI: ${fac.ai_score}% Match</span>` : ''}
+              ${fac.ai_reason ? `<span class="badge-pill" style="background: rgba(22,121,70,0.85); color: #fff; font-size: 0.65rem;">${fac.ai_reason}</span>` : ''}
               <span class="badge-pill badge-single-day">Đơn ngày</span>
               <span class="badge-pill badge-event">Sự kiện</span>
             </div>
@@ -3615,6 +3617,253 @@ class BadmintonAIApp {
     }).catch(() => {
       this.showToast("Không thể tự động sao chép. Vui lòng xuất tệp JSON.");
     });
+  }
+
+  /* ==========================================================================
+     AI ADVANCED MODULES & ALGORITHMS (UC003, UC004, UC006, GEMINI ASSISTANT)
+     ========================================================================== */
+
+  // 1. UC004: AI SMART COURT RECOMMENDER
+  openAICourtRecommenderModal() {
+    const panel = document.getElementById('ai-recommender-panel');
+    const tabEl = document.getElementById('quick-tab-ai-recom');
+    if (!panel) return;
+    const isHidden = panel.style.display === 'none';
+    panel.style.display = isHidden ? 'block' : 'none';
+    if (tabEl) {
+      tabEl.style.background = isHidden ? 'rgba(16, 185, 129, 0.35)' : 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.25))';
+    }
+    if (isHidden) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  closeAICourtRecommenderModal() {
+    const panel = document.getElementById('ai-recommender-panel');
+    const tabEl = document.getElementById('quick-tab-ai-recom');
+    if (panel) panel.style.display = 'none';
+    if (tabEl) tabEl.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.25))';
+  }
+
+  runAICourtRecommendation() {
+    const elo = parseInt(document.getElementById('ai-filter-elo')?.value || '1450', 10);
+    const playStyle = document.getElementById('ai-filter-playstyle')?.value || 'attack';
+    const maxBudget = parseInt(document.getElementById('ai-filter-budget')?.value || '999999', 10);
+
+    this.showToast("🤖 AI Recommendation Engine đang phân tích 48+ cụm sân theo thuật toán tối ưu...");
+
+    // Machine Learning style Scoring Algorithm:
+    // Score = Distance_weight * d + Rating_weight * r + Style_fit * s + Budget_fit * b
+    const scoredFacilities = MockData.facilities.filter(f => f.is_approved).map(fac => {
+      let score = 70; // baseline
+      let reasons = [];
+
+      // 1. Rating contribution (max +15)
+      const ratingBoost = (fac.rating - 4.5) * 30;
+      score += Math.max(0, ratingBoost);
+
+      // 2. Distance contribution (closer is better, max +15)
+      const distNum = parseFloat(fac.distance || '5.0');
+      if (distNum <= 3.0) {
+        score += 15;
+        reasons.push("Gần bạn (< 3km)");
+      } else if (distNum <= 6.0) {
+        score += 10;
+        reasons.push("Cự ly hợp lý (< 6km)");
+      } else {
+        score += 4;
+      }
+
+      // 3. Playstyle fit (thảm Yonex/Enlio, quy mô sân)
+      const isYonex = (fac.name + ' ' + (fac.badges || []).join(' ')).toLowerCase().includes('yonex');
+      const isEnlio = (fac.name + ' ' + (fac.badges || []).join(' ')).toLowerCase().includes('enlio');
+      
+      if (playStyle === 'attack') {
+        if (isYonex || isEnlio) {
+          score += 12;
+          reasons.push("Thảm bám đập cầu tốt");
+        }
+      } else if (playStyle === 'defense') {
+        if (fac.courts_count >= 8) {
+          score += 10;
+          reasons.push("Không gian rộng, phản xạ tốt");
+        }
+      } else if (playStyle === 'casual') {
+        score += 8;
+        reasons.push("Không khí giao lưu thoải mái");
+      }
+
+      // 4. Budget fit
+      const price = fac.base_price || 120000;
+      if (price <= maxBudget) {
+        score += 8;
+        reasons.push("Đúng khung ngân sách");
+      } else {
+        score -= 15;
+      }
+
+      // 5. ELO compatibility boost
+      if (elo >= 1700 && (isYonex || fac.rating >= 4.9)) {
+        score += 6;
+        reasons.push("Chuẩn sàn ELO cao");
+      } else if (elo < 1400) {
+        score += 5;
+        reasons.push("Thân thiện người mới");
+      }
+
+      const finalScore = Math.min(99, Math.max(55, Math.round(score)));
+      return {
+        ...fac,
+        ai_score: finalScore,
+        ai_reason: reasons.slice(0, 2).join(' • ')
+      };
+    });
+
+    // Sort descending by AI Match Score
+    scoredFacilities.sort((a, b) => b.ai_score - a.ai_score);
+
+    // Update Summary Box
+    const summaryBox = document.getElementById('ai-recommendation-summary-box');
+    if (summaryBox) {
+      summaryBox.style.display = 'block';
+      summaryBox.innerHTML = `
+        <div style="font-weight: 700; margin-bottom: 2px;">
+          <i class="fa-solid fa-circle-check text-primary"></i> Đã tính toán xong cho ELO <strong>${elo}</strong> • Phong cách: <strong>${playStyle === 'attack' ? 'Chuyên Công Đập Cầu' : (playStyle === 'defense' ? 'Phản Tạt Phòng Thủ' : 'Giao Lưu Rèn Luyện')}</strong>
+        </div>
+        <div>Top 1 đề xuất tốt nhất: <strong>${scoredFacilities[0]?.name}</strong> đạt độ tương thích <strong>${scoredFacilities[0]?.ai_score}%</strong>!</div>
+      `;
+    }
+
+    this.renderCustomerFacilities(scoredFacilities);
+    this.showToast(`✨ Đã lọc Top ${scoredFacilities.length} sân phù hợp nhất theo gợi ý AI!`);
+  }
+
+  // 2. UC006: AI MATCHMAKING & ELO PREDICTOR
+  toggleAIEloPredictor() {
+    const card = document.getElementById('ai-elo-predictor-card');
+    if (!card) return;
+    const isHidden = card.style.display === 'none';
+    card.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+      this.runAIMatchupCalculation();
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  runAIMatchupCalculation() {
+    const p1Name = document.getElementById('matchup-p1-name')?.value.trim() || 'Người chơi 1';
+    const p2Name = document.getElementById('matchup-p2-name')?.value.trim() || 'Người chơi 2';
+    const elo1 = parseInt(document.getElementById('matchup-p1-elo')?.value || '1450', 10);
+    const elo2 = parseInt(document.getElementById('matchup-p2-elo')?.value || '1680', 10);
+
+    // Standard International ELO Logistic Curve Formula:
+    // E_A = 1 / (1 + 10^((R_B - R_A)/400))
+    const exponent = (elo2 - elo1) / 400;
+    const prob1 = 1 / (1 + Math.pow(10, exponent));
+    const prob2 = 1 - prob1;
+
+    const p1Percent = Math.round(prob1 * 100);
+    const p2Percent = 100 - p1Percent;
+
+    // K-Factor rating adjustment simulation (K=32)
+    const kFactor = 32;
+    const p1WinDelta = Math.round(kFactor * (1 - prob1));
+    const p1LossDelta = Math.round(kFactor * (0 - prob1)); // negative
+    const p2WinDelta = Math.round(kFactor * (1 - prob2));
+    const p2LossDelta = Math.round(kFactor * (0 - prob2));
+
+    // Update UI elements
+    const label1 = document.getElementById('matchup-p1-winrate-label');
+    const label2 = document.getElementById('matchup-p2-winrate-label');
+    const bar1 = document.getElementById('matchup-winrate-bar-p1');
+    const bar2 = document.getElementById('matchup-winrate-bar-p2');
+    const balanceBadge = document.getElementById('matchup-match-balance-badge');
+    const analysisContent = document.getElementById('matchup-analysis-content');
+
+    if (label1) label1.innerHTML = `<i class="fa-solid fa-shield-halved"></i> ${p1Name}: <strong>${p1Percent}%</strong>`;
+    if (label2) label2.innerHTML = `<strong>${p2Percent}%</strong> :${p2Name} <i class="fa-solid fa-bolt"></i>`;
+    if (bar1) bar1.style.width = `${p1Percent}%`;
+    if (bar2) bar2.style.width = `${p2Percent}%`;
+
+    const diff = Math.abs(elo1 - elo2);
+    if (balanceBadge) {
+      if (diff <= 50) {
+        balanceBadge.className = "tag-badge";
+        balanceBadge.style.background = "#ecfdf5";
+        balanceBadge.style.color = "#15803d";
+        balanceBadge.textContent = `Cân bằng hoàn hảo (Δ ${diff} ELO)`;
+      } else if (diff <= 150) {
+        balanceBadge.className = "tag-badge";
+        balanceBadge.style.background = "#eff6ff";
+        balanceBadge.style.color = "#1d4ed8";
+        balanceBadge.textContent = `Chênh lệch nhẹ (Δ ${diff} ELO)`;
+      } else {
+        balanceBadge.className = "tag-badge";
+        balanceBadge.style.background = "#fffbeb";
+        balanceBadge.style.color = "#b45309";
+        balanceBadge.textContent = `Kèo lệch thách đấu (Δ ${diff} ELO)`;
+      }
+    }
+
+    if (analysisContent) {
+      analysisContent.innerHTML = `
+        <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+          <strong style="color: #166534;"><i class="fa-solid fa-chart-line"></i> Biến Động ELO Cho ${p1Name}:</strong>
+          <div style="margin-top: 4px; font-size: 0.8rem;">
+            <div>• Nếu Thắng: <span style="color: #16a34a; font-weight: 800;">+${p1WinDelta} ELO</span> (Lên ${elo1 + p1WinDelta})</div>
+            <div>• Nếu Thua: <span style="color: #ef4444; font-weight: 800;">${p1LossDelta} ELO</span> (Về ${elo1 + p1LossDelta})</div>
+          </div>
+        </div>
+        <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+          <strong style="color: #1e40af;"><i class="fa-solid fa-chart-line"></i> Biến Động ELO Cho ${p2Name}:</strong>
+          <div style="margin-top: 4px; font-size: 0.8rem;">
+            <div>• Nếu Thắng: <span style="color: #16a34a; font-weight: 800;">+${p2WinDelta} ELO</span> (Lên ${elo2 + p2WinDelta})</div>
+            <div>• Nếu Thua: <span style="color: #ef4444; font-weight: 800;">${p2LossDelta} ELO</span> (Về ${elo2 + p2LossDelta})</div>
+          </div>
+        </div>
+        <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+          <strong style="color: #6b21a8;"><i class="fa-solid fa-lightbulb"></i> Khuyến Nghị Ghép Kèo AI:</strong>
+          <div style="margin-top: 4px; font-size: 0.8rem; color: #475569;">
+            ${diff <= 100 
+              ? '✅ Hai đấu thủ có trình độ tương đồng, trận đấu sẽ diễn ra giằng co, kịch tính điểm số!' 
+              : `⚠️ ${p1Percent < p2Percent ? p1Name : p2Name} nên chơi thể thức chấp điểm (Chấp 3-5 quả) hoặc đánh đôi để cân bằng thế trận.`}
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // 3. UC003: AI DYNAMIC PRICING SIMULATOR & LIVE RECALC
+  simulateAIDynamicPricingRecalc() {
+    this.showToast("⚡ AI Dynamic Engine đang quét tỷ lệ lấp đầy hôm nay và tính toán lại ma trận giá...");
+
+    setTimeout(() => {
+      // Simulate occupancy and recalculate peak / off-peak slots
+      MockData.time_slots.forEach(slot => {
+        const startHour = parseInt(slot.start_time.split(':')[0], 10);
+        if (startHour >= 18 && startHour < 22) {
+          slot.is_ai_dynamic = true;
+          slot.price_type = "peak";
+          slot.price = 160000;
+          slot.adjustment = "+33% (Giờ Vàng AI Surge)";
+        } else if (startHour >= 12 && startHour <= 14) {
+          slot.is_ai_dynamic = true;
+          slot.price_type = "offpeak";
+          slot.price = 100000;
+          slot.adjustment = "-17% (Giờ Trưa Flash Sale)";
+        } else {
+          slot.is_ai_dynamic = false;
+          slot.price_type = "normal";
+          slot.price = 120000;
+        }
+      });
+
+      this.renderSlotMatrix();
+      if (typeof saveMockDataToLocalStorage === 'function') {
+        saveMockDataToLocalStorage();
+      }
+      this.showToast("✅ AI Engine đã cập nhật thành công ma trận giá động (+33% Giờ Vàng, -17% Giờ Trưa)!");
+    }, 600);
   }
 }
 

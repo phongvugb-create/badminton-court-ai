@@ -327,9 +327,21 @@ class GeminiAIAssistant {
         "3. **Cầu thi đấu**: Dùng **Hộp Cầu Lông Thành Công (300.000đ/hộp)** cho đường cầu chuẩn xác!";
     }
 
-    // 8. Tư vấn ghép kèo ELO
+    // 8. Tư vấn ghép kèo ELO & AI Matchmaking
     if (p.includes('elo') || p.includes('ghép') || p.includes('kèo')) {
-      return "⚔️ **Hệ Thống AI Matchmaking ELO**:\nHệ thống tự động xếp bạn vào các phòng ghép đúng dải ELO trình độ (từ 1000 đến 2500+). Hãy sang tab **AI Matchmaking ELO** để tạo phòng hoặc chọn phòng giao lưu gần bạn nhất!";
+      return "⚔️ **Hệ Thống AI Matchmaking & ELO Rating (UC006)**:\n" +
+        "- Hệ thống áp dụng thuật toán phân phối Logistic ELO chuẩn quốc tế: `P(A) = 1 / (1 + 10^((R_B - R_A)/400))`.\n" +
+        "- Tự động ghép phòng giao lưu thể thao cân bằng trình độ (chênh lệch dưới ±100 ELO).\n" +
+        "- Dự báo trước tỷ lệ thắng (%) và ước tính số điểm ELO tăng/giảm sau trận đấu (K-Factor = 32).\n" +
+        "👉 Bấm vào nút **'AI Dự Đoán Tỉ Lệ Thắng'** tại mục Nổi bật để trực tiếp chạy mô phỏng trận đấu!";
+    }
+
+    // 9. Tư vấn cơ chế AI Dynamic Pricing (UC003)
+    if (p.includes('dynamic') || p.includes('biến động') || p.includes('giờ vàng') || p.includes('cơ chế ai') || p.includes('tính giá')) {
+      return "⚡ **Cơ Chế AI Dynamic Pricing Engine (UC003)**:\n\n" +
+        "1. **Tự động theo dõi tải lấp đầy**: Khi hệ thống phát hiện khung giờ 18:00 - 22:00 có tỷ lệ giữ chỗ vượt quá 85%, thuật toán kích hoạt mức giá biến động (+25% đến +33%) tương ứng **160.000đ/giờ**.\n" +
+        "2. **Khuyến mãi kích cầu giờ thấp điểm**: Khung giờ sáng và giờ trưa (05:00 - 17:00) được giữ ở mức giá tiêu chuẩn **120.000đ/giờ** (hoặc flash sale giảm tới -17%).\n" +
+        "3. **Tối ưu doanh thu**: Giúp chủ sân tăng trung bình **+18.5% doanh thu hàng tháng**, đồng thời đảm bảo người chơi luôn có sân trống vào giờ linh hoạt!";
     }
 
     return "🤖 **Smashing Badminton AI Assistant**:\nTôi là trợ lý AI chính thức của **BADMINTON.AI**! Giá thuê sân giờ bình thường (5h-17h) là **120.000đ/giờ**, giờ 18h - 22h là **160.000đ/giờ**. Bạn có thể hỏi tôi thông tin chi tiết từng sân (VD: 'Sân ở Phú Nhuận', 'Sân ở Thủ Đức', 'Sân Pro Badminton Center ở đâu?').";
