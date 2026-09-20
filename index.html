@@ -761,13 +761,17 @@
             </button>
           </div>
 
-          <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <!-- GOOGLE MAPS STYLE SPORTS EXPLORER FOR OWNER FACILITY & GPS -->
+          <div class="glass-card" style="padding: 0; overflow: hidden; border-radius: 16px; border: 2px solid #167946; box-shadow: 0 10px 30px rgba(0,0,0,0.12); margin-bottom: 1.5rem; position: relative;">
+            
+            <div style="background: #ffffff; padding: 14px 18px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
               <div>
-                <h3><i class="fa-solid fa-map-location-dot text-primary"></i> Bản Đồ Ghim Vị Trí Sân Google Maps (GPS Realtime)</h3>
-                <p style="font-size: 0.82rem; color: #64748b; margin: 0;">Bản đồ đồng bộ dữ liệu vệ tinh & đường phố Google Maps. Kéo ghim đỏ hoặc bấm trực tiếp để đổi tọa độ.</p>
+                <h3 style="margin: 0; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; color: #0f172a;">
+                  <i class="fa-solid fa-map-location-dot text-primary"></i> Bản Đồ Ghim Vị Trí Sân Google Maps (GPS Realtime)
+                </h3>
+                <p style="font-size: 0.82rem; color: #64748b; margin: 2px 0 0;">Bản đồ đồng bộ dữ liệu vệ tinh & đường phố Google Maps. Kéo ghim đỏ hoặc bấm trực tiếp trên bản đồ để đổi tọa độ đón khách.</p>
               </div>
-              <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <div style="display: flex; gap: 8px; align-items: center;">
                 <button class="btn btn-secondary btn-sm" onclick="app.toggleOwnerMapTileLayer()" title="Chuyển đổi Vệ tinh / Đường phố">
                   <i class="fa-solid fa-layer-group text-primary"></i> Vệ Tinh / Đường Phố
                 </button>
@@ -777,28 +781,89 @@
               </div>
             </div>
 
-            <!-- Address Search Bar for Map -->
-            <form onsubmit="app.searchOwnerMapAddress(event)" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-              <input type="text" id="map-search-address-input" class="form-control" placeholder="🔍 Nhập địa chỉ cụ thể của sân cầu lông (VD: 102 Láng Hạ, Đống Đa, Hà Nội)..." required>
-              <button type="submit" class="btn btn-primary btn-sm" style="white-space: nowrap;">
-                <i class="fa-solid fa-magnifying-glass"></i> Tìm & Ghim Vị Trí
-              </button>
-            </form>
+            <div style="position: relative; width: 100%; height: 560px; overflow: hidden;">
+              <!-- Top Floating Search Bar & Sport Filter Chips -->
+              <div class="map-overlay-header">
+                <!-- Search Input Pill with Badges Icon -->
+                <div class="map-search-pill-container">
+                  <div class="map-brand-badge" title="Tìm kiếm vị trí sân">
+                    <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+                      <path d="M18 4C10.268 4 4 10.268 4 18C4 25.732 10.268 32 18 32C25.732 32 32 25.732 32 18C32 10.268 25.732 4 18 4Z" fill="#167946"/>
+                      <path d="M13 25C13 18 23 15 23 11C23 8.5 21 7 18 7C14.5 7 13.2 9.2 12.8 11.5" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                      <circle cx="18" cy="18" r="3" fill="#a7f3d0"/>
+                    </svg>
+                  </div>
+                  <input type="text" id="owner-map-search-input" class="map-search-input" placeholder="Tìm kiếm sân hoặc địa chỉ (VD: 102 Láng Hạ, Đống Đa)..." onkeydown="if(event.key==='Enter'){app.searchOwnerMapAddress(event);}">
+                  <button class="map-search-btn" onclick="app.searchOwnerMapAddress(event)" title="Tìm & Ghim Vị Trí">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </button>
+                </div>
 
-            <!-- Google Maps Interactive Container for Owner -->
-            <div style="position: relative; width: 100%; height: 420px; border-radius: 12px; overflow: hidden; border: 2px solid #167946; box-shadow: 0 6px 20px rgba(0,0,0,0.12);">
+                <!-- Horizontal Scrollable Badminton Filter Badges -->
+                <div class="map-sport-chips-scroll">
+                  <button type="button" class="sport-chip active" data-owner-filter="all" onclick="app.filterOwnerMapBadminton('all', this)">
+                    <span class="sport-chip-icon" style="background: #167946; color: #fff;"><i class="fa-solid fa-layer-group"></i></span>
+                    <span>Tất cả sân cầu</span>
+                  </button>
+                  <button type="button" class="sport-chip" data-owner-filter="standard" onclick="app.filterOwnerMapBadminton('standard', this)">
+                    <span class="sport-chip-icon" style="background: #16a34a; color: #fff;">🏸</span>
+                    <span>Thảm Yonex Pro</span>
+                  </button>
+                  <button type="button" class="sport-chip" data-owner-filter="vip" onclick="app.filterOwnerMapBadminton('vip', this)">
+                    <span class="sport-chip-icon" style="background: #0284c7; color: #fff;">⭐</span>
+                    <span>Thảm Enlio VIP</span>
+                  </button>
+                  <button type="button" class="sport-chip" data-owner-filter="ac" onclick="app.filterOwnerMapBadminton('ac', this)">
+                    <span class="sport-chip-icon" style="background: #06b6d4; color: #fff;">❄️</span>
+                    <span>Có máy lạnh</span>
+                  </button>
+                  <button type="button" class="sport-chip" data-owner-filter="near" onclick="app.filterOwnerMapBadminton('near', this)">
+                    <span class="sport-chip-icon" style="background: #ea580c; color: #fff;">📍</span>
+                    <span>Gần tôi (< 5km)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Google Maps Interactive Container for Owner -->
               <div id="owner-google-map-container" style="width: 100%; height: 100%; z-index: 1;"></div>
-              
-              <!-- Google Watermark -->
-              <div class="map-google-watermark" style="bottom: 8px; left: 8px;">
+
+              <!-- Floating Map Controls Right-Bottom -->
+              <div class="map-floating-actions">
+                <button class="map-float-btn" onclick="app.toggleOwnerMapTileLayer()" title="Chuyển đổi kiểu Bản đồ (Vệ tinh / Đường phố)">
+                  <i class="fa-solid fa-layer-group"></i>
+                </button>
+                <button class="map-float-btn primary" onclick="app.locateOwnerGPS()" title="Định vị GPS vị trí của tôi">
+                  <i class="fa-solid fa-crosshairs"></i>
+                </button>
+                <button class="map-float-btn green-btn" onclick="app.toggleOwnerFacilitiesSidebar()" title="Danh sách các sân thể thao">
+                  <i class="fa-solid fa-list-ul"></i>
+                </button>
+              </div>
+
+              <!-- Bottom-Left Google Branding Watermark -->
+              <div class="map-google-watermark">
                 <span class="google-logo-text"><span style="color:#4285f4">G</span><span style="color:#ea4335">o</span><span style="color:#fbbc05">o</span><span style="color:#4285f4">g</span><span style="color:#34a853">l</span><span style="color:#ea4335">e</span></span>
-                <span class="map-legal-text">Dữ liệu bản đồ &copy; 2026 Google</span>
+                <span class="map-legal-text">Dữ liệu bản đồ &copy; 2026 Google &bull; Báo cáo một lỗi bản đồ</span>
+              </div>
+
+              <!-- Slide-out Side Drawer for Facilities List in Owner Screen -->
+              <div id="owner-map-facilities-drawer" class="map-side-drawer">
+                <div class="drawer-header">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="live-dot-pulse"></span>
+                    <strong style="font-size: 1rem; color: #0f172a;">Cụm Sân Hà Nội (<span id="owner-drawer-count">0</span>)</strong>
+                  </div>
+                  <button class="btn-icon" onclick="app.toggleOwnerFacilitiesSidebar()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="drawer-list" id="owner-drawer-facilities-list">
+                  <!-- Rendered dynamically -->
+                </div>
               </div>
             </div>
 
-            <div style="margin-top: 10px; background: #f8fafc; padding: 10px 16px; border-radius: 8px; font-size: 0.88rem; border: 1.5px solid #e2e8f0; color: #0f172a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-              <div>📍 Tọa độ GPS đã chọn: <strong id="owner-gps-coords-text" style="color: #167946; font-size: 1rem;">21.0153 N, 105.8152 E</strong></div>
-              <span style="color: #0284c7; font-weight: 600; font-size: 0.82rem;"><i class="fa-solid fa-circle-info"></i> Bấm hoặc kéo nút ghim đỏ để cập nhật vị trí đón khách!</span>
+            <div style="background: #f8fafc; padding: 12px 18px; border-top: 1px solid #e2e8f0; font-size: 0.88rem; color: #0f172a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>📍 Tọa độ GPS đón khách hiện tại: <strong id="owner-gps-coords-text" style="color: #167946; font-size: 1.05rem;">21.0153 N, 105.8152 E</strong></div>
+              <span style="color: #0284c7; font-weight: 600; font-size: 0.82rem;"><i class="fa-solid fa-circle-info"></i> Bấm bất kỳ đâu trên bản đồ hoặc kéo ghim đỏ lớn để cập nhật vị trí đón khách!</span>
             </div>
           </div>
 

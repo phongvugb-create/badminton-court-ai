@@ -1191,7 +1191,9 @@ class BadmintonAIApp {
     if (!container) return;
 
     if (this.ownerGoogleMap) {
-      setTimeout(() => this.ownerGoogleMap.invalidateSize(), 200);
+      setTimeout(() => {
+        this.ownerGoogleMap.invalidateSize();
+      }, 200);
       return;
     }
 
@@ -1201,9 +1203,12 @@ class BadmintonAIApp {
 
     this.ownerGoogleMap = L.map('owner-google-map-container', {
       center: [initialLat, initialLng],
-      zoom: 15,
-      zoomControl: true
+      zoom: 13,
+      zoomControl: false
     });
+
+    // Zoom control bottom-right
+    L.control.zoom({ position: 'bottomright' }).addTo(this.ownerGoogleMap);
 
     // Primary Google Roads Layer
     this.ownerGoogleRoadsLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
@@ -1237,27 +1242,34 @@ class BadmintonAIApp {
       }
     });
 
-    // Red Google Pin Marker for Court Location
+    // Marker Layer Group for surrounding sports facilities
+    this.ownerSportsMarkerGroup = L.layerGroup().addTo(this.ownerGoogleMap);
+    this.currentOwnerMapFilter = 'all';
+    this.renderOwnerSportsMarkers();
+
+    // Red Google Pin Marker for Court Location (Drag & Drop or Click to re-position)
     const customPin = L.divIcon({
       className: 'owner-google-pin',
       html: `
-        <div style="display: flex; flex-direction: column; align-items: center; cursor: grab;">
-          <div style="width: 38px; height: 38px; border-radius: 50% 50% 50% 0; background: #dc2626; border: 2.5px solid #ffffff; box-shadow: 0 4px 14px rgba(0,0,0,0.35); transform: rotate(-45deg); display: flex; align-items: center; justify-content: center;">
-            <span style="transform: rotate(45deg); font-size: 16px; color: #fff;">🏸</span>
+        <div style="display: flex; flex-direction: column; align-items: center; cursor: grab; z-index: 9999;">
+          <div style="width: 44px; height: 44px; border-radius: 50% 50% 50% 0; background: linear-gradient(135deg, #ef4444, #dc2626); border: 3px solid #ffffff; box-shadow: 0 6px 18px rgba(220,38,38,0.45); transform: rotate(-45deg); display: flex; align-items: center; justify-content: center;">
+            <span style="transform: rotate(45deg); font-size: 20px; color: #fff;">🏸</span>
           </div>
-          <div style="width: 10px; height: 10px; border-radius: 50%; background: rgba(0,0,0,0.35); margin-top: -3px; filter: blur(1px);"></div>
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: rgba(0,0,0,0.35); margin-top: -4px; filter: blur(1.5px);"></div>
         </div>
       `,
-      iconSize: [38, 46],
-      iconAnchor: [19, 46]
+      iconSize: [44, 52],
+      iconAnchor: [22, 52],
+      popupAnchor: [0, -52]
     });
 
     this.ownerMarker = L.marker([initialLat, initialLng], {
       icon: customPin,
-      draggable: true
+      draggable: true,
+      zIndexOffset: 1000
     }).addTo(this.ownerGoogleMap);
 
-    this.ownerMarker.bindPopup("🏸 <strong>Vị trí đón khách của Sân Cầu Lông</strong><br><small style='color: #64748b;'>Kéo hoặc bấm vị trí mới để đổi tọa độ</small>").openPopup();
+    this.ownerMarker.bindPopup("🏸 <strong>Vị trí đón khách của Cơ Sở Sân Của Bạn</strong><br><small style='color: #64748b;'>Kéo hoặc bấm bất kỳ đâu trên bản đồ để đổi vị trí</small>").openPopup();
 
     this.ownerGoogleMap.on('click', (e) => {
       const { lat, lng } = e.latlng;
@@ -1270,7 +1282,113 @@ class BadmintonAIApp {
       this.updateGPSCoordsDisplay(lat, lng);
     });
 
-    setTimeout(() => this.ownerGoogleMap.invalidateSize(), 250);
+    setTimeout(() => {
+      if (this.ownerGoogleMap) this.ownerGoogleMap.invalidateSize();
+    }, 250);
+  }
+
+  renderOwnerSportsMarkers() {
+    if (!this.ownerGoogleMap || !this.ownerSportsMarkerGroup) return;
+
+    this.ownerSportsMarkerGroup.clearLayers();
+
+    const facilities = MockData.facilities.filter(f => f.is_approved !== false);
+    const filter = this.currentOwnerMapFilter || 'all';
+
+    let visibleCount = 0;
+    const drawerListContainer = document.getElementById('owner-drawer-facilities-list');
+    let drawerHtml = '';
+
+    facilities.forEach(fac => {
+      if (filter === 'standard') {
+        const hasYonex = (fac.badges && fac.badges.some(b => b.toLowerCase().includes('yonex'))) || fac.name.toLowerCase().includes('yonex');
+        if (!hasYonex) return;
+      } else if (filter === 'vip') {
+        const hasVip = (fac.badges && fac.badges.some(b => b.toLowerCase().includes('enlio') || b.toLowerCase().includes('vip'))) || fac.name.toLowerCase().includes('vip');
+        if (!hasVip) return;
+      } else if (filter === 'ac') {
+        const hasAC = (fac.badges && fac.badges.some(b => b.toLowerCase().includes('máy lạnh') || b.toLowerCase().includes('ac'))) || fac.name.toLowerCase().includes('arena') || fac.name.toLowerCase().includes('hub');
+        if (!hasAC) return;
+      } else if (filter === 'near') {
+        const distNum = parseFloat(fac.distance) || 5.0;
+        if (distNum > 5.0) return;
+      }
+
+      visibleCount++;
+
+      // Pure Badminton Pin Icon
+      const pinHtml = `
+        <div class="sports-map-marker badminton" title="${fac.name}">
+          <span class="sports-map-marker-icon">🏸</span>
+        </div>
+      `;
+
+      const customIcon = L.divIcon({
+        className: 'custom-sports-pin',
+        html: pinHtml,
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+        popupAnchor: [0, -34]
+      });
+
+      const marker = L.marker([fac.latitude, fac.longitude], { icon: customIcon });
+      marker.bindPopup(`<strong>${fac.name}</strong><br><small style="color:#64748b;">${fac.address}</small><br><span style="color:#16a34a; font-weight:700;">⭐ ${fac.rating} • ${fac.distance || 'Gần bạn'}</span>`);
+
+      this.ownerSportsMarkerGroup.addLayer(marker);
+
+      drawerHtml += `
+        <div class="drawer-facility-card" onclick="app.panToOwnerFacilityOnMap(${fac.id})">
+          <img src="${fac.img}" alt="${fac.name}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 8px; flex-shrink: 0;" onerror="this.src='images/court1.jpg'">
+          <div style="flex: 1; min-width: 0;">
+            <strong style="font-size: 0.88rem; color: #0f172a; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fac.name}</strong>
+            <p style="font-size: 0.75rem; color: #64748b; margin: 2px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${fac.address}</p>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+              <span style="color: #16a34a; font-weight: 700;">📍 ${fac.distance || 'Gần bạn'}</span>
+              <span style="color: #f59e0b; font-weight: 700;">⭐ ${fac.rating}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    const countEl = document.getElementById('owner-drawer-count');
+    if (countEl) countEl.textContent = visibleCount;
+
+    if (drawerListContainer) {
+      drawerListContainer.innerHTML = drawerHtml || '<p style="text-align: center; color: #64748b; padding: 2rem;">Không tìm thấy sân cầu lông phù hợp bộ lọc.</p>';
+    }
+  }
+
+  filterOwnerMapBadminton(category, btn) {
+    this.currentOwnerMapFilter = category;
+
+    document.querySelectorAll('[data-owner-filter]').forEach(c => c.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    this.renderOwnerSportsMarkers();
+    const labelMap = {
+      'all': 'Tất cả sân cầu',
+      'standard': 'Thảm Yonex Pro',
+      'vip': 'Thảm Enlio VIP',
+      'ac': 'Có máy lạnh',
+      'near': 'Gần tôi (< 5km)'
+    };
+    this.showToast(`🏸 Bộ lọc chủ sân: ${labelMap[category] || category}`);
+  }
+
+  toggleOwnerFacilitiesSidebar() {
+    const drawer = document.getElementById('owner-map-facilities-drawer');
+    if (!drawer) return;
+    drawer.classList.toggle('open');
+  }
+
+  panToOwnerFacilityOnMap(facId) {
+    const fac = MockData.facilities.find(f => f.id === facId);
+    if (!fac || !this.ownerGoogleMap) return;
+
+    this.ownerGoogleMap.setView([fac.latitude, fac.longitude], 16, { animate: true });
+    this.toggleOwnerFacilitiesSidebar();
+    this.showToast(`📍 Đang xem sân: ${fac.name}`);
   }
 
   toggleOwnerMapTileLayer() {
@@ -1320,7 +1438,7 @@ class BadmintonAIApp {
 
   async searchOwnerMapAddress(e) {
     if (e) e.preventDefault();
-    const input = document.getElementById('map-search-address-input');
+    const input = document.getElementById('owner-map-search-input') || document.getElementById('map-search-address-input');
     if (!input || !input.value.trim()) return;
 
     const query = input.value.trim();
