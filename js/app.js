@@ -3482,6 +3482,122 @@ class BadmintonAIApp {
     downloadAnchor.remove();
     this.showToast("Đã tải xuống thành công toàn bộ Tệp CSDL JSON (badminton_ai_database.json)!");
   }
+
+  openImportDatabaseModal() {
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    modalBody.innerHTML = `
+      <div style="text-align: left;">
+        <h3 style="color: var(--primary); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-arrows-rotate"></i> Đồng Bộ & Nhập CSDL Đa Nền Tảng
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; line-height: 1.5;">
+          Khi bạn tạo tài khoản trên trình duyệt khác (hoặc tab ẩn danh), dữ liệu LocalStorage được lưu riêng theo từng trình duyệt. Bạn có thể dùng 1 trong 2 cách sau để đồng bộ tức thì sang tài khoản Admin:
+        </p>
+
+        <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Cách 1: Tải lên tệp JSON -->
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px dashed var(--primary); border-radius: var(--radius-md); padding: 1rem;">
+            <div style="font-weight: 700; color: var(--primary); font-size: 0.9rem; margin-bottom: 0.4rem;">
+              <i class="fa-solid fa-file-arrow-up"></i> Cách 1: Tải lên file badminton_ai_database.json
+            </div>
+            <input type="file" id="db-import-file-input" accept=".json" class="form-control" style="font-size: 0.85rem;" onchange="app.handleImportDatabaseFile(event)">
+          </div>
+
+          <!-- Cách 2: Dán mã JSON trực tiếp -->
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: var(--radius-md); padding: 1rem;">
+            <div style="font-weight: 700; color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.4rem;">
+              <i class="fa-solid fa-paste"></i> Cách 2: Hoặc Dán chuỗi JSON dữ liệu vào đây
+            </div>
+            <textarea id="db-import-paste-text" class="form-control" rows="5" placeholder='Dán chuỗi JSON database vào đây... {"users": [...]}' style="font-family: monospace; font-size: 0.8rem;"></textarea>
+            <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem; gap: 0.5rem;">
+              <button class="btn btn-secondary btn-sm" onclick="app.copyCurrentDatabaseJSON()">
+                <i class="fa-solid fa-copy"></i> Sao Chép CSDL Hiện Tại
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="app.applyPastedDatabaseJSON()">
+                <i class="fa-solid fa-check"></i> Cập Nhật & Đồng Bộ Ngay
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 1.25rem;">
+          <button class="btn btn-secondary btn-sm" onclick="app.closeModal()">Đóng</button>
+        </div>
+      </div>
+    `;
+    this.openModal();
+  }
+
+  handleImportDatabaseFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const imported = JSON.parse(event.target.result);
+        this.applyImportedDatabase(imported);
+        this.closeModal();
+      } catch (err) {
+        this.showToast("⛔ Tệp JSON không hợp lệ hoặc bị lỗi cú pháp!", "error");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  applyPastedDatabaseJSON() {
+    const textarea = document.getElementById('db-import-paste-text');
+    if (!textarea) return;
+    const text = textarea.value.trim();
+    if (!text) {
+      this.showToast("⛔ Vui lòng dán chuỗi JSON CSDL trước khi đồng bộ!", "error");
+      return;
+    }
+
+    try {
+      const imported = JSON.parse(text);
+      this.applyImportedDatabase(imported);
+      this.closeModal();
+    } catch (err) {
+      this.showToast("⛔ Chuỗi JSON dán vào không hợp lệ: " + err.message, "error");
+    }
+  }
+
+  applyImportedDatabase(imported) {
+    const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
+    let updatedCount = 0;
+
+    keys.forEach(k => {
+      if (imported[k] && Array.isArray(imported[k])) {
+        MockData[k] = imported[k];
+        updatedCount++;
+      }
+    });
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.renderAdminUsers();
+    this.renderAdminOverviewFacilities();
+    this.renderAdminApprovals();
+    if (this.currentView === 'ui-20') {
+      this.renderDatabaseInspector();
+    }
+
+    this.showToast(`✅ Đồng bộ thành công ${updatedCount} bảng CSDL! Đã cập nhật toàn bộ tài khoản mới.`);
+  }
+
+  copyCurrentDatabaseJSON() {
+    const dataStr = JSON.stringify(MockData, null, 2);
+    navigator.clipboard.writeText(dataStr).then(() => {
+      this.showToast("📋 Đã sao chép toàn bộ chuỗi JSON CSDL vào Clipboard!");
+    }).catch(() => {
+      this.showToast("Không thể tự động sao chép. Vui lòng xuất tệp JSON.");
+    });
+  }
 }
 
 // Initialize Application when DOM ready

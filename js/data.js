@@ -1347,16 +1347,18 @@ const MockData = {
   ]
 };
 
-// Luu va Tai du lieu tu dong vao LocalStorage de khong bi mat du lieu khi F5 / Reload
+// Luu va Tai du lieu tu dong vao LocalStorage de dong bo va khong bi mat du lieu khi F5 / mo tab moi
 function loadMockDataFromLocalStorage() {
   try {
     const savedData = localStorage.getItem('badminton_mock_data');
     if (savedData) {
       const parsed = JSON.parse(savedData);
-      if (parsed.users && Array.isArray(parsed.users) && parsed.users.length > 0) MockData.users = parsed.users;
-      if (parsed.facilities && Array.isArray(parsed.facilities) && parsed.facilities.length > 0) MockData.facilities = parsed.facilities;
-      if (parsed.bookings && Array.isArray(parsed.bookings)) MockData.bookings = parsed.bookings;
-      if (parsed.orders && Array.isArray(parsed.orders)) MockData.orders = parsed.orders;
+      const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
+      keys.forEach(k => {
+        if (parsed[k] && Array.isArray(parsed[k])) {
+          MockData[k] = parsed[k];
+        }
+      });
     }
   } catch (e) {
     console.warn('Could not load mock data from localStorage:', e);
@@ -1365,17 +1367,31 @@ function loadMockDataFromLocalStorage() {
 
 function saveMockDataToLocalStorage() {
   try {
-    localStorage.setItem('badminton_mock_data', JSON.stringify({
-      users: MockData.users,
-      facilities: MockData.facilities,
-      bookings: MockData.bookings,
-      orders: MockData.orders
-    }));
+    const payload = {};
+    const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
+    keys.forEach(k => {
+      if (MockData[k]) payload[k] = MockData[k];
+    });
+    localStorage.setItem('badminton_mock_data', JSON.stringify(payload));
   } catch (e) {
     console.warn('Could not save mock data to localStorage:', e);
   }
 }
 
+// Lang nghe su kien storage tu tab / cua so khac tren cung trinh duyet de dong bo lap tuc
+window.addEventListener('storage', (e) => {
+  if (e.key === 'badminton_mock_data') {
+    loadMockDataFromLocalStorage();
+    if (window.app) {
+      if (app.currentView === 'ui-19') app.renderAdminUsers();
+      if (app.currentView === 'ui-20') app.renderDatabaseInspector();
+      if (app.currentView === 'ui-14') app.renderAdminOverviewFacilities();
+      if (app.currentView === 'ui-17') app.renderAdminApprovals();
+    }
+  }
+});
+
 // Khoi tao load du lieu ngay khi nap file data.js
 loadMockDataFromLocalStorage();
+
 

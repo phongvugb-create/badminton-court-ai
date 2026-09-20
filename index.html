@@ -1344,8 +1344,11 @@
               <button class="btn btn-secondary btn-sm" onclick="app.toggleDBViewMode()">
                 <i class="fa-solid fa-code" id="db-view-mode-icon"></i> <span id="db-view-mode-text">Xem Dạng JSON Raw</span>
               </button>
-              <button class="btn btn-accent btn-sm" onclick="app.exportDatabaseJSON()">
+              <button class="btn btn-accent btn-sm" onclick="app.exportDatabaseJSON()" title="Tải xuống tệp database JSON để đồng bộ sang trình duyệt/máy khác">
                 <i class="fa-solid fa-download"></i> Xuất Tệp CSDL JSON
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="app.openImportDatabaseModal()" title="Nhập tệp hoặc dán dữ liệu database từ trình duyệt khác">
+                <i class="fa-solid fa-upload"></i> Nhập / Đồng Bộ CSDL
               </button>
             </div>
           </div>
