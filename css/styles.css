@@ -1857,18 +1857,18 @@ body {
 /* Floating Gemini AI Button & Drawer Widget */
 .gemini-float-btn {
   position: fixed;
-  bottom: 1.75rem;
-  right: 1.75rem;
-  width: 56px;
-  height: 56px;
+  bottom: 5.25rem;
+  right: 1.5rem;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+  background: linear-gradient(135deg, #10b981, #06b6d4);
   color: #fff;
-  border: none;
-  font-size: 1.5rem;
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  font-size: 1.4rem;
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.45);
   cursor: pointer;
-  z-index: 999;
+  z-index: 1050;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1877,19 +1877,20 @@ body {
 
 .gemini-float-btn:hover {
   transform: scale(1.1) rotate(6deg);
+  box-shadow: 0 8px 28px rgba(16, 185, 129, 0.6);
 }
 
 .gemini-drawer {
   position: fixed;
-  bottom: 5.5rem;
-  right: 1.75rem;
+  bottom: 8.75rem;
+  right: 1.5rem;
   width: 380px;
   height: 500px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  z-index: 1000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  z-index: 1060;
   display: none;
   flex-direction: column;
   overflow: hidden;
@@ -2972,6 +2973,25 @@ body {
 
   .bottom-bar-item i {
     font-size: 1.1rem;
+  }
+
+  /* Nút Chatbot trên mobile đặt cao hơn thanh điều hướng dưới đáy để không bao giờ bị che */
+  .gemini-float-btn {
+    bottom: 4.8rem !important;
+    right: 1rem !important;
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 1.25rem !important;
+    z-index: 1050 !important;
+  }
+
+  .gemini-drawer {
+    bottom: 8.2rem !important;
+    right: 0.75rem !important;
+    left: 0.75rem !important;
+    width: auto !important;
+    max-height: calc(100vh - 150px) !important;
+    z-index: 1060 !important;
   }
 }
 
