@@ -1308,9 +1308,14 @@
               <h1 class="page-title"><i class="fa-solid fa-users-gear text-primary"></i> Quản Lý Người Dùng & Phân Quyền</h1>
               <p class="page-subtitle">Quản lý danh sách tài khoản toàn hệ thống theo mô hình phân cấp 4 tầng</p>
             </div>
-            <button class="btn btn-primary" onclick="app.openAddOwnerModal()" title="Admin tạo tài khoản Chủ Sân mới">
-              <i class="fa-solid fa-user-plus"></i> Tạo Tài Khoản Chủ Sân
-            </button>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="app.openAddOwnerModal()" title="Admin tạo tài khoản Chủ Sân mới">
+                <i class="fa-solid fa-user-plus"></i> Tạo Tài Khoản Chủ Sân
+              </button>
+              <button class="btn btn-secondary" onclick="app.openImportDatabaseModal()" title="Đồng bộ CSDL khi đăng ký tài khoản ở trình duyệt khác (Brave, Chrome, Edge)">
+                <i class="fa-solid fa-arrows-rotate"></i> Đồng Bộ CSDL Trình Duyệt Khác
+              </button>
+            </div>
           </div>
 
           <div class="glass-card">
