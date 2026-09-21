@@ -5,6 +5,9 @@ import sys
 import urllib.request
 import urllib.error
 
+# Ensure backend directory is in path if needed
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
+
 PORT = 8085
 DATA_FILE = os.path.join(os.path.dirname(__file__), "database.json")
 
@@ -21,7 +24,7 @@ Nhiệm vụ của bạn:
   + Chính sách hoàn cọc: Hoàn 100% khi hủy trước 24 giờ thi đấu.
 - Luôn trả lời bằng tiếng Việt, định dạng Markdown cơ bản (tiêu đề ###, in đậm, danh sách -) rõ ràng, dùng emoji thể thao sinh động."""
 
-def get_gemini_api_key():
+def get_gemini_api_key() -> str:
     key = os.environ.get("GEMINI_API_KEY", "")
     if key and not key.startswith("YOUR_"):
         return key.strip()
@@ -59,18 +62,17 @@ def get_smart_fallback(question: str) -> str:
 def ask_gemini(user_message: str, context: str = "", messages: list = None) -> str:
     api_key = get_gemini_api_key()
     if not api_key:
+        print("[Gemini] CẢNH BÁO: Chưa tìm thấy GEMINI_API_KEY trong file .env hoặc biến môi trường!")
         return get_smart_fallback(user_message)
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    
     full_system = SYSTEM_INSTRUCTION
     if context:
         full_system += f"\nNgữ cảnh trang web hiện tại:\n{context}"
 
-    # Build contents from message history or single message
+    # Chuẩn bị contents từ lịch sử chat
     contents = []
     if messages and isinstance(messages, list) and len(messages) > 0:
-        for m in messages[-8:]: # keep last 8 turns for efficiency
+        for m in messages[-8:]:
             role = "user" if m.get("role") == "user" or m.get("sender") == "user" else "model"
             text = m.get("content") or m.get("text") or m.get("message") or ""
             if text:
@@ -84,7 +86,9 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
             "parts": [{"text": user_message}]
         })
 
+    # Ưu tiên các model mới nhất đang hoạt động
     models_to_try = [
+        ("gemini-2.5-flash", True),
         ("gemini-1.5-flash", True),
         ("gemini-2.0-flash", True),
         ("gemini-pro", False)
@@ -103,6 +107,10 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
             payload["systemInstruction"] = {
                 "parts": [{"text": full_system}]
             }
+        else:
+            if payload["contents"] and payload["contents"][0]["role"] == "user":
+                orig_text = payload["contents"][0]["parts"][0]["text"]
+                payload["contents"][0]["parts"][0]["text"] = f"[HƯỚNG DẪN]: {full_system}\n\n[CÂU HỎI]: {orig_text}"
 
         req_data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
@@ -112,7 +120,7 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=12) as response:
                 if response.status == 200:
                     res_body = response.read().decode("utf-8")
                     res_json = json.loads(res_body)
@@ -120,9 +128,11 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
                     if candidates:
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts:
-                            text = parts[0].get("text", "")
-                            if text:
-                                return text
+                            reply_text = parts[0].get("text", "")
+                            if reply_text:
+                                return reply_text
+        except urllib.error.HTTPError as he:
+            continue
         except Exception:
             continue
 
