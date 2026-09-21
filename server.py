@@ -87,12 +87,7 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
         })
 
     # Ưu tiên các model mới nhất đang hoạt động
-    models_to_try = [
-        ("gemini-2.5-flash", True),
-        ("gemini-1.5-flash", True),
-        ("gemini-2.0-flash", True),
-        ("gemini-pro", False)
-    ]
+    models_to_try = [("gemini-3.6-flash", True)]
 
     for model_name, use_sys_inst in models_to_try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
