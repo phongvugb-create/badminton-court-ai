@@ -1348,7 +1348,7 @@ const MockData = {
 };
 
 // Luu va Tai du lieu tu dong vao LocalStorage & May chu Backend tap trung (Central Server)
-const CENTRAL_API_URL = "http://localhost:8085/api/database";
+const CENTRAL_API_URL = "/api/database";
 
 function loadMockDataFromLocalStorage() {
   try {
@@ -1412,7 +1412,7 @@ function saveMockDataToLocalStorage() {
       if (MockData[k]) payload[k] = MockData[k];
     });
     localStorage.setItem('badminton_mock_data', JSON.stringify(payload));
-    
+
     // Dong thoi tu dong gui du lieu len May chu Backend de dong bo tat ca trinh duyet
     syncDataToCentralServer(payload);
   } catch (e) {
@@ -1445,10 +1445,10 @@ async function fetchCentralServerDatabase() {
       if (serverData && (serverData.users || serverData.facilities)) {
         const prevUsersCount = MockData.users.length;
         const prevFacsCount = MockData.facilities.length;
-        
+
         applyDataToMockData(serverData);
         localStorage.setItem('badminton_mock_data', JSON.stringify(MockData));
-        
+
         // Re-render moi giao dien neu co du lieu thay doi
         if (window.app) {
           const hasChanges = (prevUsersCount !== MockData.users.length) || (prevFacsCount !== MockData.facilities.length);

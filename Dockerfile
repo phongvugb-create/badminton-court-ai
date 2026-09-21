@@ -1,11 +1,11 @@
-# Sử dụng image Nginx Alpine siêu nhẹ
-FROM nginx:alpine
+FROM python:3.11-slim
 
-# Copy toàn bộ mã nguồn web vào thư mục phục vụ của Nginx
-COPY . /usr/share/nginx/html
+WORKDIR /app
 
-# Mở cổng 80
-EXPOSE 80
+COPY . .
 
-# Chạy Nginx ở chế độ foreground
-CMD ["nginx", "-g", "daemon off;"]
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8085
+
+CMD ["python", "server.py"]

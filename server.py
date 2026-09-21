@@ -8,7 +8,7 @@ import urllib.error
 # Ensure backend directory is in path if needed
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
 
-PORT = 8085
+PORT = int(os.environ.get("PORT", 8085))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "database.json")
 
 SYSTEM_INSTRUCTION = """Bạn là Trợ lý AI Thông Minh (BADMINTON.AI Virtual Assistant) của nền tảng Quản Lý & Cho Thuê Sân Cầu Lông & Pickleball BADMINTON.AI.
