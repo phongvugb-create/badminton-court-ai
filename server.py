@@ -122,7 +122,7 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
         try:
             with urllib.request.urlopen(req, timeout=12) as response:
                 if response.status == 200:
-                    res_body = response.read().decode("utf-8")
+                    res_body = response.read()
                     res_json = json.loads(res_body)
                     candidates = res_json.get("candidates", [])
                     if candidates:
@@ -132,8 +132,12 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
                             if reply_text:
                                 return reply_text
         except urllib.error.HTTPError as he:
+            error_body = he.read().decode("utf-8", errors="replace")
+            print(f"[Gemini] HTTP {he.code}: {error_body}")
             continue
-        except Exception:
+
+        except Exception as e:
+            print(f"[Gemini] ERROR: {repr(e)}")
             continue
 
     return get_smart_fallback(user_message)
@@ -230,8 +234,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({
                     "success": True,
-                    "reply": reply,
-                    "model": "gemini-1.5-flash"
+                    "reply": reply
                 }, ensure_ascii=False).encode("utf-8"))
             except Exception as e:
                 fallback_reply = get_smart_fallback(user_msg)
@@ -340,7 +343,7 @@ if __name__ == "__main__":
     os.chdir(os.path.dirname(__file__))
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     try:
-        with http.server.ThreadingHTTPServer(("", PORT), BadmintonServerHandler) as httpd:
+        with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), BadmintonServerHandler) as httpd:
             print(f"🏸 Badminton AI Threading Server running on http://localhost:{PORT}")
             httpd.serve_forever()
     except Exception as e:
