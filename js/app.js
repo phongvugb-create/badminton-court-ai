@@ -48,7 +48,6 @@ class BadmintonAIApp {
     this.renderAdminOverviewFacilities();
     this.renderOwnerDashboardOrders();
     this.initLeafletMap();
-    this.updateGeminiStatusBadge();
   }
 
   updateTopDateDisplay() {
@@ -2782,179 +2781,6 @@ class BadmintonAIApp {
   }
 
   /* ------------------------------------------------------------------------
-     10. GEMINI AI ASSISTANT DRAWER INTEGRATION & RENDER
-     ------------------------------------------------------------------------ */
-  toggleGeminiDrawer() {
-    const drawer = document.getElementById('gemini-chat-drawer');
-    drawer.classList.toggle('active');
-  }
-
-  promptGeminiAPIKey() {
-    const currentKey = geminiAI.getAPIKey();
-    const modalBody = document.getElementById('modal-body');
-    modalBody.innerHTML = `
-      <h3>⚙️ Cấu Hình Google Gemini API Key</h3>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-        Hệ thống hiện mặc định chạy ở chế độ <strong>AI Siêu Tốc (Phản hồi tức thì &lt;0.2s)</strong> nắm vững 48+ cụm sân Hà Nội, bảng giá, dụng cụ và ELO.
-      </p>
-      <p style="font-size: 0.82rem; color: var(--text-dim); margin-top: 4px;">
-        Nếu bạn muốn kết nối trực tuyến tới mô hình đám mây <strong>Google Gemini 1.5/2.0 Flash</strong>, hãy nhập API Key cá nhân của bạn bên dưới:
-      </p>
-      <form onsubmit="app.saveGeminiAPIKey(event)" style="margin-top: 1rem;">
-        <div class="form-group">
-          <label class="form-label">Gemini API Key (Tùy chọn)</label>
-          <input type="password" id="modal-gemini-key-input" class="form-control" value="${currentKey}" placeholder="AIzaSy... (để trống nếu dùng chế độ Siêu Tốc)">
-          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
-            Chưa có key? <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-cyan);">Lấy API Key miễn phí tại Google AI Studio</a>
-          </div>
-        </div>
-        <div style="display: flex; gap: 8px; margin-top: 1rem;">
-          <button type="submit" class="btn btn-primary" style="flex: 1;">
-            <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-gemini-key-input').value=''; app.saveGeminiAPIKey(event);" style="padding: 0 12px;" title="Xóa key để dùng AI siêu tốc nội bộ">
-            ⚡ Dùng AI Siêu Tốc
-          </button>
-        </div>
-      </form>
-    `;
-    this.openModal();
-  }
-
-  saveGeminiAPIKey(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    const input = document.getElementById('modal-gemini-key-input');
-    const key = input ? input.value.trim() : '';
-    const success = (typeof geminiAI !== 'undefined' && geminiAI) ? geminiAI.setAPIKey(key) : false;
-    this.closeModal();
-    this.updateGeminiStatusBadge();
-    if (success) {
-      this.showToast("Đã kích hoạt Google Gemini 1.5 Flash trực tuyến!");
-    } else {
-      if (key) {
-        this.showToast("Key không đúng định dạng (cần bắt đầu bằng 'AIzaSy'). Đã kích hoạt chế độ AI Siêu Tốc nội bộ!", "warning");
-      } else {
-        this.showToast("Đã chuyển về chế độ AI Trợ lý Siêu Tốc nội bộ (Phản hồi <0.1s)!");
-      }
-    }
-  }
-
-  updateGeminiStatusBadge() {
-    const badge = document.getElementById('gemini-status-badge');
-    if (!badge) return;
-    const hasKey = typeof geminiAI !== 'undefined' && geminiAI && !!geminiAI.getAPIKey();
-    if (hasKey) {
-      badge.style.background = '#ecfdf5';
-      badge.style.color = '#16a34a';
-      badge.style.borderColor = '#86efac';
-      badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 0.55rem; color: #22c55e;"></i> Gemini Live';
-    } else {
-      badge.style.background = '#eff6ff';
-      badge.style.color = '#2563eb';
-      badge.style.borderColor = '#bfdbfe';
-      badge.innerHTML = '<i class="fa-solid fa-bolt" style="font-size: 0.65rem; color: #3b82f6;"></i> AI Siêu Tốc';
-    }
-  }
-
-  async handleGeminiSubmit(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    const input = document.getElementById('gemini-input-text');
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text) return;
-
-    this.addGeminiChatMessage('user', text);
-    input.value = '';
-
-    // Hiển thị trạng thái đang suy nghĩ
-    const typingId = this.addGeminiChatMessage('bot', '<i class="fa-solid fa-spinner fa-spin"></i> Smashing AI đang xử lý...');
-
-    try {
-      let reply = '';
-      if (typeof geminiAI !== 'undefined' && geminiAI && typeof geminiAI.generateResponse === 'function') {
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Timeout")), 3500)
-        );
-        reply = await Promise.race([geminiAI.generateResponse(text), timeoutPromise]);
-      } else {
-        reply = "🤖 Chào bạn! Tôi là Trợ lý AI Cầu Lông của BADMINTON.AI. Bạn có thể hỏi tôi về các cụm sân Cầu Giấy, Hoàng Mai, Đống Đa, bảng giá thuê hay tư vấn chọn vợt!";
-      }
-      this.renderFormattedGeminiMessage(typingId, reply || "Tôi có thể hỗ trợ bạn tìm sân cầu lông hoặc giải đáp quy trình đặt cọc, giữ chỗ 10 phút.");
-    } catch (err) {
-      console.warn("Lỗi gọi Gemini AI, kích hoạt phản hồi nội bộ tức thì:", err);
-      let fallbackText = "🤖 Xin chào! Hệ thống đã ghi nhận câu hỏi. Bạn có thể tham khảo danh sách cụm sân Cầu Giấy, Hoàng Mai, Đống Đa trên trang chủ với giá chỉ từ 120k/h!";
-      if (typeof geminiAI !== 'undefined' && geminiAI && typeof geminiAI.getFallbackResponse === 'function') {
-        try {
-          fallbackText = geminiAI.getFallbackResponse(text);
-        } catch (e2) {}
-      }
-      this.renderFormattedGeminiMessage(typingId, fallbackText);
-    }
-  }
-
-  renderFormattedGeminiMessage(msgId, fullText) {
-    const msgDiv = document.getElementById(msgId);
-    if (!msgDiv) return;
-
-    const targetElement = msgDiv.children[1];
-    
-    // Parse LaTeX / Math ($> 295\text{ mm}$ -> > 295 mm) & Markdown Formatting
-    let formatted = fullText
-      // Xử lý các biểu thức toán LaTeX phổ biến
-      .replace(/\$\s*\\?([><=]=?)\s*(\d+)\\text\{\s*(\w+)\}\s*\$/g, '$1 $2 $3')
-      .replace(/\$([^\$]+)\$/g, (match, p1) => {
-        return p1.replace(/\\text\{([^\}]+)\}/g, '$1').replace(/\\/g, '').trim();
-      })
-      // Chuyển đổi tiêu đề Markdown ###, ##, # thành khối tiêu đề đẹp mắt
-      .replace(/^###\s*(.*$)/gim, '<div style="font-weight: 800; font-size: 0.95rem; margin-top: 0.6rem; margin-bottom: 0.25rem; color: var(--accent-cyan);">$1</div>')
-      .replace(/^##\s*(.*$)/gim, '<div style="font-weight: 800; font-size: 1rem; margin-top: 0.6rem; margin-bottom: 0.25rem; color: var(--primary);">$1</div>')
-      .replace(/^#\s*(.*$)/gim, '<div style="font-weight: 800; font-size: 1.1rem; margin-top: 0.6rem; margin-bottom: 0.25rem; color: var(--primary);">$1</div>')
-      // Chuyển đổi **in đậm**
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Đổi dòng
-      .replace(/\n/g, '<br>');
-
-    targetElement.innerHTML = formatted;
-    
-    const container = document.getElementById('gemini-chat-messages');
-    if (container) container.scrollTop = container.scrollHeight;
-  }
-
-  sendGeminiQuickPrompt(prompt) {
-    const drawer = document.getElementById('gemini-chat-drawer');
-    if (!drawer.classList.contains('active')) {
-      drawer.classList.add('active');
-    }
-    const input = document.getElementById('gemini-input-text');
-    input.value = prompt;
-    
-    // Tự động gửi prompt khi bấm nút gợi ý nhanh
-    const form = document.getElementById('gemini-chat-form');
-    if (form) {
-      form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-    }
-  }
-
-  addGeminiChatMessage(sender, text) {
-    const container = document.getElementById('gemini-chat-messages');
-    const uniqueSuffix = Math.random().toString(36).substring(2, 8);
-    const msgId = `gemini-msg-${Date.now()}-${uniqueSuffix}`;
-    const isUser = sender === 'user';
-
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `chat-msg ${isUser ? 'sent' : 'received'}`;
-    msgDiv.id = msgId;
-    msgDiv.innerHTML = `
-      <div style="font-size: 0.7rem; font-weight: 700; color: ${isUser ? '#fff' : 'var(--accent-cyan)'}; margin-bottom: 2px;">${isUser ? 'Bạn' : 'Smashing Gemini AI'}</div>
-      <div>${text}</div>
-    `;
-
-    container.appendChild(msgDiv);
-    container.scrollTop = container.scrollHeight;
-    return msgId;
-  }
-
-  /* ------------------------------------------------------------------------
      11. UTILITIES & MODAL SYSTEM
      ------------------------------------------------------------------------ */
   openModal() {
@@ -3846,7 +3672,7 @@ class BadmintonAIApp {
   }
 
   /* ==========================================================================
-     AI ADVANCED MODULES & ALGORITHMS (UC003, UC004, UC006, GEMINI ASSISTANT)
+     AI ADVANCED MODULES & ALGORITHMS (UC003, UC004, UC006)
      ========================================================================== */
 
   // 1. UC004: AI SMART COURT RECOMMENDER

@@ -1,4 +1,10 @@
-import redis.asyncio as redis
+try:
+    import redis.asyncio as redis
+    _has_redis_lib = True
+except ImportError:
+    redis = None
+    _has_redis_lib = False
+
 from app.config import settings
 import logging
 
@@ -8,6 +14,10 @@ redis_client = None
 
 async def init_redis():
     global redis_client
+    if not _has_redis_lib:
+        logger.info("Redis library not installed. In-memory atomic lock fallback active.")
+        redis_client = None
+        return
     try:
         redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
         await redis_client.ping()

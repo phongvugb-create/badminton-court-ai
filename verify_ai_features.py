@@ -18,13 +18,6 @@ with open("js/app.js", "r", encoding="utf-8") as f:
     assert "simulateAIDynamicPricingRecalc" in app_js, "simulateAIDynamicPricingRecalc missing"
 print("OK: js/app.js has all AI functions")
 
-print("Checking js/gemini.js...")
-with open("js/gemini.js", "r", encoding="utf-8") as f:
-    gemini_js = f.read()
-    assert "AI Dynamic Pricing Engine (UC003)" in gemini_js, "Dynamic pricing info missing in gemini.js"
-    assert "AI Matchmaking & ELO Rating (UC006)" in gemini_js, "Matchmaking info missing in gemini.js"
-print("OK: js/gemini.js has all AI knowledge")
-
 print("Checking css/styles.css...")
 with open("css/styles.css", "r", encoding="utf-8") as f:
     css = f.read()

@@ -27,7 +27,8 @@ async def get_facilities(
         if search and (search.lower() not in f.name.lower() and search.lower() not in f.address.lower()):
             continue
 
-        item = FacilityResponse.from_orm(f)
+        validate_fn = getattr(FacilityResponse, "model_validate", getattr(FacilityResponse, "from_orm", None))
+        item = validate_fn(f)
         if user_lat is not None and user_lon is not None:
             dist = haversine_distance(user_lat, user_lon, f.latitude, f.longitude)
             item.distance_km = dist

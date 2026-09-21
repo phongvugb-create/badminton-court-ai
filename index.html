@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" href="favicon.png">
 
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/chatbot.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -100,9 +101,6 @@
         </button>
         <button class="icon-btn" onclick="app.toggleTheme()" title="Đổi giao diện Sáng/Tối">
           <i class="fa-solid fa-moon" id="theme-icon"></i>
-        </button>
-        <button class="icon-btn" onclick="app.toggleGeminiDrawer()" title="Hỏi Trợ Lý AI" style="background: rgba(255,255,255,0.25);">
-          <i class="fa-solid fa-wand-magic-sparkles"></i>
         </button>
         <div class="user-profile-badge" onclick="app.handleHeaderProfileClick()" title="Hồ Sơ Cá Nhân">
           <div class="avatar" id="header-avatar">👤</div>
@@ -1603,65 +1601,7 @@
     </div>
   </div>
 
-  <!-- FLOATING GEMINI AI ASSISTANT WIDGET -->
-  <button class="gemini-float-btn" onclick="app.toggleGeminiDrawer()" title="Hỏi Trợ Lý Gemini AI">
-    <i class="fa-solid fa-wand-magic-sparkles"></i>
-  </button>
 
-  <!-- GEMINI AI CHAT DRAWER -->
-  <div class="gemini-drawer" id="gemini-chat-drawer">
-    <div class="gemini-header">
-      <div class="gemini-title">
-        <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M9 7L13 22H19L23 7L16 3L9 7Z" fill="url(#shuttleGrad2)" opacity="0.9"/>
-          <path d="M9 7L13 22M23 7L19 22M16 3V22" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-          <path d="M10.5 11.5H21.5M11.8 16.5H20.2" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-          <path d="M13 22C13 24.8 14.3 27 16 27C17.7 27 19 24.8 19 22H13Z" fill="#06b6d4" stroke="#ffffff" stroke-width="2"/>
-          <defs>
-            <linearGradient id="shuttleGrad2" x1="16" y1="3" x2="16" y2="22" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#10b981"/>
-              <stop offset="1" stop-color="#06b6d4"/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <span>Badminton Gemini AI</span>
-      </div>
-      <div style="display: flex; gap: 8px; align-items: center;">
-        <span class="tag-badge" id="gemini-status-badge" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 0.72rem; padding: 2px 8px; font-weight: 700;">
-          <i class="fa-solid fa-bolt" style="font-size: 0.65rem; color: #3b82f6;"></i> AI Siêu Tốc
-        </span>
-        <button class="btn btn-secondary btn-sm" onclick="app.promptGeminiAPIKey()" title="Đổi / Cấu hình Gemini API Key" style="padding: 2px 8px; font-size: 0.75rem;">
-          <i class="fa-solid fa-key"></i> Key
-        </button>
-        <button style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;" onclick="app.toggleGeminiDrawer()">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-    </div>
-    
-    <div class="gemini-body" id="gemini-chat-messages">
-      <div class="chat-msg received">
-        <div style="font-size: 0.7rem; font-weight: 700; color: var(--accent-cyan);">Google Gemini AI Assistant</div>
-        <div>Xin chào bạn! Tôi là Trợ lý Trí Tuệ Nhân Tạo Google Gemini AI. Tôi sẵn sàng hỗ trợ và giải đáp mọi câu hỏi của bạn về đặt sân, chọn vợt, kỹ thuật cầu lông cũng như bất kỳ chủ đề thể thao và đời sống nào! Hãy trò chuyện cùng tôi nhé! ✨🏸</div>
-      </div>
-    </div>
-
-    <!-- Quick Prompt Chips -->
-    <div class="gemini-prompt-chips">
-      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('🤖 Tìm giúp tôi sân gần Hoàng Mai / Cầu Giấy có giá tốt nhất?')">🤖 Tìm sân gần tôi (Hà Nội)</button>
-      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('⚡ Cơ chế AI Dynamic Pricing tính giá giờ vàng như thế nào?')">⚡ Hỏi về AI Dynamic Pricing</button>
-      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('🏸 Tư vấn cách chọn vợt cầu lông phù hợp lối chơi công đập cầu?')">🏸 Tư vấn chọn vợt smash</button>
-      <button class="chip-btn" onclick="app.sendGeminiQuickPrompt('⚔️ ELO của tôi 1450, gợi ý phòng ghép kèo phù hợp?')">⚔️ Ghép kèo ELO 1450</button>
-      <button class="chip-btn" onclick="app.promptGeminiAPIKey()">⚙️ Nhập API Key Gemini</button>
-    </div>
-
-    <form class="gemini-footer" id="gemini-chat-form" onsubmit="app.handleGeminiSubmit(event)">
-      <input type="text" id="gemini-input-text" class="form-control" placeholder="Hỏi Trợ Lý AI Cầu Lông..." style="border-radius: var(--radius-full);" required>
-      <button type="submit" class="btn btn-primary btn-sm" style="border-radius: var(--radius-full);">
-        <i class="fa-solid fa-paper-plane"></i>
-      </button>
-    </form>
-  </div>
 
   <!-- Dynamic Modal Overlay -->
   <div class="modal-overlay" id="global-modal">
@@ -1699,8 +1639,8 @@
   <!-- Include App Scripts with cache busting -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/data.js?v=20260921_03"></script>
-  <script src="js/gemini.js?v=20260921_03"></script>
   <script src="js/app.js?v=20260921_03"></script>
+  <script src="js/chatbot.js?v=20260921_03"></script>
   
   <!-- Failsafe auto-dismiss splash screen -->
   <script>

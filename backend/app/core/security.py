@@ -1,7 +1,18 @@
 from datetime import datetime, timedelta
 from typing import Optional, Union, Any
-from jose import jwt
-from passlib.context import CryptContext
+try:
+    from jose import jwt
+    _has_jose = True
+except ImportError:
+    jwt = None
+    _has_jose = False
+
+try:
+    from passlib.context import CryptContext
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+except ImportError:
+    pwd_context = None
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from app.config import settings
@@ -12,7 +23,6 @@ try:
 except ImportError:
     _use_direct_bcrypt = False
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

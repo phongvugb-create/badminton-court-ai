@@ -1,8 +1,10 @@
 .env
+.env.local
 .vscode/
 .idea/
 *.log
 Thumbs.db
 __pycache__/
 *.pyc
+node_modules/
 verify_syntax.py

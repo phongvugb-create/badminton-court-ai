@@ -1,0 +1,3 @@
+"""
+Badminton AI Application Package
+"""

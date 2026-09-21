@@ -19,9 +19,9 @@ async def list_rooms(db: AsyncSession = Depends(get_db)):
         .order_by(MatchmakingRoom.id.desc())
     )
     res = await db.execute(stmt)
-    results = []
+    validate_fn = getattr(MatchmakingRoomResponse, "model_validate", getattr(MatchmakingRoomResponse, "from_orm", None))
     for room, fac_name in res.all():
-        data = MatchmakingRoomResponse.from_orm(room)
+        data = validate_fn(room)
         data.facility_name = fac_name
         results.append(data)
     return results
