@@ -84,7 +84,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 8
+      "courts_count": 8,
+      "price_range": "70.000đ - 140.000đ/giờ",
+      "base_price": 70000
     },
     {
       "id": 102,
@@ -109,7 +111,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 10
+      "courts_count": 10,
+      "price_range": "80.000đ - 150.000đ/giờ",
+      "base_price": 80000
     },
     {
       "id": 103,
@@ -134,7 +138,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 8
+      "courts_count": 8,
+      "price_range": "80.000đ - 160.000đ/giờ",
+      "base_price": 80000
     },
     {
       "id": 104,
@@ -159,7 +165,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 12
+      "courts_count": 12,
+      "price_range": "90.000đ - 150.000đ/giờ",
+      "base_price": 90000
     },
     {
       "id": 105,
@@ -184,7 +192,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 10
+      "courts_count": 10,
+      "price_range": "80.000đ - 140.000đ/giờ",
+      "base_price": 80000
     },
     {
       "id": 106,
@@ -209,7 +219,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 14
+      "courts_count": 14,
+      "price_range": "80.000đ - 150.000đ/giờ",
+      "base_price": 80000
     },
     {
       "id": 107,
@@ -234,7 +246,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 8
+      "courts_count": 8,
+      "price_range": "90.000đ - 160.000đ/giờ",
+      "base_price": 90000
     },
     {
       "id": 108,
@@ -259,7 +273,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 12
+      "courts_count": 12,
+      "price_range": "70.000đ - 130.000đ/giờ",
+      "base_price": 70000
     },
     {
       "id": 109,
@@ -284,7 +300,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 8
+      "courts_count": 8,
+      "price_range": "80.000đ - 150.000đ/giờ",
+      "base_price": 80000
     },
     {
       "id": 110,
@@ -309,7 +327,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 6
+      "courts_count": 6,
+      "price_range": "70.000đ - 130.000đ/giờ",
+      "base_price": 70000
     },
     {
       "id": 111,
@@ -334,7 +354,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 8
+      "courts_count": 8,
+      "price_range": "80.000đ - 140.000đ/giờ",
+      "base_price": 80000
     },
     {
       "id": 112,
@@ -359,7 +381,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 8
+      "courts_count": 8,
+      "price_range": "70.000đ - 130.000đ/giờ",
+      "base_price": 70000
     },
     {
       "id": 113,
@@ -384,7 +408,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 12
+      "courts_count": 12,
+      "price_range": "100.000đ - 180.000đ/giờ",
+      "base_price": 100000
     },
     {
       "id": 114,
@@ -409,7 +435,9 @@
       ],
       "sport_type": "badminton",
       "sport_icon": "🏸",
-      "courts_count": 10
+      "courts_count": 10,
+      "price_range": "80.000đ - 140.000đ/giờ",
+      "base_price": 80000
     },
     {
       "id": 115,

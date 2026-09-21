@@ -409,9 +409,9 @@ class BadmintonAIChatbot {
     let safe = this.escapeHtml(text);
 
     // Headers ### -> <h4>, ## -> <h4>, # -> <h4>
-    safe = safe.replace(/^###\s+(.*?)$/gm, '<h4>$1</h4>');
-    safe = safe.replace(/^##\s+(.*?)$/gm, '<h4>$1</h4>');
-    safe = safe.replace(/^#\s+(.*?)$/gm, '<h4>$1</h4>');
+    safe = safe.replace(/^###\s+(.*?)$/gm, '<h4 style="margin: 6px 0 3px 0; color: #38bdf8; font-size: 0.95rem;">$1</h4>');
+    safe = safe.replace(/^##\s+(.*?)$/gm, '<h4 style="margin: 6px 0 3px 0; color: #38bdf8; font-size: 0.95rem;">$1</h4>');
+    safe = safe.replace(/^#\s+(.*?)$/gm, '<h4 style="margin: 6px 0 3px 0; color: #38bdf8; font-size: 0.95rem;">$1</h4>');
 
     // Bold **text**
     safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -420,19 +420,18 @@ class BadmintonAIChatbot {
     safe = safe.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
     // Code `code`
-    safe = safe.replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px; color: #38bdf8; font-size: 0.8rem;">$1</code>');
+    safe = safe.replace(/`([^`]+)`/g, '<code style="background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px; color: #38bdf8; font-size: 0.82rem;">$1</code>');
 
     // List items - item
-    safe = safe.replace(/^\s*-\s+(.*?)$/gm, '<li>$1</li>');
-    safe = safe.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+    safe = safe.replace(/^\s*-\s+(.*?)$/gm, '<li style="margin-left: 1.1rem; margin-bottom: 3px; list-style-type: disc;">$1</li>');
 
-    // Convert newlines to <br>
+    // Convert double newlines to paragraph break, single newline to <br>
+    safe = safe.replace(/\n\n/g, '<br><br>');
     safe = safe.replace(/\n/g, '<br>');
 
-    // Clean up excessive <br> inside list
-    safe = safe.replace(/<\/li><br>/g, '</li>');
-    safe = safe.replace(/<ul><br>/g, '<ul>');
-    safe = safe.replace(/<\/ul><br>/g, '</ul>');
+    // Clean up excessive <br> around list items
+    safe = safe.replace(/<br>\s*<li/g, '<li');
+    safe = safe.replace(/<\/li>\s*<br>/g, '</li>');
 
     return safe;
   }
