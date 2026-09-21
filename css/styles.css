@@ -1585,10 +1585,16 @@ body {
 }
 
 .slot-btn.selected {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-  box-shadow: 0 0 12px var(--primary-glow);
+  background: linear-gradient(135deg, #167946 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: 2px solid #10b981 !important;
+  box-shadow: 0 4px 14px rgba(22, 121, 70, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.slot-btn.selected .slot-time,
+.slot-btn.selected .slot-price {
+  color: #ffffff !important;
 }
 
 .slot-btn.held {

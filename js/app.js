@@ -11,6 +11,7 @@ class BadmintonAIApp {
     // Booking & State Tracking
     this.selectedFacility = MockData.facilities[0];
     this.selectedSlot = null;
+    this.selectedSlots = []; // Multi-slot booking support: Array of selected slot objects
     this.selectedEquipments = {}; // { equipId: qty }
     this.holdTimer = null;
     this.holdTimerSeconds = 600; // 10 minutes (600s)
@@ -538,7 +539,7 @@ class BadmintonAIApp {
   }
 
   /* ------------------------------------------------------------------------
-     3. UI 03: SLOT MATRIX & EQUIPMENT RENTAL
+     3. UI 03: SLOT MATRIX & MULTI-HOUR BOOKING (HỖ TRỢ CHỌN NHIỀU GIỜ)
      ------------------------------------------------------------------------ */
   renderSlotMatrix() {
     const matrixGrid = document.getElementById('slot-matrix-grid');
@@ -546,8 +547,11 @@ class BadmintonAIApp {
     let html = '';
     let ownerHtml = '';
 
+    if (!this.selectedSlots) this.selectedSlots = [];
+    const selectedIds = new Set(this.selectedSlots.map(s => s.id));
+
     MockData.time_slots.forEach(slot => {
-      const isSelected = this.selectedSlot && this.selectedSlot.id === slot.id;
+      const isSelected = selectedIds.has(slot.id);
       const statusClass = isSelected ? 'selected' : slot.status.toLowerCase();
 
       let aiTag = '';
@@ -556,8 +560,11 @@ class BadmintonAIApp {
       }
 
       html += `
-        <div class="slot-btn ${statusClass}" onclick="app.selectSlot(${slot.id})">
-          <span class="slot-time">${slot.start_time} - ${slot.end_time}</span>
+        <div class="slot-btn ${statusClass}" onclick="app.toggleSlotSelection(${slot.id})">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%;">
+            ${isSelected ? '<i class="fa-solid fa-circle-check" style="color: #ffffff; font-size: 0.85rem;"></i>' : ''}
+            <span class="slot-time">${slot.start_time} - ${slot.end_time}</span>
+          </div>
           <span class="slot-price">${slot.price.toLocaleString('vi-VN')} đ</span>
           ${aiTag}
         </div>
@@ -577,16 +584,85 @@ class BadmintonAIApp {
     if (ownerMatrix) ownerMatrix.innerHTML = ownerHtml;
   }
 
-  selectSlot(slotId) {
+  // Toggle selection for multiple slots (1 hour, 2 hours, 3+ hours)
+  toggleSlotSelection(slotId) {
     const slot = MockData.time_slots.find(s => s.id === slotId);
+    if (!slot) return;
+
     if (slot.status !== 'AVAILABLE') {
-      this.showToast(`Khung giờ ${slot.start_time} - ${slot.end_time} đang ở trạng thái: ${slot.status}!`, 'error');
+      this.showToast(`Khung giờ ${slot.start_time} - ${slot.end_time} đang ở trạng thái: ${slot.status === 'BOOKED' ? 'Đã được đặt' : 'Đang tạm giữ 10p'}!`, 'error');
       return;
     }
 
-    this.selectedSlot = slot;
+    if (!this.selectedSlots) this.selectedSlots = [];
+    const index = this.selectedSlots.findIndex(s => s.id === slotId);
+
+    if (index >= 0) {
+      // Bỏ chọn slot này
+      this.selectedSlots.splice(index, 1);
+    } else {
+      // Thêm slot mới vào danh sách đã chọn
+      this.selectedSlots.push(slot);
+    }
+
+    // Sắp xếp lại danh sách slot đã chọn theo thứ tự thời gian
+    this.selectedSlots.sort((a, b) => a.start_time.localeCompare(b.start_time));
+    this.selectedSlot = this.selectedSlots.length > 0 ? this.selectedSlots[0] : null;
+
     this.renderSlotMatrix();
     this.updateBookingSummary();
+  }
+
+  // Quick select duration preset (1h, 2h, 3h consecutive available slots)
+  quickSelectDuration(hours) {
+    const availableSlots = MockData.time_slots.filter(s => s.status === 'AVAILABLE');
+    if (availableSlots.length === 0) {
+      this.showToast("Hiện không còn khung giờ trống trong ngày!", "error");
+      return;
+    }
+
+    // Ưu tiên chọn các slot giờ đẹp buổi chiều tối (17h - 21h) hoặc các slot liên tiếp đầu tiên
+    let chosenSlots = [];
+    const eveningSlots = availableSlots.filter(s => parseInt(s.start_time.split(':')[0], 10) >= 17);
+    const candidateList = eveningSlots.length >= hours ? eveningSlots : availableSlots;
+
+    // Tìm các slot liên tiếp
+    for (let i = 0; i <= candidateList.length - hours; i++) {
+      const sub = candidateList.slice(i, i + hours);
+      let isConsecutive = true;
+      for (let j = 0; j < sub.length - 1; j++) {
+        if (sub[j].end_time !== sub[j + 1].start_time) {
+          isConsecutive = false;
+          break;
+        }
+      }
+      if (isConsecutive) {
+        chosenSlots = sub;
+        break;
+      }
+    }
+
+    // Nếu không có liên tiếp hoàn hảo thì lấy N slot đầu tiên khả dụng
+    if (chosenSlots.length === 0) {
+      chosenSlots = candidateList.slice(0, hours);
+    }
+
+    this.selectedSlots = chosenSlots;
+    this.selectedSlot = this.selectedSlots[0] || null;
+    this.renderSlotMatrix();
+    this.updateBookingSummary();
+    this.showToast(`✨ Đã chọn nhanh ${hours} giờ thuê sân (${this.selectedSlots.map(s => s.start_time).join(', ')}...)!`);
+  }
+
+  clearSelectedSlots() {
+    this.selectedSlots = [];
+    this.selectedSlot = null;
+    this.renderSlotMatrix();
+    this.updateBookingSummary();
+  }
+
+  selectSlot(slotId) {
+    this.toggleSlotSelection(slotId);
   }
 
   renderEquipmentRentalList() {
@@ -628,26 +704,59 @@ class BadmintonAIApp {
     const summaryTotal = document.getElementById('selected-total-summary');
     const btnProceed = document.getElementById('btn-proceed-checkout');
 
-    if (!this.selectedSlot) {
-      summarySlot.textContent = "Chưa chọn slot giờ";
-      summaryTotal.textContent = "0 VNĐ";
-      btnProceed.disabled = true;
+    if (!this.selectedSlots || this.selectedSlots.length === 0) {
+      if (summarySlot) summarySlot.textContent = "Chưa chọn khung giờ nào";
+      if (summaryTotal) summaryTotal.textContent = "0 VNĐ";
+      if (btnProceed) btnProceed.disabled = true;
       return;
     }
 
-    let slotPrice = this.selectedSlot.price;
-    let equipPriceTotal = 0;
+    const totalHours = this.selectedSlots.length;
+    let slotPriceTotal = 0;
+    this.selectedSlots.forEach(s => {
+      slotPriceTotal += s.price;
+    });
 
+    let equipPriceTotal = 0;
     MockData.equipments.forEach(eq => {
       const qty = this.selectedEquipments[eq.id] || 0;
       equipPriceTotal += qty * eq.price;
     });
 
-    const totalAmount = slotPrice + equipPriceTotal;
+    const totalAmount = slotPriceTotal + equipPriceTotal;
+    const depositAmount = 50000;
 
-    summarySlot.textContent = `Sân 01 | ${this.selectedSlot.start_time} - ${this.selectedSlot.end_time}`;
-    summaryTotal.textContent = `${totalAmount.toLocaleString('vi-VN')} VNĐ (Cọc: 50,000đ)`;
-    btnProceed.disabled = false;
+    // Check if slots are consecutive
+    let isConsecutive = true;
+    for (let i = 0; i < this.selectedSlots.length - 1; i++) {
+      if (this.selectedSlots[i].end_time !== this.selectedSlots[i + 1].start_time) {
+        isConsecutive = false;
+        break;
+      }
+    }
+
+    let timeRangeText = '';
+    if (isConsecutive && totalHours > 1) {
+      timeRangeText = `${this.selectedSlots[0].start_time} - ${this.selectedSlots[this.selectedSlots.length - 1].end_time} (${totalHours} tiếng liên tục)`;
+    } else {
+      timeRangeText = this.selectedSlots.map(s => `${s.start_time}-${s.end_time}`).join(', ') + ` (${totalHours} giờ)`;
+    }
+
+    if (summarySlot) {
+      summarySlot.innerHTML = `
+        <span style="color: #0f172a; font-weight: 800;">Sân 01</span> | 
+        <span style="color: var(--primary); font-weight: 700;">${timeRangeText}</span>
+      `;
+    }
+
+    if (summaryTotal) {
+      summaryTotal.innerHTML = `
+        <span style="color: #0f172a;">${totalAmount.toLocaleString('vi-VN')} VNĐ</span> 
+        <span style="font-size: 0.85rem; color: #16a34a; font-weight: 700;">(Cọc giữ chỗ: ${depositAmount.toLocaleString('vi-VN')}đ)</span>
+      `;
+    }
+
+    if (btnProceed) btnProceed.disabled = false;
   }
 
   proceedToCheckout() {
@@ -656,9 +765,50 @@ class BadmintonAIApp {
       this.navigateTo('ui-01');
       return;
     }
+
+    if (!this.selectedSlots || this.selectedSlots.length === 0) {
+      this.showToast("⚠️ Vui lòng chọn ít nhất 1 khung giờ đặt sân!", "error");
+      return;
+    }
+
+    // Update Checkout UI with selected slots detail
+    this.updateCheckoutViewDetails();
     this.navigateTo('ui-04');
     this.startHoldTimer();
-    this.showToast("Hệ thống đã kích hoạt Redis Atomic Lock giữ chỗ slot giờ trong 10:00 phút!");
+    this.showToast(`Hệ thống đã kích hoạt Redis Atomic Lock giữ ${this.selectedSlots.length} khung giờ trong 10:00 phút!`);
+  }
+
+  updateCheckoutViewDetails() {
+    const totalHours = this.selectedSlots ? this.selectedSlots.length : 1;
+    let slotPriceTotal = 0;
+    (this.selectedSlots || []).forEach(s => slotPriceTotal += s.price);
+
+    let equipPriceTotal = 0;
+    MockData.equipments.forEach(eq => {
+      const qty = this.selectedEquipments[eq.id] || 0;
+      equipPriceTotal += qty * eq.price;
+    });
+
+    const totalAmount = slotPriceTotal + equipPriceTotal;
+    const timeSlotsStr = (this.selectedSlots && this.selectedSlots.length > 0)
+      ? this.selectedSlots.map(s => `${s.start_time} - ${s.end_time}`).join(', ')
+      : '17:30 - 18:30';
+
+    const datePicker = document.getElementById('booking-date-picker');
+    const bookingDate = datePicker ? datePicker.value : '2026-09-11';
+
+    const orderInfoEl = document.querySelector('.qr-payment-card div[style*="background: #f8fafc"]');
+    if (orderInfoEl) {
+      const code = `BK-${bookingDate.replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
+      this.currentPendingBookingCode = code;
+      orderInfoEl.innerHTML = `
+        <div style="margin-bottom: 4px;"><strong>Mã đơn:</strong> <span style="color: var(--primary); font-weight: 700;">${code}</span></div>
+        <div style="margin-bottom: 4px;"><strong>Khung giờ thuê (${totalHours}h):</strong> <span style="color: #0369a1; font-weight: 600;">${timeSlotsStr}</span></div>
+        <div style="margin-bottom: 4px;"><strong>Tổng tiền dịch vụ:</strong> <strong>${totalAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
+        <div style="margin-bottom: 4px;"><strong>Số tiền cọc cần trả:</strong> <span style="color: #059669; font-weight: 800; font-size: 1.05rem;">50,000 VNĐ</span></div>
+        <div><strong>Nội dung CK:</strong> <code>COC ${code}</code></div>
+      `;
+    }
   }
 
   /* ------------------------------------------------------------------------
@@ -677,7 +827,7 @@ class BadmintonAIApp {
 
       if (this.holdTimerSeconds <= 0) {
         clearInterval(this.holdTimer);
-        this.showToast("Hết thời gian giữ chỗ! Slot giờ đã giải phóng.", 'error');
+        this.showToast("Hết thời gian giữ chỗ! Các slot giờ đã được tự động giải phóng.", 'error');
         this.navigateTo('ui-03');
       }
     }, 1000);
@@ -685,7 +835,64 @@ class BadmintonAIApp {
 
   simulatePaymentSuccess() {
     clearInterval(this.holdTimer);
-    this.showToast("Cổng thanh toán VNPay đã gửi Webhook IPN! Xác nhận cọc 50,000đ thành công.");
+    
+    // Tạo đơn hàng mới dựa trên các slot đã chọn
+    const datePicker = document.getElementById('booking-date-picker');
+    const bookingDate = datePicker ? datePicker.value : '2026-09-11';
+    const totalHours = this.selectedSlots ? this.selectedSlots.length : 1;
+    
+    let slotPriceTotal = 0;
+    (this.selectedSlots || []).forEach(s => slotPriceTotal += s.price);
+
+    let equipPriceTotal = 0;
+    MockData.equipments.forEach(eq => {
+      const qty = this.selectedEquipments[eq.id] || 0;
+      equipPriceTotal += qty * eq.price;
+    });
+
+    const totalAmount = slotPriceTotal + equipPriceTotal;
+    const timeSlotsStr = (this.selectedSlots && this.selectedSlots.length > 0)
+      ? this.selectedSlots.map(s => `${s.start_time} - ${s.end_time}`).join(', ')
+      : '18:00 - 20:00';
+
+    const bookingCode = this.currentPendingBookingCode || `BK-${bookingDate.replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
+    const ticketCode = `TICKET-BADMINTON-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const newOrder = {
+      id: Date.now(),
+      booking_code: bookingCode,
+      user_name: (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng',
+      user_phone: (this.currentUser && this.currentUser.phone) ? this.currentUser.phone : '0901234567',
+      facility_name: this.selectedFacility ? this.selectedFacility.name : "CLB Cầu Lông Catchy Badminton Arena",
+      court_name: "Sân 01 - Thảm Yonex Pro",
+      slot_time: `${timeSlotsStr} (${totalHours} giờ)`,
+      booking_date: bookingDate,
+      total_amount: totalAmount,
+      deposit_amount: 50000,
+      deposit_status: "Đã Cọc 50K",
+      order_status: "Đã Xác Nhận",
+      created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      qr_ticket_code: ticketCode
+    };
+
+    MockData.booking_orders.unshift(newOrder);
+
+    // Cập nhật trạng thái các slot vừa đặt thành BOOKED
+    if (this.selectedSlots) {
+      this.selectedSlots.forEach(s => {
+        const found = MockData.time_slots.find(item => item.id === s.id);
+        if (found) found.status = 'BOOKED';
+      });
+    }
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.renderBookingOrdersList();
+    this.renderSlotMatrix();
+
+    this.showToast(`🎉 Cổng thanh toán VNPay đã gửi Webhook IPN! Đặt sân thành công ${totalHours} giờ (Mã vé: ${ticketCode})`);
     this.navigateTo('ui-05');
   }
 
@@ -694,6 +901,7 @@ class BadmintonAIApp {
      ------------------------------------------------------------------------ */
   renderBookingOrdersList() {
     const container = document.getElementById('booking-orders-list-container');
+    if (!container) return;
     let html = '';
 
     MockData.booking_orders.forEach(order => {
@@ -709,7 +917,7 @@ class BadmintonAIApp {
                 <span class="tag-badge tag-ai">${order.order_status}</span>
               </div>
               <div style="font-size: 0.9rem; margin-top: 0.5rem;"><strong>Cụm Sân:</strong> ${order.facility_name}</div>
-              <div style="font-size: 0.85rem; color: var(--text-muted);"><strong>Chi tiết:</strong> ${order.court_name} | Khung giờ: ${order.slot_time} | Ngày: ${order.booking_date}</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);"><strong>Chi tiết:</strong> ${order.court_name} | Khung giờ: <strong style="color: #0369a1;">${order.slot_time}</strong> | Ngày: ${order.booking_date}</div>
               <div style="font-size: 0.85rem; margin-top: 0.25rem;"><strong>Mã Vé QR Check-in:</strong> <code style="color: var(--accent-cyan); font-weight: 700;">${order.qr_ticket_code}</code></div>
               <div style="margin-top: 0.75rem; font-size: 0.9rem;">Tổng đơn: <strong>${order.total_amount.toLocaleString('vi-VN')}đ</strong> | Đã cọc: <span style="color: var(--primary); font-weight: 700;">50,000đ</span></div>
             </div>
@@ -718,7 +926,7 @@ class BadmintonAIApp {
       `;
     });
 
-    if (container) container.innerHTML = html;
+    container.innerHTML = html;
   }
 
   /* ------------------------------------------------------------------------
