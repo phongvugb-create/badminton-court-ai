@@ -671,36 +671,51 @@
           </div>
         </section>
 
-        <!-- AI MATCHMAKING & ELO RATING (UC006) - HOÀN TOÀN RIÊNG BIỆT -->
+        <!-- AI MATCHMAKING & ELO RATING (UC006) - NÂNG CẤP TRÍ TUỆ NHÂN TẠO TOÀN DIỆN -->
         <section id="view-ui-06" class="screen-view">
           
+          <!-- Page Header with AI Badges & Quick Action -->
           <div class="page-header" style="margin-bottom: 1.25rem;">
             <div>
               <h1 class="page-title">
                 <i class="fa-solid fa-users-viewfinder text-primary"></i> Phòng Ghép Kèo Cầu Lông AI (Matchmaking)
                 <span class="badge-ai-sparkle"><i class="fa-solid fa-wand-magic-sparkles"></i> AI UC006</span>
               </h1>
-              <p class="page-subtitle">Tìm đối thủ và bạn đánh tương đồng điểm ELO Rating để giao lưu rèn luyện</p>
+              <p class="page-subtitle">Hệ thống AI tự động phân tích điểm ELO Rating, kỹ năng công/thủ và vị trí sân để ghép đối thủ hoàn hảo nhất</p>
             </div>
-            <button class="btn btn-accent" onclick="app.openCreateRoomModal()">
-              <i class="fa-solid fa-plus"></i> Tạo Phòng Ghép Mới
-            </button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="app.startAIAutoMatch()" style="background: linear-gradient(135deg, #10b981 0%, #0284c7 100%); box-shadow: 0 4px 14px rgba(16,185,129,0.35); font-weight: 700;">
+                <i class="fa-solid fa-bolt"></i> ⚡ AI Tìm Kèo Tự Động (3s)
+              </button>
+              <button class="btn btn-accent" onclick="app.openCreateRoomModal()">
+                <i class="fa-solid fa-plus"></i> Tạo Phòng Ghép Mới
+              </button>
+            </div>
           </div>
 
-          <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+          <!-- User ELO Dashboard Bar & AI Matchmaking Status -->
+          <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 1.5rem; background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1.5px solid #86efac;">
             <div style="display: flex; align-items: center; gap: 1rem;">
-              <div class="avatar" style="width: 48px; height: 48px; font-size: 1.2rem;">H</div>
+              <div class="avatar" style="width: 52px; height: 52px; font-size: 1.3rem; background: linear-gradient(135deg, #167946, #059669); color: #fff; box-shadow: 0 4px 10px rgba(22,121,70,0.3);">H</div>
               <div>
-                <div style="font-weight: 700; font-size: 1.1rem;">Nguyễn Văn Hùng</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Trình độ hiện tại: <span class="elo-badge">ELO 1450 - Trạng thái: Hạng Khá</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-weight: 800; font-size: 1.15rem; color: #0f172a;">Nguyễn Văn Hùng</span>
+                  <span class="elo-badge"><i class="fa-solid fa-trophy"></i> ELO 1450</span>
+                  <span style="background: #e0f2fe; color: #0284c7; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">Hạng Khá</span>
+                </div>
+                <div style="font-size: 0.85rem; color: #475569; margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap;">
+                  <span><i class="fa-solid fa-fire text-amber"></i> Phong độ: <strong>Chuỗi 3 thắng</strong> (72% Winrate)</span>
+                  <span><i class="fa-solid fa-shield-halved text-primary"></i> Lối chơi: <strong>All-Rounder (Công thủ toàn diện)</strong></span>
+                  <span><i class="fa-solid fa-location-dot text-rose"></i> Khu vực: <strong>Hoàng Mai / Đống Đa / Cầu Giấy</strong></span>
+                </div>
               </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-primary btn-sm" onclick="app.toggleAIEloPredictor()" style="background: linear-gradient(135deg, #10b981 0%, #0284c7 100%);">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Dự Đoán Tỉ Lệ Thắng (Win Probability)
+              <button class="btn btn-secondary btn-sm" onclick="app.toggleAIEloPredictor()" style="border: 1.5px solid #0284c7; color: #0284c7; font-weight: 700;">
+                <i class="fa-solid fa-brain"></i> AI Dự Đoán Tỉ Lệ Thắng
               </button>
               <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('ui-08')">
-                <i class="fa-solid fa-chart-line"></i> Xem Thống Kê Trận Đấu
+                <i class="fa-solid fa-chart-line"></i> Hồ Sơ & Thống Kê
               </button>
             </div>
           </div>
@@ -745,7 +760,7 @@
                 <input type="text" id="matchup-p2-name" class="form-control" value="Trần Thị Mai" style="margin: 6px 0; font-weight: 700; text-align: center;" placeholder="Tên đối thủ B">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;">
                   <label style="font-size: 0.82rem; font-weight: 700; color: #1e40af;">Điểm ELO:</label>
-                  <input type="number" id="matchup-p2-elo" class="form-control" value="1680" style="width: 100px; text-align: center; font-weight: 800; color: #1e40af;" oninput="app.runAIMatchupCalculation()">
+                  <input type="number" id="matchup-p2-elo" class="form-control" value="1480" style="width: 100px; text-align: center; font-weight: 800; color: #1e40af;" oninput="app.runAIMatchupCalculation()">
                 </div>
               </div>
             </div>
@@ -753,13 +768,13 @@
             <!-- Probability Bar -->
             <div style="margin-bottom: 1rem;">
               <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem; margin-bottom: 6px;">
-                <span id="matchup-p1-winrate-label" style="color: #166534;"><i class="fa-solid fa-shield-halved"></i> N.V. Hùng: 21%</span>
-                <span id="matchup-match-balance-badge" style="font-size: 0.8rem; background: #e0f2fe; color: #0284c7; padding: 2px 10px; border-radius: 9999px; font-weight: 700;">Chênh lệch 230 ELO</span>
-                <span id="matchup-p2-winrate-label" style="color: #1e40af;">T.T. Mai: 79% <i class="fa-solid fa-bolt"></i></span>
+                <span id="matchup-p1-winrate-label" style="color: #166534;"><i class="fa-solid fa-shield-halved"></i> N.V. Hùng: 48%</span>
+                <span id="matchup-match-balance-badge" style="font-size: 0.8rem; background: #e0f2fe; color: #0284c7; padding: 2px 10px; border-radius: 9999px; font-weight: 700;">Cân bằng (Δ 30 ELO)</span>
+                <span id="matchup-p2-winrate-label" style="color: #1e40af;">T.T. Mai: 52% <i class="fa-solid fa-bolt"></i></span>
               </div>
               <div style="width: 100%; height: 22px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; display: flex; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
-                <div id="matchup-winrate-bar-p1" style="height: 100%; width: 21%; background: linear-gradient(90deg, #10b981, #059669); transition: width 0.4s ease;"></div>
-                <div id="matchup-winrate-bar-p2" style="height: 100%; width: 79%; background: linear-gradient(90deg, #3b82f6, #1d4ed8); transition: width 0.4s ease;"></div>
+                <div id="matchup-winrate-bar-p1" style="height: 100%; width: 48%; background: linear-gradient(90deg, #10b981, #059669); transition: width 0.4s ease;"></div>
+                <div id="matchup-winrate-bar-p2" style="height: 100%; width: 52%; background: linear-gradient(90deg, #3b82f6, #1d4ed8); transition: width 0.4s ease;"></div>
               </div>
             </div>
 
@@ -769,35 +784,112 @@
             </div>
           </div>
 
-          <div id="matchmaking-rooms-grid" class="facility-cards-grid">
+          <!-- AI Category Filter Chips -->
+          <div class="mm-filter-bar">
+            <button class="mm-chip active" id="mm-chip-all" onclick="app.filterMatchmakingCategory('all')">
+              <i class="fa-solid fa-layer-group"></i> Tất Cả Kèo (8)
+            </button>
+            <button class="mm-chip" id="mm-chip-recommended" onclick="app.filterMatchmakingCategory('recommended')">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber"></i> 🎯 Gợi Ý AI Cho Bạn (95%+ Match)
+            </button>
+            <button class="mm-chip" id="mm-chip-doubles" onclick="app.filterMatchmakingCategory('doubles')">
+              <i class="fa-solid fa-user-group text-primary"></i> 🏸 Kèo Đôi Cân Bằng
+            </button>
+            <button class="mm-chip" id="mm-chip-singles" onclick="app.filterMatchmakingCategory('singles')">
+              <i class="fa-solid fa-user text-cyan"></i> ⚡ Kèo Đơn Thách Đấu
+            </button>
+            <button class="mm-chip" id="mm-chip-handicap" onclick="app.filterMatchmakingCategory('handicap')">
+              <i class="fa-solid fa-scale-balanced text-purple"></i> ⚖️ Kèo AI Chấp Điểm
+            </button>
+          </div>
+
+          <!-- Search & District Filter Toolbar -->
+          <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; min-width: 260px; position: relative;">
+              <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim);"></i>
+              <input type="text" id="mm-search-input" class="form-control" placeholder="Tìm theo tên sân, quận Hoàng Mai, Cầu Giấy, Ba Đình..." style="padding-left: 38px; border-radius: var(--radius-full);" oninput="app.searchMatchmakingRooms(this.value)">
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">Sắp xếp:</label>
+              <select id="mm-sort-select" class="form-control" style="width: auto; border-radius: var(--radius-full);" onchange="app.sortMatchmakingRooms(this.value)">
+                <option value="ai-match">🎯 Độ tương thích AI cao nhất</option>
+                <option value="time">⏰ Giờ thi đấu gần nhất</option>
+                <option value="elo-asc">📈 ELO từ thấp đến cao</option>
+                <option value="elo-desc">📉 ELO từ cao đến thấp</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Matchmaking Rooms Grid -->
+          <div id="matchmaking-rooms-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.25rem;">
             <!-- Rendered by JS -->
           </div>
         </section>
 
-        <!-- Matchmaking Room Detail & Live Chat Group -->
+        <!-- Matchmaking Room Detail & Live Chat Group (UI 07) -->
         <section id="view-ui-07" class="screen-view">
           <div class="page-header">
             <div>
-              <h1 class="page-title"><i class="fa-solid fa-comments text-primary"></i> Chi Tiết Phòng Ghép & Nhóm Chat</h1>
-              <p class="page-subtitle">Trao đổi trực tiếp giữa các thành viên phòng ghép sau khi ghép cặp thành công</p>
+              <h1 class="page-title"><i class="fa-solid fa-comments text-primary"></i> Chi Tiết Kèo Đấu & Nhóm Chat AI</h1>
+              <p class="page-subtitle">Phòng chiến thuật & trao đổi trực tiếp giữa các thành viên sau khi ghép cặp AI</p>
             </div>
             <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('ui-06')">
               <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách phòng
             </button>
           </div>
 
-          <div class="glass-card">
-            <h2 id="room-detail-title">Giao lưu Trình độ Khá (ELO 1400 - 1600)</h2>
-            <p id="room-detail-meta" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">Sân Smashing Arena | 12/09/2026 (18:00 - 20:00) | Thể thức: Đôi Nam/Nữ</p>
+          <!-- Match Summary Card -->
+          <div class="glass-card" style="margin-bottom: 1rem; border-left: 5px solid #10b981;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <span id="room-detail-status-badge" class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Đang mở ghép kèo</span>
+                <h2 id="room-detail-title" style="margin: 6px 0 2px; font-size: 1.25rem;">Giao lưu Đôi Nam Nữ Cân Kèo (ELO 1400 - 1550)</h2>
+                <p id="room-detail-meta" style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                  <i class="fa-solid fa-map-pin text-rose"></i> CLB Cầu Lông Catchy Badminton Arena | 
+                  <i class="fa-solid fa-clock text-amber"></i> Hôm nay (18:00 - 20:00) | 
+                  <i class="fa-solid fa-tag text-primary"></i> 45.000đ/người
+                </p>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary btn-sm" onclick="app.joinActiveRoomChat()" id="btn-join-room-action" style="background: #167946;">
+                  <i class="fa-solid fa-user-plus"></i> Tham Gia Kèo Này
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="app.loadActiveRoomToPredictor()">
+                  <i class="fa-solid fa-brain"></i> AI Mô Phỏng Trận
+                </button>
+              </div>
+            </div>
           </div>
 
+          <!-- AI Virtual Coach & Match Analysis Tactical Panel -->
+          <div id="ai-room-tactics-panel" class="glass-card" style="padding: 1.25rem; margin-bottom: 1rem; background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%); border: 1.5px solid #38bdf8; border-radius: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 8px;">
+              <h3 style="margin: 0; font-size: 1rem; color: #0369a1; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-robot text-primary"></i> TRỢ LÝ TRỌNG TÀI & HUẤN LUYỆN VIÊN CHIẾN THUẬT AI
+              </h3>
+              <button class="btn btn-sm btn-primary" onclick="app.requestAICoachTactics()" style="font-size: 0.78rem; padding: 4px 12px; background: #0284c7;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Phân Tích Chiến Thuật Mới
+              </button>
+            </div>
+            
+            <div id="ai-room-tactics-body" style="font-size: 0.85rem; color: #334155; line-height: 1.6;">
+              <!-- Dynamic JS Coach Insight -->
+            </div>
+          </div>
+
+          <!-- Live Room Chat Box -->
           <div class="chat-box-container">
             <div id="chat-messages-list" class="chat-messages">
               <!-- Rendered by JS -->
             </div>
+            <div style="padding: 6px 12px; background: #f1f5f9; border-top: 1px solid #e2e8f0; display: flex; gap: 6px; overflow-x: auto;">
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px;" onclick="app.sendQuickChatMessage('🏸 Mình đã sẵn sàng, hẹn gặp mọi người ở sân!')">🏸 Mình đã sẵn sàng</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px;" onclick="app.sendQuickChatMessage('📍 Mọi người nhớ đến trước 10 phút khởi động nhé!')">📍 Đến sớm 10p khởi động</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px;" onclick="app.requestAICoachTactics()">🤖 @AI Cho xin chiến thuật đánh đôi</button>
+            </div>
             <form class="chat-input-bar" onsubmit="app.sendChatMessage(event)">
-              <input type="text" id="chat-input-text" class="form-control" placeholder="Nhập tin nhắn giao lưu..." style="border-radius: var(--radius-full); margin-right: 0.5rem;" required>
-              <button type="submit" class="btn btn-primary" style="border-radius: var(--radius-full);">
+              <input type="text" id="chat-input-text" class="form-control" placeholder="Nhập tin nhắn giao lưu hoặc gõ @AI để hỏi chiến thuật..." style="border-radius: var(--radius-full); margin-right: 0.5rem;" required>
+              <button type="submit" class="btn btn-primary" style="border-radius: var(--radius-full); padding: 0.5rem 1.25rem;">
                 <i class="fa-solid fa-paper-plane"></i> Gửi
               </button>
             </form>

@@ -1294,43 +1294,259 @@ const MockData = {
     }
   ],
 
-  // 8. BẢNG matchmaking_rooms
+  // 8. BẢNG matchmaking_rooms (Danh mục phòng ghép kèo AI thông minh)
   matchmaking_rooms: [
     {
       id: 701,
-      room_name: "Giao lưu Trình độ Khá (ELO 1400 - 1600)",
-      facility_name: "CLB Cầu Lông Catchy Badminton Arena (Hoàng Mai, Hà Nội)",
-      match_date: "12/09/2026",
+      room_name: "Giao lưu Đôi Nam Nữ Cân Kèo (ELO 1400 - 1550)",
+      facility_id: 101,
+      facility_name: "CLB Cầu Lông Catchy Badminton Arena",
+      district: "Hoàng Mai, Hà Nội",
+      match_date: "Hôm nay, 22/09/2026",
       match_time: "18:00 - 20:00",
       required_elo_min: 1400,
-      required_elo_max: 1600,
+      required_elo_max: 1550,
       match_type: "Đôi Nam/Nữ",
+      court_number: "Sân 03 (Thảm Enlio VIP)",
+      price_per_slot: "45.000đ",
       current_players: 3,
       max_players: 4,
       status: "OPEN",
-      host_name: "Nguyễn Văn Hùng",
-      host_elo: 1450,
+      host_name: "Lê Hoàng Quân",
+      host_elo: 1460,
+      ai_compatibility: 98,
+      ai_prediction: "Tỉ lệ thắng dự kiến 51% - 49%. Độ cân bằng hoàn hảo, nhịp độ công thủ tốc độ cao.",
+      ai_handicap: "Đồng banh (0 điểm)",
+      category: "doubles",
+      is_ai_recommended: true,
+      players: [
+        { name: "Lê Hoàng Quân", elo: 1460, avatar: "Q", role: "Host", style: "Công thủ toàn diện", team: "A" },
+        { name: "Trần Thị Mai", elo: 1480, avatar: "M", role: "Member", style: "Bắt lưới & Tạt cầu", team: "A" },
+        { name: "Phạm Quốc Tuấn", elo: 1430, avatar: "T", role: "Member", style: "Phòng thủ dẻo dai", team: "B" }
+      ],
       chat_messages: [
-        { sender: "Nguyễn Văn Hùng", text: "Chào mọi người, nhóm mình còn thiếu 1 tay vợt ELO 1450+ đánh đôi nhé!", time: "16:45" },
-        { sender: "Trần Thị Mai", text: "Mình ELO 1680 vừa tham gia rồi nha!", time: "16:50" }
+        { sender: "🤖 AI Match Referee", text: "Chào mừng các tay vợt! AI đã phân tích kèo đấu: Độ cân bằng 98%, dự kiến trận đấu 3 ván kịch tính!", time: "16:30" },
+        { sender: "Lê Hoàng Quân", text: "Chào mọi người, nhóm mình còn thiếu 1 tay vợt ELO quanh 1450 đánh đôi nhé!", time: "16:45" },
+        { sender: "Trần Thị Mai", text: "Mình ELO 1480 vừa vào phòng rồi, đánh đôi với Quân nhé!", time: "16:50" },
+        { sender: "Phạm Quốc Tuấn", text: "Mình bên đội B rồi, cần thêm 1 bạn ghép cùng quẩy nhiệt tình tối nay!", time: "17:05" }
       ]
     },
     {
       id: 702,
-      room_name: "Săn Kèo Đơn Nam ELO Cao (1700+)",
-      facility_name: "CLB Cầu Lông Ba Đình Star Arena (Ba Đình, Hà Nội)",
-      match_date: "12/09/2026",
-      match_time: "19:00 - 21:00",
+      room_name: "Săn Kèo Đơn Nam Thách Đấu (ELO 1700 - 1950)",
+      facility_id: 103,
+      facility_name: "CLB Cầu Lông Ba Đình Star Arena",
+      district: "Ba Đình, Hà Nội",
+      match_date: "Hôm nay, 22/09/2026",
+      match_time: "19:30 - 21:30",
       required_elo_min: 1700,
-      required_elo_max: 2000,
+      required_elo_max: 1950,
       match_type: "Đơn Nam",
+      court_number: "Sân 01 (Thảm Yonex Tour)",
+      price_per_slot: "90.000đ",
       current_players: 1,
       max_players: 2,
       status: "OPEN",
       host_name: "Hoàng Văn Nam",
       host_elo: 1780,
+      ai_compatibility: 68,
+      ai_prediction: "Kèo thách đấu hạng A. Host có smash tốc độ 320km/h. Cần thể lực bền bỉ và di chuyển nhanh.",
+      ai_handicap: "AI Handicap: Chấp 4 điểm/set",
+      category: "singles",
+      is_ai_recommended: false,
+      players: [
+        { name: "Hoàng Văn Nam", elo: 1780, avatar: "N", role: "Host", style: "Tấn công dồn dập & Smash uy lực", team: "A" }
+      ],
       chat_messages: [
-        { sender: "Hoàng Văn Nam", text: "Cần tìm đối thủ cọ xát giao lưu đơn nam tối mai!", time: "15:10" }
+        { sender: "🤖 AI Match Referee", text: "Hệ thống AI Handicap đã kích hoạt: Đối thủ có thể nhận chấp từ 3-5 điểm nếu ELO chênh lệch.", time: "15:00" },
+        { sender: "Hoàng Văn Nam", text: "Cần tìm đối thủ cọ xát giao lưu đơn nam tối nay, có chấp điểm thoải mái nhé!", time: "15:10" }
+      ]
+    },
+    {
+      id: 703,
+      room_name: "Kèo Đôi Nam Tốc Độ Cao & Phản Tạt (ELO 1420 - 1580)",
+      facility_id: 105,
+      facility_name: "CLB Cầu Lông Cầu Giấy Pro Center",
+      district: "Cầu Giấy, Hà Nội",
+      match_date: "Hôm nay, 22/09/2026",
+      match_time: "20:00 - 22:00",
+      required_elo_min: 1420,
+      required_elo_max: 1580,
+      match_type: "Đôi Nam",
+      court_number: "Sân 05 (Thảm Victor Quốc Tế)",
+      price_per_slot: "50.000đ",
+      current_players: 2,
+      max_players: 4,
+      status: "OPEN",
+      host_name: "Đỗ Minh Đức",
+      host_elo: 1490,
+      ai_compatibility: 96,
+      ai_prediction: "Độ tương thích ELO 96%. Đấu pháp phối hợp phản tạt nhanh và kiểm soát cầu giữa sân.",
+      ai_handicap: "Đồng banh (0 điểm)",
+      category: "doubles",
+      is_ai_recommended: true,
+      players: [
+        { name: "Đỗ Minh Đức", elo: 1490, avatar: "Đ", role: "Host", style: "Đập cầu uy lực", team: "A" },
+        { name: "Ngô Quốc Khánh", elo: 1440, avatar: "K", role: "Member", style: "Điều cầu góc xa", team: "B" }
+      ],
+      chat_messages: [
+        { sender: "Đỗ Minh Đức", text: "Kèo đánh tốc độ cao nhé anh em, chuẩn bị sẵn vợt căng 11kg!", time: "14:20" }
+      ]
+    },
+    {
+      id: 704,
+      room_name: "Giao Lưu Cuối Ngày - Chia Tiền Sân Vui Vẻ (ELO 1380 - 1500)",
+      facility_id: 102,
+      facility_name: "CLB Cầu Lông Đống Đa Sport Hub",
+      district: "Đống Đa, Hà Nội",
+      match_date: "Hôm nay, 22/09/2026",
+      match_time: "21:00 - 23:00",
+      required_elo_min: 1380,
+      required_elo_max: 1500,
+      match_type: "Đôi Nam/Nữ",
+      court_number: "Sân 02 (Thảm Xanh Lá)",
+      price_per_slot: "40.000đ",
+      current_players: 3,
+      max_players: 4,
+      status: "OPEN",
+      host_name: "Bùi Đình Trọng",
+      host_elo: 1420,
+      ai_compatibility: 99,
+      ai_prediction: "Khớp ELO 99% với bạn (1450). Trận đấu giao lưu cực kỳ vui vẻ, chia sẻ tiền sân tự động.",
+      ai_handicap: "Đồng banh (0 điểm)",
+      category: "doubles",
+      is_ai_recommended: true,
+      players: [
+        { name: "Bùi Đình Trọng", elo: 1420, avatar: "T", role: "Host", style: "Bền bỉ thể lực", team: "A" },
+        { name: "Vũ Hải Yến", elo: 1410, avatar: "Y", role: "Member", style: "Khống chế lưới", team: "A" },
+        { name: "Lê Minh Tuấn", elo: 1470, avatar: "T", role: "Member", style: "Công thủ linh hoạt", team: "B" }
+      ],
+      chat_messages: [
+        { sender: "Bùi Đình Trọng", text: "Anh em vào giao lưu dưỡng sinh giải tỏa căng thẳng sau giờ làm nào!", time: "17:15" },
+        { sender: "Vũ Hải Yến", text: "Mình có mang theo nước bù khoáng cho cả sân nha!", time: "17:20" }
+      ]
+    },
+    {
+      id: 705,
+      room_name: "Kèo Giao Hữu AI Chấp Điểm (ELO Lệch 200+)",
+      facility_id: 104,
+      facility_name: "CLB Cầu Lông Thanh Xuân Sport Arena",
+      district: "Thanh Xuân, Hà Nội",
+      match_date: "Ngày mai, 23/09/2026",
+      match_time: "17:30 - 19:30",
+      required_elo_min: 1300,
+      required_elo_max: 1700,
+      match_type: "Đơn Nam",
+      court_number: "Sân 04 (Thảm Enlio)",
+      price_per_slot: "60.000đ",
+      current_players: 1,
+      max_players: 2,
+      status: "OPEN",
+      host_name: "Phan Anh Vũ",
+      host_elo: 1660,
+      ai_compatibility: 85,
+      ai_prediction: "Hệ thống AI tự động cân bằng: Người chơi ELO thấp hơn được cộng +3.5 điểm mỗi ván đấu.",
+      ai_handicap: "AI Handicap: Chấp +3.5 điểm/set",
+      category: "handicap",
+      is_ai_recommended: true,
+      players: [
+        { name: "Phan Anh Vũ", elo: 1660, avatar: "V", role: "Host", style: "Chiến thuật & Kỹ thuật", team: "A" }
+      ],
+      chat_messages: [
+        { sender: "Phan Anh Vũ", text: "Kèo chấp điểm AI tính toán rất công bằng, hoan nghênh anh em ELO 1300-1500 giao lưu học hỏi!", time: "13:00" }
+      ]
+    },
+    {
+      id: 706,
+      room_name: "Kèo Đôi Nam Nữ Rèn Thể Lực & Phản Xạ (ELO 1400 - 1520)",
+      facility_id: 106,
+      facility_name: "CLB Cầu Lông Nam Từ Liêm Smash Center",
+      district: "Nam Từ Liêm, Hà Nội",
+      match_date: "Hôm nay, 22/09/2026",
+      match_time: "19:00 - 21:00",
+      required_elo_min: 1400,
+      required_elo_max: 1520,
+      match_type: "Đôi Nam/Nữ",
+      court_number: "Sân 06 (Thảm Đỏ Thi Đấu)",
+      price_per_slot: "45.000đ",
+      current_players: 2,
+      max_players: 4,
+      status: "OPEN",
+      host_name: "Nguyễn Thành Long",
+      host_elo: 1445,
+      ai_compatibility: 97,
+      ai_prediction: "Độ khớp 97%. Nhịp độ trận đấu đều đặn, thích hợp tăng cường cảm giác cầu.",
+      ai_handicap: "Đồng banh (0 điểm)",
+      category: "doubles",
+      is_ai_recommended: true,
+      players: [
+        { name: "Nguyễn Thành Long", elo: 1445, avatar: "L", role: "Host", style: "Điều cầu", team: "A" },
+        { name: "Trịnh Diệu Linh", elo: 1430, avatar: "D", role: "Member", style: "Tạt lưới", team: "B" }
+      ],
+      chat_messages: [
+        { sender: "Nguyễn Thành Long", text: "Phòng đang có 2 bạn rồi, cần thêm 1 cặp nữa là đủ 4 người!", time: "16:00" }
+      ]
+    },
+    {
+      id: 707,
+      room_name: "Tập Luyện & Sửa Động Tác Cơ Bản (ELO 1100 - 1350)",
+      facility_id: 107,
+      facility_name: "CLB Cầu Lông Tây Hồ View Arena",
+      district: "Tây Hồ, Hà Nội",
+      match_date: "Ngày mai, 23/09/2026",
+      match_time: "06:00 - 08:00",
+      required_elo_min: 1100,
+      required_elo_max: 1350,
+      match_type: "Giao Lưu Tự Do",
+      court_number: "Sân 02 (Thảm Xám)",
+      price_per_slot: "35.000đ",
+      current_players: 3,
+      max_players: 4,
+      status: "OPEN",
+      host_name: "Hoàng Thu Trang",
+      host_elo: 1280,
+      ai_compatibility: 74,
+      ai_prediction: "Trình độ nhập môn & cơ bản. Phù hợp khởi động ngày mới nhẹ nhàng.",
+      ai_handicap: "AI Handicap: Hướng dẫn kỹ thuật",
+      category: "handicap",
+      is_ai_recommended: false,
+      players: [
+        { name: "Hoàng Thu Trang", elo: 1280, avatar: "T", role: "Host", style: "Tân thủ", team: "A" },
+        { name: "Phạm Hải Đăng", elo: 1250, avatar: "Đ", role: "Member", style: "Cơ bản", team: "A" },
+        { name: "Nguyễn Mai Anh", elo: 1300, avatar: "A", role: "Member", style: "Tập luyện", team: "B" }
+      ],
+      chat_messages: [
+        { sender: "Hoàng Thu Trang", text: "Chào cả nhà, sáng mai đánh nhẹ nhàng 6h sáng tại Tây Hồ nhé!", time: "18:00" }
+      ]
+    },
+    {
+      id: 708,
+      room_name: "Đại Chiến Bán Chuyên - Đơn Nam Hạng A (ELO 1800 - 2100)",
+      facility_id: 108,
+      facility_name: "CLB Cầu Lông Hà Đông Master Club",
+      district: "Hà Đông, Hà Nội",
+      match_date: "Hôm nay, 22/09/2026",
+      match_time: "20:30 - 22:30",
+      required_elo_min: 1800,
+      required_elo_max: 2100,
+      match_type: "Đơn Nam",
+      court_number: "Sân VIP 01 (Thảm Yonex Pro)",
+      price_per_slot: "100.000đ",
+      current_players: 1,
+      max_players: 2,
+      status: "OPEN",
+      host_name: "Vũ Quang Huy",
+      host_elo: 1920,
+      ai_compatibility: 55,
+      ai_prediction: "Đấu thủ bán chuyên quốc gia. Tốc độ di chuyển cực nhanh, đập cầu cắm sân.",
+      ai_handicap: "AI Handicap: Chấp 6 điểm/set",
+      category: "singles",
+      is_ai_recommended: false,
+      players: [
+        { name: "Vũ Quang Huy", elo: 1920, avatar: "H", role: "Host", style: "Bán chuyên đỉnh cao", team: "A" }
+      ],
+      chat_messages: [
+        { sender: "Vũ Quang Huy", text: "Tìm đối thủ solo đơn nam cọ xát trình độ cao tối nay!", time: "16:20" }
       ]
     }
   ],
@@ -1364,12 +1580,28 @@ function loadMockDataFromLocalStorage() {
 
 function applyDataToMockData(sourceData) {
   if (!sourceData) return;
-  const keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
+  const keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'occupancy_heatmap', 'bookings', 'orders'];
   keys.forEach(k => {
     if (sourceData[k] && Array.isArray(sourceData[k]) && sourceData[k].length > 0) {
       MockData[k] = sourceData[k];
     }
   });
+
+  // Hop nhat matchmaking_rooms thong minh (giu cac phong moi nhat va merge)
+  if (sourceData.matchmaking_rooms && Array.isArray(sourceData.matchmaking_rooms) && sourceData.matchmaking_rooms.length > 0) {
+    const existingRoomIds = new Set(MockData.matchmaking_rooms.map(r => r.id));
+    sourceData.matchmaking_rooms.forEach(r => {
+      if (!existingRoomIds.has(r.id)) {
+        MockData.matchmaking_rooms.push(r);
+        existingRoomIds.add(r.id);
+      } else {
+        const idx = MockData.matchmaking_rooms.findIndex(item => item.id === r.id);
+        if (idx !== -1) {
+          MockData.matchmaking_rooms[idx] = { ...MockData.matchmaking_rooms[idx], ...r };
+        }
+      }
+    });
+  }
 
   // 1. Hop nhat danh sach co so san (facilities) thong minh
   if (sourceData.facilities && Array.isArray(sourceData.facilities) && sourceData.facilities.length > 0) {

@@ -22,6 +22,9 @@ class BadmintonAIApp {
 
     // Chat & Active Room
     this.activeRoom = MockData.matchmaking_rooms[0];
+    this.currentMMFilter = 'all';
+    this.currentMMSearch = '';
+    this.currentMMSort = 'ai-match';
 
     // Database Inspector State
     this.currentDBTable = 'facilities';
@@ -719,27 +722,181 @@ class BadmintonAIApp {
   }
 
   /* ------------------------------------------------------------------------
-     6. UI 06 & UI 07: AI MATCHMAKING & CHAT GROUP
+     6. UI 06 & UI 07: AI MATCHMAKING & TACTICAL CHAT GROUP
      ------------------------------------------------------------------------ */
+  filterMatchmakingCategory(cat) {
+    this.currentMMFilter = cat;
+    const chips = ['all', 'recommended', 'doubles', 'singles', 'handicap'];
+    chips.forEach(c => {
+      const el = document.getElementById(`mm-chip-${c}`);
+      if (el) {
+        if (c === cat) el.classList.add('active');
+        else el.classList.remove('active');
+      }
+    });
+    this.renderMatchmakingRooms();
+  }
+
+  searchMatchmakingRooms(query) {
+    this.currentMMSearch = (query || '').trim().toLowerCase();
+    this.renderMatchmakingRooms();
+  }
+
+  sortMatchmakingRooms(sortBy) {
+    this.currentMMSort = sortBy;
+    this.renderMatchmakingRooms();
+  }
+
   renderMatchmakingRooms() {
     const container = document.getElementById('matchmaking-rooms-grid');
-    let html = '';
+    if (!container) return;
 
-    MockData.matchmaking_rooms.forEach(room => {
+    let list = [...MockData.matchmaking_rooms];
+
+    // Filter by Category
+    if (this.currentMMFilter === 'recommended') {
+      list = list.filter(r => r.is_ai_recommended || (r.ai_compatibility && r.ai_compatibility >= 95));
+    } else if (this.currentMMFilter === 'doubles') {
+      list = list.filter(r => (r.match_type && r.match_type.includes('Đôi')) || r.category === 'doubles');
+    } else if (this.currentMMFilter === 'singles') {
+      list = list.filter(r => (r.match_type && r.match_type.includes('Đơn')) || r.category === 'singles');
+    } else if (this.currentMMFilter === 'handicap') {
+      list = list.filter(r => r.category === 'handicap' || (r.ai_handicap && r.ai_handicap.includes('Chấp')));
+    }
+
+    // Filter by Search Query
+    if (this.currentMMSearch) {
+      list = list.filter(r => {
+        const text = `${r.room_name} ${r.facility_name} ${r.district || ''} ${r.match_type} ${r.host_name}`.toLowerCase();
+        return text.includes(this.currentMMSearch);
+      });
+    }
+
+    // Sort
+    if (this.currentMMSort === 'ai-match') {
+      list.sort((a, b) => (b.ai_compatibility || 0) - (a.ai_compatibility || 0));
+    } else if (this.currentMMSort === 'elo-asc') {
+      list.sort((a, b) => (a.required_elo_min || 0) - (b.required_elo_min || 0));
+    } else if (this.currentMMSort === 'elo-desc') {
+      list.sort((a, b) => (b.required_elo_min || 0) - (a.required_elo_min || 0));
+    } else if (this.currentMMSort === 'time') {
+      list.sort((a, b) => (a.match_time || '').localeCompare(b.match_time || ''));
+    }
+
+    if (list.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; background: #ffffff; border-radius: 16px; border: 1px dashed var(--border-color);">
+          <i class="fa-solid fa-users-slash" style="font-size: 2.5rem; color: var(--text-dim); margin-bottom: 0.75rem;"></i>
+          <h3 style="margin: 0; color: var(--text-main);">Không tìm thấy phòng ghép phù hợp</h3>
+          <p style="color: var(--text-muted); font-size: 0.88rem; margin: 6px 0 1rem;">Hãy thử tìm kiếm với từ khóa khác hoặc tạo một phòng ghép mới theo trình độ của bạn!</p>
+          <button class="btn btn-primary btn-sm" onclick="app.openCreateRoomModal()">
+            <i class="fa-solid fa-plus"></i> Tạo Phòng Ghép Ngay
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '';
+    list.forEach(room => {
+      const matchScore = room.ai_compatibility || 90;
+      let badgeClass = 'high';
+      if (matchScore < 75) badgeClass = 'challenge';
+      else if (matchScore < 90) badgeClass = 'mid';
+
+      const userElo = (this.currentUser && this.currentUser.elo_rating) ? this.currentUser.elo_rating : 1450;
+      const isDoubles = room.match_type && room.match_type.includes('Đôi');
+      const maxSlots = room.max_players || (isDoubles ? 4 : 2);
+      const curSlots = room.current_players || (room.players ? room.players.length : 1);
+      const emptySlots = Math.max(0, maxSlots - curSlots);
+
+      // Render player avatar pills
+      let avatarsHtml = '';
+      if (room.players && Array.isArray(room.players)) {
+        room.players.forEach(p => {
+          const isHost = p.role === 'Host';
+          const bg = isHost ? 'linear-gradient(135deg, #167946, #059669)' : 'linear-gradient(135deg, #0284c7, #0369a1)';
+          avatarsHtml += `
+            <div class="mm-player-avatar-item" style="background: ${bg};" title="${p.name} (ELO ${p.elo}) - ${p.style || 'Đấu thủ'}">
+              ${p.avatar || p.name.charAt(0)}
+              ${isHost ? '<span style="position: absolute; top: -6px; right: -6px; background: #f59e0b; color: #fff; font-size: 0.6rem; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-crown" style="font-size: 7px;"></i></span>' : ''}
+            </div>
+          `;
+        });
+      } else {
+        avatarsHtml += `
+          <div class="mm-player-avatar-item" style="background: linear-gradient(135deg, #167946, #059669);" title="${room.host_name} (ELO ${room.host_elo})">
+            ${(room.host_name || 'H').charAt(0)}
+          </div>
+        `;
+      }
+
+      for (let i = 0; i < emptySlots; i++) {
+        avatarsHtml += `
+          <div class="mm-player-avatar-item empty" title="Chỗ trống sẵn sàng ghép">
+            <i class="fa-solid fa-plus" style="font-size: 0.75rem;"></i>
+          </div>
+        `;
+      }
+
       html += `
-        <div class="facility-card">
-          <div class="facility-body">
+        <div class="mm-room-card">
+          <div class="mm-card-header">
+            <span class="mm-ai-badge ${badgeClass}">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> 🎯 AI Match: ${matchScore}%
+            </span>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <span class="badge ${isDoubles ? 'badge-info' : 'badge-warning'}" style="font-size: 0.75rem;">
+                ${isDoubles ? '🏸 Đôi' : '⚡ Đơn'}
+              </span>
+              <span class="elo-badge" style="font-size: 0.75rem; padding: 2px 8px;">
+                ELO ${room.required_elo_min} - ${room.required_elo_max}
+              </span>
+            </div>
+          </div>
+
+          <div class="mm-card-body">
             <div>
-              <span class="elo-badge">ELO ${room.required_elo_min} - ${room.required_elo_max}</span>
-              <h3 style="margin-top: 0.5rem;">${room.room_name}</h3>
-              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-                <i class="fa-solid fa-map-pin"></i> ${room.facility_name}<br>
-                <i class="fa-solid fa-clock"></i> ${room.match_date} (${room.match_time})
+              <h3 style="margin: 0 0 4px; font-size: 1.05rem; font-weight: 700; color: var(--text-main);">${room.room_name}</h3>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0; display: flex; flex-direction: column; gap: 2px;">
+                <span><i class="fa-solid fa-location-dot text-rose"></i> <strong>${room.facility_name}</strong></span>
+                <span><i class="fa-solid fa-clock text-amber"></i> ${room.match_date} (${room.match_time}) • <span style="color: var(--primary); font-weight: 600;">${room.court_number || 'Sân tiêu chuẩn'}</span></span>
               </p>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
-              <span style="font-size: 0.85rem;"><i class="fa-solid fa-users text-primary"></i> ${room.current_players}/${room.max_players} Thành viên</span>
-              <button class="btn btn-accent btn-sm" onclick="app.openRoomChat(${room.id})">
+
+            <!-- Players Lineup -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; font-weight: 700; color: var(--text-dim); margin-bottom: 2px;">
+                <span>ĐẤU THỦ TRONG PHÒNG (${curSlots}/${maxSlots})</span>
+                <span style="color: ${emptySlots > 0 ? '#16a34a' : '#ef4444'}; font-weight: 800;">
+                  ${emptySlots > 0 ? `🟢 Còn ${emptySlots} chỗ trống` : '🔴 Đã đủ người'}
+                </span>
+              </div>
+              <div class="mm-player-avatar-group">
+                ${avatarsHtml}
+              </div>
+            </div>
+
+            <!-- AI Tactical Prediction -->
+            <div class="ai-tactical-tip">
+              <i class="fa-solid fa-robot" style="font-size: 1.1rem; color: #0284c7; flex-shrink: 0;"></i>
+              <div style="line-height: 1.4;">
+                <strong style="color: #0369a1;">AI Phân Tích:</strong> ${room.ai_prediction || 'Trận đấu cân bằng, tốc độ trận đấu nhịp nhàng.'}
+                ${room.ai_handicap ? `<br><span style="color: #6b21a8; font-weight: 700;">⚖️ ${room.ai_handicap}</span>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="mm-card-footer">
+            <div>
+              <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Phí chia sân</div>
+              <div style="font-size: 0.95rem; font-weight: 800; color: var(--primary);">${room.price_per_slot || '45.000đ'}/người</div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary btn-sm" onclick="app.loadRoomIntoEloSimulator(${room.id})" title="Đưa vào bộ mô phỏng ELO">
+                <i class="fa-solid fa-brain"></i> AI Dự Báo
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${room.id})" style="background: linear-gradient(135deg, #167946 0%, #059669 100%);">
                 <i class="fa-solid fa-comments"></i> Vào Phòng Chat
               </button>
             </div>
@@ -748,101 +905,473 @@ class BadmintonAIApp {
       `;
     });
 
-    if (container) container.innerHTML = html;
+    container.innerHTML = html;
+  }
+
+  // 1-Click AI Auto Matchmaking Scanner with Radar Animation
+  startAIAutoMatch() {
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    modalBody.innerHTML = `
+      <div style="text-align: center; padding: 1rem 0;">
+        <h3 style="margin: 0 0 6px; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <i class="fa-solid fa-bolt text-amber"></i> AI AUTO-MATCHMAKING SCANNER
+        </h3>
+        <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1.5rem;">Hệ thống đang quét phân tích dải điểm ELO 1450 & vị trí sân tối ưu trong bán kính 5km...</p>
+
+        <!-- Radar Display Component -->
+        <div class="ai-radar-container">
+          <div class="radar-sweep-beam"></div>
+          <div class="radar-ring r1"></div>
+          <div class="radar-ring r2"></div>
+          <div class="radar-ring r3"></div>
+          <div class="radar-crosshair-h"></div>
+          <div class="radar-crosshair-v"></div>
+          <div class="radar-blip" style="top: 30%; left: 65%;"></div>
+          <div class="radar-blip" style="top: 70%; left: 35%; animation-delay: 0.5s;"></div>
+          <div class="radar-blip" style="top: 45%; left: 25%; animation-delay: 1s;"></div>
+        </div>
+
+        <!-- Scanning Terminal Logs -->
+        <div id="radar-scan-logs" style="background: #0f172a; color: #38bdf8; font-family: monospace; font-size: 0.82rem; padding: 0.85rem; border-radius: 12px; margin: 1.25rem 0; text-align: left; min-height: 85px; line-height: 1.6; box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);">
+          <div>> [00.3s] Khởi tạo AI Neural Matchmaker v2.6...</div>
+          <div>> [00.8s] Đang quét 48 cụm sân cầu lông tại Hà Nội...</div>
+        </div>
+
+        <div id="radar-scan-result" style="display: none; animation: fadeIn 0.4s ease;"></div>
+      </div>
+    `;
+
+    this.openModal();
+
+    const logEl = document.getElementById('radar-scan-logs');
+    const resEl = document.getElementById('radar-scan-result');
+
+    setTimeout(() => {
+      if (logEl) {
+        logEl.innerHTML += `<div>> [01.4s] Phát hiện 8 phòng ghép mở & 23 vận động viên trực tuyến...</div>`;
+      }
+    }, 900);
+
+    setTimeout(() => {
+      if (logEl) {
+        logEl.innerHTML += `<div>> [02.1s] <span style="color: #4ade80;">[SUCCESS] Đã tìm thấy phòng ghép tối ưu tương thích 98.4%!</span></div>`;
+      }
+
+      // Best matched room is 701 (Catchy Badminton Arena, 98% compatibility)
+      const bestRoom = MockData.matchmaking_rooms[0];
+
+      if (resEl) {
+        resEl.style.display = 'block';
+        resEl.innerHTML = `
+          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 14px; padding: 1rem; text-align: left; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="badge badge-success" style="font-size: 0.8rem; font-weight: 800;">
+                <i class="fa-solid fa-circle-check"></i> ĐỘ TƯƠNG THÍCH 98.4%
+              </span>
+              <span class="elo-badge">ELO 1400 - 1550</span>
+            </div>
+            <h4 style="margin: 0 0 4px; color: #166534; font-size: 1.05rem;">${bestRoom.room_name}</h4>
+            <p style="font-size: 0.82rem; color: #475569; margin: 0 0 10px;">
+              <i class="fa-solid fa-map-pin text-rose"></i> ${bestRoom.facility_name} | 
+              <i class="fa-solid fa-clock text-amber"></i> ${bestRoom.match_time} (${bestRoom.match_date})
+            </p>
+            <div style="background: #ffffff; padding: 8px 12px; border-radius: 8px; border: 1px solid #bbf7d0; font-size: 0.8rem; color: #15803d; margin-bottom: 12px;">
+              💡 <strong>Lý do ghép:</strong> Đối thủ trong phòng có dải ELO (1430 - 1480) tương đồng tuyệt đối với ELO 1450 của bạn. Trận đấu hứa hẹn vô cùng kịch tính!
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary" style="flex: 1; background: #167946;" onclick="app.closeModal(); app.openRoomChat(${bestRoom.id});">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i> Tham Gia & Vào Phòng Ngay
+              </button>
+              <button class="btn btn-secondary" onclick="app.closeModal()">Đóng</button>
+            </div>
+          </div>
+        `;
+      }
+    }, 2200);
   }
 
   openRoomChat(roomId) {
-    this.activeRoom = MockData.matchmaking_rooms.find(r => r.id === roomId);
-    document.getElementById('room-detail-title').textContent = this.activeRoom.room_name;
+    this.activeRoom = MockData.matchmaking_rooms.find(r => r.id === roomId) || MockData.matchmaking_rooms[0];
+    
+    const titleEl = document.getElementById('room-detail-title');
+    const metaEl = document.getElementById('room-detail-meta');
+    const statusBadge = document.getElementById('room-detail-status-badge');
+
+    if (titleEl) titleEl.textContent = this.activeRoom.room_name;
+    if (metaEl) {
+      metaEl.innerHTML = `
+        <i class="fa-solid fa-map-pin text-rose"></i> ${this.activeRoom.facility_name} | 
+        <i class="fa-solid fa-clock text-amber"></i> ${this.activeRoom.match_date} (${this.activeRoom.match_time}) | 
+        <i class="fa-solid fa-tag text-primary"></i> ${this.activeRoom.price_per_slot || '45.000đ/người'}
+      `;
+    }
+
+    if (statusBadge) {
+      const isFull = (this.activeRoom.current_players || 0) >= (this.activeRoom.max_players || 4);
+      if (isFull) {
+        statusBadge.className = "badge badge-danger";
+        statusBadge.innerHTML = `<i class="fa-solid fa-users"></i> Phòng đã đủ thành viên`;
+      } else {
+        statusBadge.className = "badge badge-success";
+        statusBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đang mở ghép kèo (${this.activeRoom.current_players || 1}/${this.activeRoom.max_players || 4})`;
+      }
+    }
+
     this.renderChatMessages();
+    this.renderAIRoomTactics();
     this.navigateTo('ui-07');
+  }
+
+  renderAIRoomTactics() {
+    const body = document.getElementById('ai-room-tactics-body');
+    if (!body || !this.activeRoom) return;
+
+    const room = this.activeRoom;
+    const isDoubles = room.match_type && room.match_type.includes('Đôi');
+
+    body.innerHTML = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 10px;">
+        <div style="background: #ffffff; padding: 10px 14px; border-radius: 10px; border: 1px solid #bae6fd;">
+          <div style="font-weight: 700; color: #0369a1; font-size: 0.85rem; margin-bottom: 4px;">
+            <i class="fa-solid fa-users text-primary"></i> TỔNG QUAN CẶP ĐẤU & ĐỘ CÂN BẰNG:
+          </div>
+          <div style="font-size: 0.8rem; color: #475569;">
+            • Thể thức: <strong>${room.match_type || 'Đôi Nam/Nữ'}</strong> | Khung giờ: <strong>${room.match_time}</strong><br>
+            • Dải ELO yêu cầu: <strong>${room.required_elo_min} - ${room.required_elo_max}</strong><br>
+            • Dự đoán thế trận: <strong>${room.ai_prediction || 'Cân bằng, kịch tính'}</strong>
+          </div>
+        </div>
+
+        <div style="background: #ffffff; padding: 10px 14px; border-radius: 10px; border: 1px solid #bae6fd;">
+          <div style="font-weight: 700; color: #166534; font-size: 0.85rem; margin-bottom: 4px;">
+            <i class="fa-solid fa-shield-halved text-primary"></i> CHIẾN THUẬT GỢI Ý TỪ AI COACH:
+          </div>
+          <div style="font-size: 0.8rem; color: #475569;">
+            ${isDoubles 
+              ? '• Chủ động khống chế lưới và ép cầu dọc dây để tạo cơ hội cho đồng đội phía sau smash dứt điểm.<br>• Phân chia vị trí tấn công trước - sau linh hoạt khi chuyển đổi phòng thủ.'
+              : '• Điều cầu liên tục 4 góc sân để tiêu hao thể lực đối phương, tung cú chém cầu so le khi đối thủ lùi sâu.'}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  requestAICoachTactics() {
+    if (!this.activeRoom) return;
+
+    this.showToast("🤖 AI Coach đang phân tích dữ liệu trận đấu và đưa ra chiến thuật...");
+
+    setTimeout(() => {
+      const coachTips = [
+        "💡 [Chiến Thuật AI]: Nhận thấy đối thủ có lối chơi đập cầu uy lực nhưng di chuyển đuôi sân chậm. Đề xuất: Kéo cầu 2 góc biên và chủ động bỏ nhỏ sát lưới!",
+        "🏸 [Chiến Thuật AI]: Đội bạn nên tập trung khai thác khoảng trống giữa 2 tay vợt khi họ chuyển đổi công sang thủ. Sử dụng các quả tạt cầu ngang thắt lưng!",
+        "⚡ [Chiến Thuật AI]: Tỉ lệ thắng của kèo này là 51% - 49%. Khuyên bạn nên khởi động kỹ khớp cổ chân và cổ tay trước trận 10 phút để tối ưu tốc độ phản xạ!",
+        "🎯 [Chiến Thuật AI]: Đối thủ có xu hướng giao cầu bổng về cuối sân. Hãy sẵn sàng lùi đón cầu sớm để thực hiện cú smash chéo sân dứt điểm!"
+      ];
+      const randomTip = coachTips[Math.floor(Math.random() * coachTips.length)];
+
+      this.activeRoom.chat_messages.push({
+        sender: "🤖 AI Virtual Coach",
+        text: randomTip,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isAI: true
+      });
+
+      this.renderChatMessages();
+      this.showToast("✅ AI Coach đã gửi lời khuyên chiến thuật vào phòng chat!");
+    }, 600);
+  }
+
+  sendQuickChatMessage(text) {
+    if (!this.activeRoom) return;
+    const input = document.getElementById('chat-input-text');
+    if (input) input.value = text;
+    this.sendChatMessage(new Event('submit'));
+  }
+
+  loadRoomIntoEloSimulator(roomId) {
+    const room = MockData.matchmaking_rooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    const p1Name = document.getElementById('matchup-p1-name');
+    const p1Elo = document.getElementById('matchup-p1-elo');
+    const p2Name = document.getElementById('matchup-p2-name');
+    const p2Elo = document.getElementById('matchup-p2-elo');
+
+    if (p1Name) p1Name.value = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng';
+    if (p1Elo) p1Elo.value = (this.currentUser && this.currentUser.elo_rating) ? this.currentUser.elo_rating : 1450;
+    if (p2Name) p2Name.value = room.host_name || 'Đối thủ Host';
+    if (p2Elo) p2Elo.value = room.host_elo || 1480;
+
+    const card = document.getElementById('ai-elo-predictor-card');
+    if (card) {
+      card.style.display = 'block';
+      this.runAIMatchupCalculation();
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      this.showToast(`🧠 Đã tải dữ liệu phòng "${room.room_name}" vào bộ dự báo AI!`);
+    }
+  }
+
+  loadActiveRoomToPredictor() {
+    if (this.activeRoom) {
+      this.navigateTo('ui-06');
+      this.loadRoomIntoEloSimulator(this.activeRoom.id);
+    }
+  }
+
+  joinActiveRoomChat() {
+    if (!this.activeRoom) return;
+
+    const user = this.currentUser || { name: 'Nguyễn Văn Hùng', elo_rating: 1450, avatar: 'H' };
+    const alreadyIn = this.activeRoom.players && this.activeRoom.players.some(p => p.name === user.name);
+
+    if (alreadyIn) {
+      this.showToast("ℹ️ Bạn đã là thành viên trong phòng ghép này!");
+      return;
+    }
+
+    if ((this.activeRoom.current_players || 0) >= (this.activeRoom.max_players || 4)) {
+      this.showToast("⚠️ Phòng ghép đã đủ số lượng thành viên!");
+      return;
+    }
+
+    if (!this.activeRoom.players) this.activeRoom.players = [];
+    this.activeRoom.players.push({
+      name: user.name,
+      elo: user.elo_rating || 1450,
+      avatar: user.avatar || user.name.charAt(0),
+      role: 'Member',
+      style: 'Công thủ linh hoạt',
+      team: 'B'
+    });
+
+    this.activeRoom.current_players = this.activeRoom.players.length;
+
+    this.activeRoom.chat_messages.push({
+      sender: "🤖 AI Match Referee",
+      text: `🎉 Chào mừng ${user.name} (ELO ${user.elo_rating || 1450}) đã tham gia phòng ghép! Kèo đấu hiện có ${this.activeRoom.current_players}/${this.activeRoom.max_players} thành viên.`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.renderChatMessages();
+    this.renderAIRoomTactics();
+    this.renderMatchmakingRooms();
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+    this.showToast(`🎉 Tham gia phòng ghép "${this.activeRoom.room_name}" thành công!`);
   }
 
   renderChatMessages() {
     const container = document.getElementById('chat-messages-list');
+    if (!container || !this.activeRoom) return;
     let html = '';
 
-    this.activeRoom.chat_messages.forEach(msg => {
-      const isSent = msg.sender === this.currentUser.name;
+    const currentUserName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng';
+
+    (this.activeRoom.chat_messages || []).forEach(msg => {
+      const isSent = msg.sender === currentUserName;
+      const isReferee = msg.sender.includes('AI') || msg.sender.includes('Referee') || msg.isAI;
+
+      let msgClass = 'chat-msg received';
+      if (isSent) msgClass = 'chat-msg sent';
+      else if (isReferee) msgClass = 'chat-msg referee';
+
       html += `
-        <div class="chat-msg ${isSent ? 'sent' : 'received'}">
-          <div style="font-size: 0.7rem; font-weight: 700; opacity: 0.8;">${msg.sender} • ${msg.time}</div>
+        <div class="${msgClass}">
+          <div style="font-size: 0.72rem; font-weight: 800; opacity: 0.85; margin-bottom: 2px;">
+            ${msg.sender} • <span style="font-weight: 500;">${msg.time || 'vừa xong'}</span>
+          </div>
           <div>${msg.text}</div>
         </div>
       `;
     });
 
-    if (container) {
-      container.innerHTML = html;
-      container.scrollTop = container.scrollHeight;
-    }
+    container.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
   }
 
   sendChatMessage(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const input = document.getElementById('chat-input-text');
+    if (!input) return;
     const text = input.value.trim();
-    if (!text) return;
+    if (!text || !this.activeRoom) return;
+
+    const currentUserName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng';
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     this.activeRoom.chat_messages.push({
-      sender: this.currentUser.name,
+      sender: currentUserName,
       text: text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      time: nowTime
     });
 
     input.value = '';
     this.renderChatMessages();
+
+    // If user asks @AI or mentions tactics, auto reply with AI coach advice
+    if (text.toLowerCase().includes('@ai') || text.toLowerCase().includes('chiến thuật') || text.toLowerCase().includes('kèo')) {
+      setTimeout(() => {
+        this.activeRoom.chat_messages.push({
+          sender: "🤖 AI Virtual Coach",
+          text: `🎯 Trả lời bạn @${currentUserName}: Dựa trên phân tích ELO trận đấu này, đề xuất chiến thuật tối ưu nhất là tập trung kiểm soát nhịp độ, phát cầu ngắn sát lưới và bọc lót chéo góc!`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isAI: true
+        });
+        this.renderChatMessages();
+      }, 700);
+    }
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
   }
 
   openCreateRoomModal() {
     const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    let facOptions = '';
+    (MockData.facilities || []).forEach(f => {
+      facOptions += `<option value="${f.id}">${f.name} (${f.address || ''})</option>`;
+    });
+
     modalBody.innerHTML = `
-      <h3>Tạo Phòng Ghép Matchmaking Mới</h3>
-      <form onsubmit="app.handleCreateRoom(event)" style="margin-top: 1rem;">
-        <div class="form-group">
-          <label class="form-label">Tên Phòng Ghép</label>
-          <input type="text" id="modal-room-name" class="form-control" value="Giao lưu Săn Kèo Đôi Nam/Nữ" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Dải ELO Yêu Cầu (Min - Max)</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <input type="number" id="modal-elo-min" class="form-control" value="1400">
-            <input type="number" id="modal-elo-max" class="form-control" value="1600">
+      <div style="padding: 0.5rem 0;">
+        <h3 style="margin: 0 0 6px; color: #0f172a; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-users-viewfinder text-primary"></i> Khởi Tạo Phòng Ghép Kèo AI Mới
+        </h3>
+        <p style="color: #64748b; font-size: 0.82rem; margin-bottom: 1rem;">Hệ thống AI sẽ tự động phân tích và gợi ý đối thủ tương thích ELO sau khi bạn tạo phòng.</p>
+
+        <form onsubmit="app.handleCreateRoom(event)">
+          <div class="form-group">
+            <label class="form-label">Tên Phòng Ghép / Tiêu Đề</label>
+            <input type="text" id="modal-room-name" class="form-control" value="Giao lưu Săn Kèo Đôi Nam Nữ Cân Kèo" required>
           </div>
-        </div>
-        <button type="submit" class="btn btn-accent" style="width: 100%; margin-top: 1rem;">
-          <i class="fa-solid fa-circle-check"></i> Khởi Tạo Phòng Ghép
-        </button>
-      </form>
+
+          <div class="form-group">
+            <label class="form-label">Chọn Cụm Cơ Sở Sân Cầu Lông</label>
+            <select id="modal-room-facility" class="form-control" required>
+              ${facOptions}
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Thể Thức Thi Đấu</label>
+              <select id="modal-room-type" class="form-control">
+                <option value="Đôi Nam/Nữ">🏸 Đôi Nam/Nữ (4 người)</option>
+                <option value="Đôi Nam">🏸 Đôi Nam (4 người)</option>
+                <option value="Đơn Nam">⚡ Đơn Nam (2 người)</option>
+                <option value="Đơn Nữ">⚡ Đơn Nữ (2 người)</option>
+                <option value="Giao Lưu Tự Do">🎯 Giao Lưu Tự Do</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Khung Giờ Dự Kiến</label>
+              <input type="text" id="modal-room-time" class="form-control" value="18:00 - 20:00 (Hôm nay)">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Dải Điểm ELO Yêu Cầu (Min - Max)</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <span style="font-size: 0.75rem; color: #64748b;">ELO Tối Thiểu:</span>
+                <input type="number" id="modal-elo-min" class="form-control" value="1400" required>
+              </div>
+              <div>
+                <span style="font-size: 0.75rem; color: #64748b;">ELO Tối Đa:</span>
+                <input type="number" id="modal-elo-max" class="form-control" value="1550" required>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Sân Số</label>
+              <input type="text" id="modal-room-court" class="form-control" value="Sân số 03 (Thảm Pro)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phí Chia Sân / Người</label>
+              <input type="text" id="modal-room-price" class="form-control" value="45.000đ">
+            </div>
+          </div>
+
+          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 10px; margin: 10px 0; font-size: 0.8rem; color: #166534;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> <strong>AI Auto-Balance:</strong> Tự động tính toán điểm chấp nếu có thành viên chênh lệch > 150 ELO tham gia.
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; background: linear-gradient(135deg, #167946 0%, #059669 100%); font-weight: 700;">
+            <i class="fa-solid fa-circle-check"></i> Khởi Tạo Phòng Ghép & Mở Radar AI
+          </button>
+        </form>
+      </div>
     `;
+
     this.openModal();
   }
 
   handleCreateRoom(e) {
-    e.preventDefault();
-    const name = document.getElementById('modal-room-name').value;
-    const minElo = parseInt(document.getElementById('modal-elo-min').value);
-    const maxElo = parseInt(document.getElementById('modal-elo-max').value);
+    if (e && e.preventDefault) e.preventDefault();
+    const name = document.getElementById('modal-room-name')?.value || 'Phòng Giao Lưu Mới';
+    const facId = parseInt(document.getElementById('modal-room-facility')?.value || '101', 10);
+    const matchType = document.getElementById('modal-room-type')?.value || 'Đôi Nam/Nữ';
+    const matchTime = document.getElementById('modal-room-time')?.value || '18:00 - 20:00 (Hôm nay)';
+    const minElo = parseInt(document.getElementById('modal-elo-min')?.value || '1400', 10);
+    const maxElo = parseInt(document.getElementById('modal-elo-max')?.value || '1600', 10);
+    const court = document.getElementById('modal-room-court')?.value || 'Sân số 03';
+    const price = document.getElementById('modal-room-price')?.value || '45.000đ';
 
-    MockData.matchmaking_rooms.push({
+    const fac = MockData.facilities.find(f => f.id === facId) || MockData.facilities[0];
+    const isDoubles = matchType.includes('Đôi');
+    const maxPlayers = isDoubles ? 4 : 2;
+    const currentUserName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng';
+    const currentUserElo = (this.currentUser && this.currentUser.elo_rating) ? this.currentUser.elo_rating : 1450;
+
+    const newRoom = {
       id: Date.now(),
       room_name: name,
-      facility_name: "Smashing Arena",
-      match_date: "12/09/2026",
-      match_time: "19:00 - 21:00",
+      facility_id: fac.id,
+      facility_name: fac.name,
+      district: fac.address || 'Hà Nội',
+      match_date: "Hôm nay, 22/09/2026",
+      match_time: matchTime,
       required_elo_min: minElo,
       required_elo_max: maxElo,
-      match_type: "Đôi Nam/Nữ",
+      match_type: matchType,
+      court_number: court,
+      price_per_slot: price,
       current_players: 1,
-      max_players: 4,
+      max_players: maxPlayers,
       status: "OPEN",
-      host_name: this.currentUser.name,
-      chat_messages: [{ sender: this.currentUser.name, text: "Phòng đã sẵn sàng, mời mọi người tham gia!", time: "vừa xong" }]
-    });
+      host_name: currentUserName,
+      host_elo: currentUserElo,
+      ai_compatibility: 98,
+      ai_prediction: "Phòng mới tạo. Trình độ ELO yêu cầu rất cân bằng, AI đang mời các tay vợt phù hợp.",
+      ai_handicap: "Đồng banh (0 điểm)",
+      category: isDoubles ? 'doubles' : 'singles',
+      is_ai_recommended: true,
+      players: [
+        { name: currentUserName, elo: currentUserElo, avatar: currentUserName.charAt(0), role: 'Host', style: 'Công thủ toàn diện', team: 'A' }
+      ],
+      chat_messages: [
+        { sender: "🤖 AI Match Referee", text: `Phòng ghép "${name}" đã khởi tạo thành công! Radar AI đang tự động gửi thông báo đến các tay vợt ELO ${minElo}-${maxElo}.`, time: "vừa xong" },
+        { sender: currentUserName, text: "Chào mọi người, phòng đã sẵn sàng, mời anh em vào giao lưu!", time: "vừa xong" }
+      ]
+    };
+
+    MockData.matchmaking_rooms.unshift(newRoom);
 
     this.closeModal();
     this.renderMatchmakingRooms();
-    this.showToast("Đã khởi tạo phòng ghép thành công!");
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+    this.showToast("🎉 Đã khởi tạo phòng ghép thành công và kích hoạt AI Matchmaker!");
   }
 
   /* ------------------------------------------------------------------------
@@ -3859,26 +4388,30 @@ class BadmintonAIApp {
 
     if (analysisContent) {
       analysisContent.innerHTML = `
-        <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
-          <strong style="color: #166534;"><i class="fa-solid fa-chart-line"></i> Biến Động ELO Cho ${p1Name}:</strong>
-          <div style="margin-top: 4px; font-size: 0.8rem;">
-            <div>• Nếu Thắng: <span style="color: #16a34a; font-weight: 800;">+${p1WinDelta} ELO</span> (Lên ${elo1 + p1WinDelta})</div>
-            <div>• Nếu Thua: <span style="color: #ef4444; font-weight: 800;">${p1LossDelta} ELO</span> (Về ${elo1 + p1LossDelta})</div>
+        <div style="background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
+          <strong style="color: #166534; font-size: 0.88rem;"><i class="fa-solid fa-chart-line"></i> Biến Động ELO Cho ${p1Name}:</strong>
+          <div style="margin-top: 6px; font-size: 0.82rem; line-height: 1.5;">
+            <div>• Nếu Thắng: <span style="color: #16a34a; font-weight: 800;">+${p1WinDelta} ELO</span> (Lên ${elo1 + p1WinDelta} điểm)</div>
+            <div>• Nếu Thua: <span style="color: #ef4444; font-weight: 800;">${p1LossDelta} ELO</span> (Về ${elo1 + p1LossDelta} điểm)</div>
+            <div style="margin-top: 4px; color: #475569;">• Dự đoán tỉ số: <strong>${p1Percent >= p2Percent ? '21 - ' + Math.max(12, Math.round(21 * (p2Percent / p1Percent))) : Math.max(12, Math.round(21 * (p1Percent / p2Percent))) + ' - 21'}</strong></div>
           </div>
         </div>
-        <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
-          <strong style="color: #1e40af;"><i class="fa-solid fa-chart-line"></i> Biến Động ELO Cho ${p2Name}:</strong>
-          <div style="margin-top: 4px; font-size: 0.8rem;">
-            <div>• Nếu Thắng: <span style="color: #16a34a; font-weight: 800;">+${p2WinDelta} ELO</span> (Lên ${elo2 + p2WinDelta})</div>
-            <div>• Nếu Thua: <span style="color: #ef4444; font-weight: 800;">${p2LossDelta} ELO</span> (Về ${elo2 + p2LossDelta})</div>
+        <div style="background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
+          <strong style="color: #1e40af; font-size: 0.88rem;"><i class="fa-solid fa-chart-line"></i> Biến Động ELO Cho ${p2Name}:</strong>
+          <div style="margin-top: 6px; font-size: 0.82rem; line-height: 1.5;">
+            <div>• Nếu Thắng: <span style="color: #16a34a; font-weight: 800;">+${p2WinDelta} ELO</span> (Lên ${elo2 + p2WinDelta} điểm)</div>
+            <div>• Nếu Thua: <span style="color: #ef4444; font-weight: 800;">${p2LossDelta} ELO</span> (Về ${elo2 + p2LossDelta} điểm)</div>
+            <div style="margin-top: 4px; color: #475569;">• Tỉ lệ kiểm soát cầu: <strong>${p2Percent}%</strong></div>
           </div>
         </div>
-        <div style="background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
-          <strong style="color: #6b21a8;"><i class="fa-solid fa-lightbulb"></i> Khuyến Nghị Ghép Kèo AI:</strong>
-          <div style="margin-top: 4px; font-size: 0.8rem; color: #475569;">
-            ${diff <= 100 
-              ? '✅ Hai đấu thủ có trình độ tương đồng, trận đấu sẽ diễn ra giằng co, kịch tính điểm số!' 
-              : `⚠️ ${p1Percent < p2Percent ? p1Name : p2Name} nên chơi thể thức chấp điểm (Chấp 3-5 quả) hoặc đánh đôi để cân bằng thế trận.`}
+        <div style="background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
+          <strong style="color: #6b21a8; font-size: 0.88rem;"><i class="fa-solid fa-brain"></i> Phân Tích Chiến Thuật AI:</strong>
+          <div style="margin-top: 6px; font-size: 0.82rem; color: #334155; line-height: 1.5;">
+            ${diff <= 50 
+              ? '🎯 <strong>Kèo Cân Bằng Tuyệt Đối:</strong> Trận đấu phụ thuộc vào độ chính xác trong các pha gài cầu sát lưới và tâm lý thi đấu ở các điểm số then chốt (sau điểm 18).' 
+              : diff <= 150
+              ? `⚡ <strong>Kèo Chênh Lệch Vừa Phải:</strong> ${p1Percent < p2Percent ? p1Name : p2Name} có lợi thế về tốc độ đập cầu. Đấu thủ còn lại nên tập trung phòng thủ sâu 2 góc và phản tạt nhanh ngang lưới.`
+              : `⚖️ <strong>Đề Xuất Chấp Điểm AI:</strong> Chênh lệch ${diff} ELO. AI khuyến nghị ${elo1 > elo2 ? p1Name : p2Name} chấp ${Math.min(7, Math.round(diff / 45))} điểm/set để trận đấu đạt mức cân bằng 50-50!`}
           </div>
         </div>
       `;
