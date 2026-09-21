@@ -115,7 +115,7 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=12) as response:
+            with urllib.request.urlopen(req, timeout=30) as response:
                 if response.status == 200:
                     res_body = response.read()
                     res_json = json.loads(res_body)
