@@ -12,7 +12,7 @@ class BadmintonAIChatbot {
     this.messages = [];
     this.storageKey = 'badminton_ai_chat_history_v1';
     this.apiEndpoint = '/api/chat'; // Secure server-side proxy
-    
+
     this.init();
   }
 
@@ -259,11 +259,35 @@ class BadmintonAIChatbot {
 
     // 3. Build Site Context
     let siteContext = "";
+
     if (typeof app !== 'undefined' && app.currentUser) {
-      siteContext += `Khách hàng hiện tại: ${app.currentUser.name} (Điểm ELO: ${app.currentUser.elo || 1200}). `;
+      siteContext += `Khách hàng hiện tại: ${app.currentUser.name} (Điểm ELO: ${app.currentUser.elo || app.currentUser.elo_rating || 1200}). `;
     }
+
     if (typeof app !== 'undefined' && app.selectedFacility) {
       siteContext += `Đang xem cụm sân: ${app.selectedFacility.name} (${app.selectedFacility.address}). `;
+    }
+
+    // Gửi dữ liệu sân hiện có cho AI để có thể tìm sân theo khu vực,
+    // giá, đánh giá và giờ mở cửa.
+    if (typeof MockData !== 'undefined' && Array.isArray(MockData.facilities)) {
+      const facilitiesForAI = MockData.facilities
+        .filter(f => f && f.is_approved !== false)
+        .map(f => ({
+          id: f.id,
+          name: f.name,
+          address: f.address,
+          distance: f.distance,
+          rating: f.rating,
+          reviews_count: f.reviews_count,
+          price_range: f.price_range,
+          base_price: f.base_price,
+          open_hours: f.open_hours,
+          courts_count: f.courts_count,
+          badges: f.badges
+        }));
+
+      siteContext += `\nDANH SÁCH SÂN CẦU LÔNG HIỆN CÓ:\n${JSON.stringify(facilitiesForAI, null, 2)}\n`;
     }
 
     // 4. Call Secure Server Endpoint
@@ -300,7 +324,7 @@ class BadmintonAIChatbot {
     } catch (err) {
       console.warn("API Call Failed, fallback:", err);
       this.removeTypingIndicator();
-      
+
       this.messages.push({
         sender: 'bot',
         text: "⚡ **Phản Hồi Tức Thì**:\nHệ thống sẵn sàng hỗ trợ bạn tìm sân tại Hà Nội, đặt cọc giữ chỗ 10 phút và tư vấn ghép kèo thi đấu ELO! Hãy nhắn chi tiết hơn nhu cầu của bạn nhé!",
