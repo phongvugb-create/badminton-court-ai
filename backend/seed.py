@@ -57,10 +57,10 @@ async def seed_data():
         # 2. Facilities
         fac1 = Facility(
             owner_id=owner1.id,
-            name="CLB Cầu Lông & Pickleball Alobo Sports",
-            address="Số 22, Đường D5, Phường 25, Bình Thạnh, TP.HCM",
-            latitude=10.8038,
-            longitude=106.7145,
+            name="CLB Cầu Lông Catchy Badminton Arena",
+            address="Số 136 Phố Tân Khai, Quận Hoàng Mai, Hà Nội",
+            latitude=20.9856,
+            longitude=105.8580,
             open_time="05:00",
             close_time="23:30",
             image_url="https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800",
@@ -69,10 +69,10 @@ async def seed_data():
         )
         fac2 = Facility(
             owner_id=owner1.id,
-            name="Sân Cầu Lông Thảo Điền Sport Hub",
-            address="18 Quốc Hương, Thảo Điền, Quận 2, TP.HCM",
-            latitude=10.8055,
-            longitude=106.7320,
+            name="CLB Cầu Lông Đống Đa Sport Hub",
+            address="102 Phố Láng Hạ, Phường Láng Hạ, Quận Đống Đa, Hà Nội",
+            latitude=21.0153,
+            longitude=105.8152,
             open_time="06:00",
             close_time="23:00",
             image_url="https://images.unsplash.com/photo-1544717305-2782549b5136?w=800",

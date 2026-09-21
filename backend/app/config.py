@@ -12,12 +12,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     
     # Database configuration
-    # Can connect to postgres or fallback to sqlite for local dev without docker
+    # Can connect to sqlite by default or postgresql if DATABASE_URL is set in env
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL", 
-        "postgresql+asyncpg://badminton_admin:BadmintonAI2026!@127.0.0.1:5432/badminton_court_ai"
+        "sqlite+aiosqlite:///./badminton.db"
     )
-    # Fallback sync URL if needed
+    # Sync SQLite URL
     SYNC_DATABASE_URL: str = os.getenv(
         "SYNC_DATABASE_URL",
         "sqlite:///./badminton.db"

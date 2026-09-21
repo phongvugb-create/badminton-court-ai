@@ -1,17 +1,33 @@
-/* ==========================================================================
-   BADMINTON GEMINI AI ASSISTANT INTEGRATION (DEDICATED WEBSITE & BADMINTON AI)
-   ========================================================================== */
+// Tự động dọn dẹp key hỏng hoặc placeholder cũ trong localStorage
+try {
+  if (typeof localStorage !== 'undefined') {
+    const rawKey = localStorage.getItem('gemini_api_key');
+    if (rawKey && (!rawKey.startsWith('AIzaSy') || rawKey.length < 35)) {
+      localStorage.removeItem('gemini_api_key');
+    }
+  }
+} catch (e) {}
 
 class GeminiAIAssistant {
   constructor() {
-    // Configured Google Gemini API Key (Decoded at runtime)
-    const _b64 = "QVEuQWI4Uk42S3pXeGdhTm5lM2RWUUJxOTdTRFNMZGV5X0F2cDM0ay1FWmxTRWdQTDEyQWc=";
-    this.defaultKey = typeof atob === 'function' ? atob(_b64) : '';
-    this.apiKey = localStorage.getItem('gemini_api_key') || window.GEMINI_API_KEY || this.defaultKey;
+    // Configured Google Gemini API Key
+    let stored = '';
+    try {
+      stored = localStorage.getItem('gemini_api_key') || '';
+    } catch (e) {}
 
-    this.primaryModel = 'gemini-flash-latest';
-    this.fallbackModel = 'gemini-pro-latest';
-    this.tertiaryModel = 'gemini-flash-lite-latest';
+    // Dọn dẹp key cũ không hợp lệ nếu từng lưu
+    if (stored && !this.isValidKey(stored)) {
+      try { localStorage.removeItem('gemini_api_key'); } catch (e) {}
+      stored = '';
+    }
+
+    const windowKey = (typeof window !== 'undefined' && window.GEMINI_API_KEY) ? window.GEMINI_API_KEY : '';
+    const candidate = stored || windowKey || '';
+    this.apiKey = this.isValidKey(candidate) ? candidate : '';
+
+    this.primaryModel = 'gemini-1.5-flash';
+    this.fallbackModel = 'gemini-2.0-flash';
 
     this.systemInstruction = `
       Bạn là Smashing AI Assistant - Trợ lý Trí Tuệ Nhân Tạo chính thức của Hệ thống Quản lý & Cho Thuê Sân Cầu Lông BADMINTON.AI.
@@ -88,13 +104,25 @@ class GeminiAIAssistant {
     `;
   }
 
+  isValidKey(key) {
+    return typeof key === 'string' && key.trim().startsWith('AIzaSy') && key.trim().length >= 35;
+  }
+
   getAPIKey() {
-    return this.apiKey;
+    return this.isValidKey(this.apiKey) ? this.apiKey : '';
   }
 
   setAPIKey(key) {
-    this.apiKey = key.trim();
-    localStorage.setItem('gemini_api_key', this.apiKey);
+    const cleanKey = (key || '').trim();
+    if (this.isValidKey(cleanKey)) {
+      this.apiKey = cleanKey;
+      localStorage.setItem('gemini_api_key', this.apiKey);
+      return true;
+    } else {
+      this.apiKey = '';
+      localStorage.removeItem('gemini_api_key');
+      return false;
+    }
   }
 
   isOtherProvinceQuery(prompt) {
@@ -125,8 +153,8 @@ class GeminiAIAssistant {
       'cầu lông', 'sân', 'vợt', 'cầu', 'smash', 'đập', 'phông', 'bỏ nhỏ', 'chặt cầu', 'cắt cầu',
       'lưới', 'dây', 'đan', 'căng', 'lbs', 'kg', 'yonex', 'lining', 'victor', 'mizuno', 'astrox',
       'arcsaber', 'duora', 'voltric', 'halbertec', 'tectonic', '88d', '99', '100zz', 'nanoflare',
-      'ryuga', 'axforce', 'kumpoo', 'k520', 'elo', 'ghép', 'kèo', 'cọc', 'vnpay', 'đặt', 'thủ đức', 'quận 1', 'tân bình', 'quận 7',
-      'gò vấp', 'quận 10', 'phú nhuận', 'bình thạnh', 'luật', 'giao cầu', 'trọng tài', 'đơn', 'đôi',
+      'ryuga', 'axforce', 'kumpoo', 'k520', 'elo', 'ghép', 'kèo', 'cọc', 'vnpay', 'đặt', 'cầu giấy', 'đống đa', 'ba đình', 'hai bà trưng',
+      'nam từ liêm', 'bắc từ liêm', 'thanh xuân', 'tây hồ', 'hà đông', 'hoàng mai', 'long biên', 'hoàn kiếm', 'luật', 'giao cầu', 'trọng tài', 'đơn', 'đôi',
       'thể lực', 'khởi động', 'chấn thương', 'cổ tay', 'đầu gối', 'bước chân', 'dậm nhảy',
       'lee chong wei', 'lin dan', 'momota', 'axelsen', 'tiến minh', 'thùy linh', 'bwf', 'badminton',
       'bóng', 'thiết bị', 'tư vấn', 'giờ', 'giá', 'giảm giá', 'đánh', 'chơi', 'tập', 'phòng',
@@ -137,34 +165,42 @@ class GeminiAIAssistant {
   }
 
   async generateResponse(userPrompt) {
-    const currentKey = this.getAPIKey();
-    if (!currentKey) {
-      return this.getFallbackResponse(userPrompt);
-    }
+    try {
+      const currentKey = this.getAPIKey();
 
-    const requestBody = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `${this.systemInstruction}\n\nKhách hỏi: ${userPrompt}` }]
-        }
-      ],
-      generationConfig: {
-        maxOutputTokens: 1024,
-        temperature: 0.4
+      // CHẾ ĐỘ 1: SIÊU TỐC NỘI BỘ (Chưa có key hoặc key chưa kích hoạt)
+      // Trả lời lập tức với tri thức nghiệp vụ cầu lông chuẩn xác, phản hồi cực nhanh ~50ms
+      if (!currentKey) {
+        await new Promise(r => setTimeout(r, 50));
+        return this.getFallbackResponse(userPrompt);
       }
-    };
 
-    const modelsToTry = [this.primaryModel, 'gemini-3.6-flash', this.tertiaryModel];
+      // CHẾ ĐỘ 2: GOOGLE GEMINI 1.5 FLASH TRỰC TUYẾN (Khi có API Key cá nhân hợp lệ)
+      const requestBody = {
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: `${this.systemInstruction}\n\nKhách hỏi: ${userPrompt}` }]
+          }
+        ],
+        generationConfig: {
+          maxOutputTokens: 800,
+          temperature: 0.4
+        }
+      };
 
-    for (const model of modelsToTry) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.primaryModel}:generateContent?key=${currentKey}`;
       try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2500); // 2.5s tối đa
+
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
         });
+        clearTimeout(timer);
 
         if (response.ok) {
           const data = await response.json();
@@ -174,11 +210,14 @@ class GeminiAIAssistant {
           }
         }
       } catch (e) {
-        console.warn(`Model ${model} fail, trying next...`);
+        console.warn(`Gemini online timeout hoặc không thể kết nối (${e.message}), chuyển ngay sang AI nội bộ siêu tốc.`);
       }
-    }
 
-    return this.getFallbackResponse(userPrompt);
+      return this.getFallbackResponse(userPrompt);
+    } catch (globalErr) {
+      console.error("Lỗi generateResponse:", globalErr);
+      return this.getFallbackResponse(userPrompt);
+    }
   }
 
   cleanReplyText(text) {
@@ -198,11 +237,9 @@ class GeminiAIAssistant {
       return "👋 Xin chào bạn! Rất vui được hỗ trợ bạn hôm nay. Tôi là **Trợ lý Trí Tuệ Nhân Tạo Google Gemini AI** của hệ thống sân cầu lông BADMINTON.AI.\n\nTôi có thể giúp gì cho bạn? Bạn có thể hỏi tôi về bất kỳ thông tin nào: gợi ý sân gần bạn, hướng dẫn chọn vợt, chiến thuật thi đấu, luật chơi hay bất kỳ câu hỏi nào bạn đang thắc mắc nhé! 🏸✨";
     }
 
-    const p = prompt.toLowerCase();
-
-    // 0. Khớp dữ liệu sân cụ thể hoặc quận/huyện đúng trọng tâm
+    // 0. Khớp dữ liệu sân cụ thể hoặc quận/huyện đúng trọng tâm tại Hà Nội
     if (typeof MockData !== 'undefined' && MockData.facilities) {
-      const isLocationOrCourtQuery = p.includes('sân') || p.includes('địa chỉ') || p.includes('ở đâu') || p.includes('mấy giờ') || p.includes('mở cửa') || p.includes('đóng cửa') || p.includes('đánh giá') || p.includes('mấy sân') || p.includes('tọa độ') || p.includes('thủ đức') || p.includes('phú nhuận') || p.includes('tân bình') || p.includes('gò vấp') || p.includes('bình thạnh') || p.includes('quận 1') || p.includes('quận 7') || p.includes('quận 10') || p.includes('tân phú') || p.includes('quận 12') || p.includes('bình tân');
+      const isLocationOrCourtQuery = p.includes('sân') || p.includes('địa chỉ') || p.includes('ở đâu') || p.includes('mấy giờ') || p.includes('mở cửa') || p.includes('đóng cửa') || p.includes('đánh giá') || p.includes('mấy sân') || p.includes('tọa độ') || p.includes('hà nội') || p.includes('cầu giấy') || p.includes('đống đa') || p.includes('ba đình') || p.includes('hai bà trưng') || p.includes('nam từ liêm') || p.includes('bắc từ liêm') || p.includes('thanh xuân') || p.includes('tây hồ') || p.includes('hà đông') || p.includes('hoàng mai') || p.includes('long biên') || p.includes('hoàn kiếm');
 
       const isEquipmentOrGeneralQuery = p.includes('vợt') || p.includes('thành công') || p.includes('pocari') || p.includes('khăn') || p.includes('elo') || p.includes('đập') || p.includes('smash');
 
@@ -211,36 +248,41 @@ class GeminiAIAssistant {
           const nameLower = fac.name.toLowerCase();
           const addrLower = fac.address.toLowerCase();
 
-          // Theo khu vực / Quận
-          if (p.includes('thủ đức') && addrLower.includes('thủ đức')) return true;
-          if ((p.includes('quận 1') || p.includes('q1') || p.includes('q.1')) && addrLower.includes('quận 1')) return true;
-          if ((p.includes('quận 7') || p.includes('q7') || p.includes('q.7')) && addrLower.includes('quận 7')) return true;
-          if (p.includes('bình thạnh') && addrLower.includes('bình thạnh')) return true;
-          if (p.includes('tân bình') && addrLower.includes('tân bình')) return true;
-          if (p.includes('gò vấp') && addrLower.includes('gò vấp')) return true;
-          if ((p.includes('quận 10') || p.includes('q10') || p.includes('q.10')) && addrLower.includes('quận 10')) return true;
-          if (p.includes('phú nhuận') && addrLower.includes('phú nhuận')) return true;
-          if (p.includes('tân phú') && addrLower.includes('tân phú')) return true;
-          if ((p.includes('quận 12') || p.includes('q12') || p.includes('q.12')) && addrLower.includes('quận 12')) return true;
-          if (p.includes('bình tân') && addrLower.includes('bình tân')) return true;
+          // Theo khu vực / Quận tại Hà Nội
+          if (p.includes('cầu giấy') && (addrLower.includes('cầu giấy') || nameLower.includes('cầu giấy'))) return true;
+          if (p.includes('đống đa') && (addrLower.includes('đống đa') || nameLower.includes('đống đa'))) return true;
+          if (p.includes('ba đình') && (addrLower.includes('ba đình') || nameLower.includes('ba đình'))) return true;
+          if ((p.includes('hai bà trưng') || p.includes('hbt')) && (addrLower.includes('hai bà trưng') || nameLower.includes('hai bà trưng'))) return true;
+          if ((p.includes('nam từ liêm') || p.includes('mỹ đình')) && (addrLower.includes('nam từ liêm') || nameLower.includes('mỹ đình'))) return true;
+          if (p.includes('bắc từ liêm') && (addrLower.includes('bắc từ liêm') || nameLower.includes('bắc từ liêm'))) return true;
+          if (p.includes('thanh xuân') && (addrLower.includes('thanh xuân') || nameLower.includes('thanh xuân'))) return true;
+          if (p.includes('tây hồ') && (addrLower.includes('tây hồ') || nameLower.includes('tây hồ'))) return true;
+          if (p.includes('hà đông') && (addrLower.includes('hà đông') || nameLower.includes('hà đông'))) return true;
+          if (p.includes('hoàng mai') && (addrLower.includes('hoàng mai') || nameLower.includes('hoàng mai'))) return true;
+          if (p.includes('long biên') && (addrLower.includes('long biên') || nameLower.includes('long biên'))) return true;
+          if (p.includes('hoàn kiếm') && (addrLower.includes('hoàn kiếm') || nameLower.includes('hoàn kiếm'))) return true;
 
-          // Theo tên cụ thể
-          if (p.includes('ai badminton') || p.includes('lê văn việt')) return fac.id === 101;
-          if (p.includes('pro badminton') || p.includes('nguyễn thị minh khai')) return fac.id === 102;
-          if (p.includes('sài gòn star')) return fac.id === 103;
-          if (p.includes('tân bình sport hub') || p.includes('trường chinh')) return fac.id === 104;
-          if (p.includes('smash zone') || p.includes('nguyễn hữu thọ')) return fac.id === 105;
-          if (p.includes('gò vấp star') || p.includes('nguyễn oanh')) return fac.id === 106;
-          if (p.includes('quận 10 yonex') || p.includes('lý thường kiệt')) return fac.id === 107;
-          if (p.includes('fuji') || p.includes('phan đăng lưu')) return fac.id === 108;
-          if (p.includes('thanh đa') || p.includes('bình quới')) return fac.id === 109;
-          if (p.includes('võ văn ngân')) return fac.id === 110;
+          // Theo tên cụ thể hoặc từ khóa đặc trưng của cụm sân Hà Nội
+          if (p.includes('catchy') || p.includes('tân khai')) return fac.id === 101;
+          if (p.includes('sport hub') || p.includes('láng hạ')) return fac.id === 102;
+          if (p.includes('mỹ đình') || p.includes('lê đức thọ')) return fac.id === 103;
+          if (p.includes('ba đình star') || p.includes('điện biên phủ')) return fac.id === 104;
+          if (p.includes('bách khoa') || p.includes('lê thanh nghị')) return fac.id === 105;
+          if (p.includes('thanh xuân') || p.includes('lê văn lương')) return fac.id === 106;
+          if (p.includes('tây hồ') || p.includes('đặng thai mai')) return fac.id === 107;
+          if (p.includes('hà đông') || p.includes('trần phú') || p.includes('văn quán')) return fac.id === 108;
+          if (p.includes('cầu giấy pro') || p.includes('dịch vọng hậu')) return fac.id === 109;
+          if (p.includes('hoàng gia') || p.includes('cổ nhuế')) return fac.id === 110;
+          if (p.includes('quần ngựa') || p.includes('văn cao') || p.includes('liễu giai')) return fac.id === 111;
+          if (p.includes('định công')) return fac.id === 112;
+          if (p.includes('ciputra')) return fac.id === 113;
+          if (p.includes('long biên') || p.includes('cổ linh')) return fac.id === 114;
 
           return false;
         });
 
         if (matched.length > 0) {
-          let reply = `🏟️ **Thông Tin Chi Tiết Cụm Sân Theo Yêu Cầu Của Bạn**:\n\n`;
+          let reply = `🏟️ **Thông Tin Chi Tiết Cụm Sân Hà Nội Theo Yêu Cầu Của Bạn**:\n\n`;
           matched.forEach((fac, idx) => {
             reply += `${idx + 1}. **${fac.name}**\n` +
                      `📍 **Địa chỉ**: ${fac.address}\n` +
@@ -297,19 +339,23 @@ class GeminiAIAssistant {
 
     // 6. Tư vấn danh sách cụm sân / địa chỉ chung
     if (p.includes('sân nào') || p.includes('danh sách') || p.includes('chi nhánh') || p.includes('nhiều nhất') || p.includes('địa chỉ') || p.includes('các sân') || p.includes('mấy sân')) {
-      return "🏟️ **Danh Sách Các Cụm Sân Cầu Lông Trên BADMINTON.AI**:\n\n" +
+      return "🏟️ **Danh Sách Các Cụm Sân Cầu Lông Thủ Đô Hà Nội Trên BADMINTON.AI**:\n\n" +
         "- Giá giờ bình thường (5h - 17h): **120.000đ/giờ** | Giá giờ cao điểm (18h - 22h): **160.000đ/giờ**.\n\n" +
-        "1. **AI Badminton Arena** - 123 Lê Văn Việt, TP. Thủ Đức (8 sân)\n" +
-        "2. **Pro Badminton Center** - 45 Nguyễn Thị Minh Khai, Quận 1 (6 sân)\n" +
-        "3. **Sài Gòn Star Badminton** - 88 Phạm Văn Đồng, Bình Thạnh (4 sân)\n" +
-        "4. **Tân Bình Sport Hub** - 102 Trường Chinh, Tân Bình (10 sân)\n" +
-        "5. **Smash Zone D7** - 15 Nguyễn Hữu Thọ, Quận 7 (8 sân)\n" +
-        "6. **Gò Vấp Star Arena** - 178 Nguyễn Oanh, Gò Vấp (12 sân)\n" +
-        "7. **Nhà Thi Đấu Quận 10 Yonex Pro** - 219 Lý Thường Kiệt, Q.10 (10 sân)\n" +
-        "8. **Phú Nhuận Sport Center** - 159 Phan Đăng Lưu, Phú Nhuận (14 sân - Nhiều sân nhất!)\n" +
-        "9. **CLB Bình Thạnh Arena** - 48 Bình Quới, Bình Thạnh (8 sân)\n" +
-        "10. **Thủ Đức Cyber Club** - 215 Võ Văn Ngân, TP. Thủ Đức (12 sân)\n\n" +
-        "👉 Bạn có thể gõ tên sân hoặc tên Quận (VD: 'Sân ở Phú Nhuận', 'Sân AI Badminton Arena địa chỉ mấy?') để tôi tư vấn chính xác từng sân!";
+        "1. **CLB Cầu Lông Catchy Badminton Arena** - 136 Tân Khai, Hoàng Mai (8 sân)\n" +
+        "2. **CLB Cầu Lông Đống Đa Sport Hub** - 102 Láng Hạ, Đống Đa (10 sân)\n" +
+        "3. **Smash Zone Cyber Badminton Mỹ Đình** - 15 Lê Đức Thọ, Nam Từ Liêm (8 sân)\n" +
+        "4. **CLB Cầu Lông Ba Đình Star Arena** - 178 Điện Biên Phủ, Ba Đình (12 sân)\n" +
+        "5. **Nhà Thi Đấu Cầu Lông Bách Khoa Yonex Pro** - 219 Lê Thanh Nghị, Hai Bà Trưng (10 sân)\n" +
+        "6. **Thanh Xuân Badminton Club & Fuji Pro** - 159 Lê Văn Lương, Thanh Xuân (14 sân - Nhiều sân nhất!)\n" +
+        "7. **CLB Cầu Lông Tây Hồ Arena** - 48 Đặng Thai Mai, Tây Hồ (8 sân)\n" +
+        "8. **Hà Đông Cyber Badminton Club** - 215 Trần Phú, Hà Đông (12 sân)\n" +
+        "9. **Sân Cầu Lông Cầu Giấy Pro Arena** - 35 Dịch Vọng Hậu, Cầu Giấy (8 sân)\n" +
+        "10. **CLB Cầu Lông Hoàng Gia Cổ Nhuế** - 18 Cổ Nhuế, Bắc Từ Liêm (6 sân)\n" +
+        "11. **Sân Cầu Lông Quần Ngựa Liễu Giai** - 30 Văn Cao, Ba Đình (8 sân)\n" +
+        "12. **CLB Cầu Lông Định Công Arena** - KĐT Định Công, Hoàng Mai (8 sân)\n" +
+        "13. **Sân Cầu Lông Ciputra Club** - KĐT Ciputra, Bắc Từ Liêm (12 sân)\n" +
+        "14. **Sân Cầu Lông Long Biên Riverside Pro** - Đường Cổ Linh, Long Biên (10 sân)\n\n" +
+        "👉 Bạn có thể gõ tên sân hoặc tên Quận tại Hà Nội (VD: 'Sân ở Cầu Giấy', 'Sân Đống Đa Sport Hub địa chỉ mấy?') để tôi tư vấn chính xác từng sân!";
     }
 
     // 7. Tư vấn đập cầu / kỹ thuật
@@ -335,6 +381,43 @@ class GeminiAIAssistant {
         "1. **Tự động theo dõi tải lấp đầy**: Khi hệ thống phát hiện khung giờ 18:00 - 22:00 có tỷ lệ giữ chỗ vượt quá 85%, thuật toán kích hoạt mức giá biến động (+25% đến +33%) tương ứng **160.000đ/giờ**.\n" +
         "2. **Khuyến mãi kích cầu giờ thấp điểm**: Khung giờ sáng và giờ trưa (05:00 - 17:00) được giữ ở mức giá tiêu chuẩn **120.000đ/giờ** (hoặc flash sale giảm tới -17%).\n" +
         "3. **Tối ưu doanh thu**: Giúp chủ sân tăng trung bình **+18.5% doanh thu hàng tháng**, đồng thời đảm bảo người chơi luôn có sân trống vào giờ linh hoạt!";
+    }
+
+    // 10. Hướng dẫn cách đặt sân & giữ chỗ
+    if (p.includes('cách đặt') || p.includes('đặt như thế nào') || p.includes('hướng dẫn đặt') || (p.includes('đặt') && p.includes('bước'))) {
+      return "📅 **Quy Trình Đặt Sân Siêu Nhanh Trên BADMINTON.AI**:\n\n" +
+        "1. **Chọn cụm sân**: Bấm vào bất kỳ cụm sân nào bạn yêu thích trên trang chủ hoặc bản đồ Hà Nội.\n" +
+        "2. **Chọn ngày & slot giờ**: Nhấp 'Đặt sân', chọn ngày chơi và khung giờ trống bạn muốn.\n" +
+        "3. **Khóa giữ chỗ 10 phút**: Hệ thống tự động khóa vị trí đó để đảm bảo không ai trùng sân với bạn.\n" +
+        "4. **Đặt cọc VNPay**: Quét mã QR cọc 50.000đ để nhận ngay Vé điện tử QR Code check-in tại sân!\n\n" +
+        "👉 Rất nhanh chóng và tiện lợi, chỉ mất chưa đầy 1 phút!";
+    }
+
+    // 11. Chính sách hủy sân & hoàn tiền
+    if (p.includes('hủy sân') || p.includes('hoàn tiền') || p.includes('đổi giờ') || p.includes('dời lịch') || p.includes('hoàn cọc')) {
+      return "🛡️ **Chính Sách Hủy Sân & Đổi Lịch Minh Bạch**:\n\n" +
+        "- **Hủy trước 24 giờ**: Hoàn cọc **100%** tự động về ví hoặc tài khoản ngân hàng.\n" +
+        "- **Đổi lịch trước 6 - 24 giờ**: Được hỗ trợ dời lịch sang giờ hoặc ngày khác hoàn toàn **miễn phí**.\n" +
+        "- **Hủy gấp dưới 6 giờ**: Không hoàn cọc theo quy định giữ chỗ của cụm sân.\n\n" +
+        "👉 Quản lý vé và hủy sân dễ dàng ngay trong mục **'Vé của tôi'** trên menu tài khoản!";
+    }
+
+    // 12. Giờ mở cửa & hotline hỗ trợ
+    if (p.includes('mấy giờ') || p.includes('mở cửa') || p.includes('đóng cửa') || p.includes('hotline') || p.includes('liên hệ') || p.includes('số điện thoại') || p.includes('sđt')) {
+      return "⏰ **Thời Gian Hoạt Động & Kênh Hỗ Trợ 24/7**:\n\n" +
+        "- **Giờ mở cửa toàn hệ thống**: **05:00 Sáng - 23:00 Đêm** (tất cả các ngày trong tuần, kể cả ngày Lễ).\n" +
+        "- 📞 **Hotline CSKH 24/7**: **1900 6868** hoặc **0988.123.456**\n" +
+        "- 📧 **Email**: support@badminton.ai\n" +
+        "- 💬 **Chat trực tuyến**: Bạn có thể hỏi trực tiếp tôi ở đây bất cứ lúc nào!";
+    }
+
+    // 13. Dịch vụ căng cước & phụ kiện
+    if (p.includes('căng cước') || p.includes('đan vợt') || p.includes('quấn cán') || p.includes('cước') || p.includes('dây')) {
+      return "🏸 **Dịch Vụ Căng Cước & Phụ Kiện Tại Sân**:\n\n" +
+        "- **Căng cước máy điện tử 4 nút chuẩn Yonex**: Lấy ngay sau 15 - 20 phút.\n" +
+        "- **Các loại cước có sẵn**: Yonex BG65 (110k), BG65Ti (130k), BG80 (160k), Nanogy 98 (170k), Lining No.1 (140k).\n" +
+        "- **Mức căng khuyến nghị**: Người mới (9.0 - 10.0 kg), Phong trào (10.5 - 11.5 kg), Nâng cao (11.5 - 12.5 kg).\n" +
+        "- **Quấn cán**: Yonex AC102EX (20.000đ/cái) có nhân viên quấn thay tại chỗ!";
     }
 
     return "🤖 **Google Gemini AI Assistant**:\nChào bạn! Tôi là trợ lý Trí Tuệ Nhân Tạo của hệ thống **BADMINTON.AI**. Tôi có thể hỗ trợ bạn giải đáp bất kỳ thắc mắc nào, từ đặt sân, tư vấn chọn vợt, chiến thuật thi đấu, điểm ELO, đến các câu hỏi giao lưu đời sống và thể thao. Hãy nhắn cho tôi bất kỳ điều gì bạn muốn tìm hiểu nhé! ✨🏸";

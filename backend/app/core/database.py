@@ -10,16 +10,22 @@ db_url = settings.DATABASE_URL
 if db_url.startswith("postgresql://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+engine_kwargs = {"echo": False, "future": True}
+if "sqlite" in db_url:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    engine_kwargs["pool_pre_ping"] = True
+
 try:
+    engine = create_async_engine(db_url, **engine_kwargs)
+except Exception as e:
+    logger.warning(f"Could not connect to database {db_url}: {e}. Fallback to sqlite async.")
     engine = create_async_engine(
-        db_url,
+        "sqlite+aiosqlite:///./badminton.db",
         echo=False,
         future=True,
-        pool_pre_ping=True
+        connect_args={"check_same_thread": False}
     )
-except Exception as e:
-    logger.warning(f"Could not connect to async postgres: {e}. Fallback to sqlite async.")
-    engine = create_async_engine("sqlite+aiosqlite:///./badminton.db", echo=False)
 
 AsyncSessionLocal = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False

@@ -30,11 +30,48 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(b"{}")
             return
         
+        if self.path == "/api/sqlite/download":
+            db_path = os.path.join(os.path.dirname(__file__), "badminton.db")
+            if os.path.exists(db_path):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/x-sqlite3")
+                self.send_header("Content-Disposition", 'attachment; filename="badminton.db"')
+                with open(db_path, "rb") as f:
+                    content = f.read()
+                self.send_header("Content-Length", str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+            else:
+                self.send_response(404)
+                self.end_headers()
+            return
+
+        if self.path == "/api/sqlite/data":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            try:
+                import sqlite_sync
+                conn = sqlite_sync.get_connection()
+                data = sqlite_sync.export_sqlite_to_dict(conn)
+                conn.close()
+                self.wfile.write(json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"))
+            except Exception as e:
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
         if self.path == "/api/status":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            self.wfile.write(json.dumps({"status": "running", "server": "Badminton AI Central DB Server"}).encode("utf-8"))
+            db_path = os.path.join(os.path.dirname(__file__), "badminton.db")
+            has_sqlite = os.path.exists(db_path)
+            self.wfile.write(json.dumps({
+                "status": "running",
+                "server": "Badminton AI Central DB Server",
+                "sqlite_enabled": has_sqlite,
+                "sqlite_file": "badminton.db" if has_sqlite else None
+            }).encode("utf-8"))
             return
 
         return super().do_GET()
@@ -97,15 +134,26 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     elif k in current_data:
                         merged_database[k] = current_data[k]
 
-                # Save merged data
+                # Save merged data to JSON
                 with open(DATA_FILE, "w", encoding="utf-8") as f:
                     json.dump(merged_database, f, ensure_ascii=False, indent=2)
+
+                # Also sync directly to SQLite database
+                try:
+                    import sqlite_sync
+                    conn = sqlite_sync.get_connection()
+                    sqlite_sync.sync_json_to_sqlite(merged_database, conn)
+                    conn.close()
+                except Exception as sqle:
+                    print(f"Warning: could not sync to SQLite: {sqle}")
 
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
                 self.wfile.write(json.dumps({
                     "success": True, 
+                    "database_type": "SQLite3 + JSON",
+                    "sqlite_file": "badminton.db",
                     "users_count": len(merged_users),
                     "facilities_count": len(merged_facilities)
                 }).encode("utf-8"))

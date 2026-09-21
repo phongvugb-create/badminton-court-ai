@@ -470,8 +470,8 @@
           <div class="glass-card">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
               <div>
-                <h2 id="facility-detail-name">Sân Cầu Lông AI Smashing Arena</h2>
-                <p id="facility-detail-address" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 6px;">123 Đường Lê Văn Việt, TP. Thủ Đức</p>
+                <h2 id="facility-detail-name">CLB Cầu Lông Catchy Badminton Arena</h2>
+                <p id="facility-detail-address" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 6px;">Số 136 Phố Tân Khai, Quận Hoàng Mai, Hà Nội</p>
                 <button class="btn btn-secondary btn-sm" onclick="app.openCurrentGoogleMaps()">
                   <i class="fa-solid fa-map-location-dot text-primary"></i> 🗺️ Xem Vị Trí & Chỉ Đường Google Maps
                 </button>
@@ -1548,6 +1548,9 @@
               <button class="btn btn-accent btn-sm" onclick="app.exportDatabaseJSON()" title="Tải xuống tệp database JSON để đồng bộ sang trình duyệt/máy khác">
                 <i class="fa-solid fa-download"></i> Xuất Tệp CSDL JSON
               </button>
+              <button class="btn btn-secondary btn-sm" onclick="app.exportSQLiteDatabase()" title="Tải xuống tệp cơ sở dữ liệu SQLite (.db) chuẩn SQL">
+                <i class="fa-solid fa-database text-primary"></i> Xuất Tệp SQLite (.db)
+              </button>
               <button class="btn btn-primary btn-sm" onclick="app.openImportDatabaseModal()" title="Nhập tệp hoặc dán dữ liệu database từ trình duyệt khác">
                 <i class="fa-solid fa-upload"></i> Nhập / Đồng Bộ CSDL
               </button>
@@ -1612,8 +1615,8 @@
         <span>Badminton Gemini AI</span>
       </div>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <span class="tag-badge" style="background: #ecfdf5; color: #16a34a; border: 1px solid #86efac; font-size: 0.72rem; padding: 2px 8px; font-weight: 700;">
-          <i class="fa-solid fa-circle" style="font-size: 0.55rem; color: #22c55e;"></i> Gemini Live
+        <span class="tag-badge" id="gemini-status-badge" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 0.72rem; padding: 2px 8px; font-weight: 700;">
+          <i class="fa-solid fa-bolt" style="font-size: 0.65rem; color: #3b82f6;"></i> AI Siêu Tốc
         </span>
         <button class="btn btn-secondary btn-sm" onclick="app.promptGeminiAPIKey()" title="Đổi / Cấu hình Gemini API Key" style="padding: 2px 8px; font-size: 0.75rem;">
           <i class="fa-solid fa-key"></i> Key
@@ -1681,11 +1684,11 @@
     </a>
   </nav>
 
-  <!-- Include App Scripts -->
+  <!-- Include App Scripts with cache busting -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/gemini.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/data.js?v=20260921_02"></script>
+  <script src="js/gemini.js?v=20260921_02"></script>
+  <script src="js/app.js?v=20260921_02"></script>
   
   <!-- Failsafe auto-dismiss splash screen -->
   <script>

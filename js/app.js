@@ -48,6 +48,7 @@ class BadmintonAIApp {
     this.renderAdminOverviewFacilities();
     this.renderOwnerDashboardOrders();
     this.initLeafletMap();
+    this.updateGeminiStatusBadge();
   }
 
   updateTopDateDisplay() {
@@ -490,7 +491,7 @@ class BadmintonAIApp {
     if (this.selectedFacility) {
       this.openGoogleMapsDirections(this.selectedFacility.id);
     } else {
-      window.open('https://www.google.com/maps/search/?api=1&query=S%C3%A2n+C%E1%BA%A7u+L%C3%B4ng+TP.HCM', '_blank');
+      window.open('https://www.google.com/maps/search/?api=1&query=S%C3%A2n+C%E1%BA%A7u+L%C3%B4ng+H%C3%A0+N%E1%BB%99i', '_blank');
     }
   }
 
@@ -2127,11 +2128,11 @@ class BadmintonAIApp {
         </div>
         <div class="form-group">
           <label class="form-label"><i class="fa-solid fa-building text-primary"></i> Tên Cụm Sân Quản Lý</label>
-          <input type="text" id="add-owner-facility-name" class="form-control" placeholder="VD: Sân Cầu Lông Tân Bình Sport" required>
+          <input type="text" id="add-owner-facility-name" class="form-control" placeholder="VD: Sân Cầu Lông Cầu Giấy Sport" required>
         </div>
         <div class="form-group">
           <label class="form-label"><i class="fa-solid fa-location-dot text-primary"></i> Địa Chỉ Cụm Sân</label>
-          <input type="text" id="add-owner-facility-address" class="form-control" value="102 Hoàng Văn Thụ, Phường 4, Quận Tân Bình, TP.HCM" required>
+          <input type="text" id="add-owner-facility-address" class="form-control" value="102 Đường Cầu Giấy, Quận Cầu Giấy, Hà Nội" required>
         </div>
         <div class="form-group">
           <label class="form-label"><i class="fa-solid fa-lock text-primary"></i> Mật Khẩu Đăng Nhập Ban Đầu</label>
@@ -2162,15 +2163,15 @@ class BadmintonAIApp {
     const name = nameInput.value.trim();
     const phone = phoneInput.value.trim();
     const facName = facNameInput.value.trim();
-    const facAddr = facAddrInput ? facAddrInput.value.trim() : 'TP. Hồ Chí Minh';
+    const facAddr = facAddrInput ? facAddrInput.value.trim() : 'Hà Nội';
 
     const newFacId = MockData.facilities.length > 0 ? Math.max(...MockData.facilities.map(f => f.id)) + 1 : 101;
     const newFacility = {
       id: newFacId,
       name: facName,
       address: facAddr,
-      latitude: 10.7900,
-      longitude: 106.6600,
+      latitude: 21.0285,
+      longitude: 105.8542,
       open_time: "06:00",
       close_time: "23:00",
       is_approved: true,
@@ -2790,37 +2791,73 @@ class BadmintonAIApp {
     const currentKey = geminiAI.getAPIKey();
     const modalBody = document.getElementById('modal-body');
     modalBody.innerHTML = `
-      <h3>⚙️ Cấu Hình Gemini AI API Key</h3>
+      <h3>⚙️ Cấu Hình Google Gemini API Key</h3>
       <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-        Nhập Google Gemini API Key của bạn để sử dụng mô hình AI <strong>Gemini 3.6 Flash</strong> chuẩn trực tiếp trên trình duyệt.
+        Hệ thống hiện mặc định chạy ở chế độ <strong>AI Siêu Tốc (Phản hồi tức thì &lt;0.2s)</strong> nắm vững 48+ cụm sân Hà Nội, bảng giá, dụng cụ và ELO.
+      </p>
+      <p style="font-size: 0.82rem; color: var(--text-dim); margin-top: 4px;">
+        Nếu bạn muốn kết nối trực tuyến tới mô hình đám mây <strong>Google Gemini 1.5/2.0 Flash</strong>, hãy nhập API Key cá nhân của bạn bên dưới:
       </p>
       <form onsubmit="app.saveGeminiAPIKey(event)" style="margin-top: 1rem;">
         <div class="form-group">
-          <label class="form-label">Gemini API Key</label>
-          <input type="password" id="modal-gemini-key-input" class="form-control" value="${currentKey}" placeholder="AIzaSy..." required>
+          <label class="form-label">Gemini API Key (Tùy chọn)</label>
+          <input type="password" id="modal-gemini-key-input" class="form-control" value="${currentKey}" placeholder="AIzaSy... (để trống nếu dùng chế độ Siêu Tốc)">
           <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
             Chưa có key? <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent-cyan);">Lấy API Key miễn phí tại Google AI Studio</a>
           </div>
         </div>
-        <button type="submit" class="btn btn-accent" style="width: 100%; margin-top: 1rem;">
-          <i class="fa-solid fa-floppy-disk"></i> Lưu API Key
-        </button>
+        <div style="display: flex; gap: 8px; margin-top: 1rem;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-gemini-key-input').value=''; app.saveGeminiAPIKey(event);" style="padding: 0 12px;" title="Xóa key để dùng AI siêu tốc nội bộ">
+            ⚡ Dùng AI Siêu Tốc
+          </button>
+        </div>
       </form>
     `;
     this.openModal();
   }
 
   saveGeminiAPIKey(e) {
-    e.preventDefault();
-    const key = document.getElementById('modal-gemini-key-input').value;
-    geminiAI.setAPIKey(key);
+    if (e && e.preventDefault) e.preventDefault();
+    const input = document.getElementById('modal-gemini-key-input');
+    const key = input ? input.value.trim() : '';
+    const success = (typeof geminiAI !== 'undefined' && geminiAI) ? geminiAI.setAPIKey(key) : false;
     this.closeModal();
-    this.showToast("Đã lưu Gemini API Key thành công!");
+    this.updateGeminiStatusBadge();
+    if (success) {
+      this.showToast("Đã kích hoạt Google Gemini 1.5 Flash trực tuyến!");
+    } else {
+      if (key) {
+        this.showToast("Key không đúng định dạng (cần bắt đầu bằng 'AIzaSy'). Đã kích hoạt chế độ AI Siêu Tốc nội bộ!", "warning");
+      } else {
+        this.showToast("Đã chuyển về chế độ AI Trợ lý Siêu Tốc nội bộ (Phản hồi <0.1s)!");
+      }
+    }
+  }
+
+  updateGeminiStatusBadge() {
+    const badge = document.getElementById('gemini-status-badge');
+    if (!badge) return;
+    const hasKey = typeof geminiAI !== 'undefined' && geminiAI && !!geminiAI.getAPIKey();
+    if (hasKey) {
+      badge.style.background = '#ecfdf5';
+      badge.style.color = '#16a34a';
+      badge.style.borderColor = '#86efac';
+      badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size: 0.55rem; color: #22c55e;"></i> Gemini Live';
+    } else {
+      badge.style.background = '#eff6ff';
+      badge.style.color = '#2563eb';
+      badge.style.borderColor = '#bfdbfe';
+      badge.innerHTML = '<i class="fa-solid fa-bolt" style="font-size: 0.65rem; color: #3b82f6;"></i> AI Siêu Tốc';
+    }
   }
 
   async handleGeminiSubmit(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const input = document.getElementById('gemini-input-text');
+    if (!input) return;
     const text = input.value.trim();
     if (!text) return;
 
@@ -2830,8 +2867,27 @@ class BadmintonAIApp {
     // Hiển thị trạng thái đang suy nghĩ
     const typingId = this.addGeminiChatMessage('bot', '<i class="fa-solid fa-spinner fa-spin"></i> Smashing AI đang xử lý...');
 
-    const reply = await geminiAI.generateResponse(text);
-    this.renderFormattedGeminiMessage(typingId, reply);
+    try {
+      let reply = '';
+      if (typeof geminiAI !== 'undefined' && geminiAI && typeof geminiAI.generateResponse === 'function') {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout")), 3500)
+        );
+        reply = await Promise.race([geminiAI.generateResponse(text), timeoutPromise]);
+      } else {
+        reply = "🤖 Chào bạn! Tôi là Trợ lý AI Cầu Lông của BADMINTON.AI. Bạn có thể hỏi tôi về các cụm sân Cầu Giấy, Hoàng Mai, Đống Đa, bảng giá thuê hay tư vấn chọn vợt!";
+      }
+      this.renderFormattedGeminiMessage(typingId, reply || "Tôi có thể hỗ trợ bạn tìm sân cầu lông hoặc giải đáp quy trình đặt cọc, giữ chỗ 10 phút.");
+    } catch (err) {
+      console.warn("Lỗi gọi Gemini AI, kích hoạt phản hồi nội bộ tức thì:", err);
+      let fallbackText = "🤖 Xin chào! Hệ thống đã ghi nhận câu hỏi. Bạn có thể tham khảo danh sách cụm sân Cầu Giấy, Hoàng Mai, Đống Đa trên trang chủ với giá chỉ từ 120k/h!";
+      if (typeof geminiAI !== 'undefined' && geminiAI && typeof geminiAI.getFallbackResponse === 'function') {
+        try {
+          fallbackText = geminiAI.getFallbackResponse(text);
+        } catch (e2) {}
+      }
+      this.renderFormattedGeminiMessage(typingId, fallbackText);
+    }
   }
 
   renderFormattedGeminiMessage(msgId, fullText) {
@@ -3279,7 +3335,7 @@ class BadmintonAIApp {
 
     const tableConfigs = [
       { key: 'users', label: '1. NGUỜI DÙNG (users)', icon: 'fa-users', desc: 'Bảng 1: Quản lý tài khoản người dùng (Khách hàng, Chủ sân, Nhân viên POS, Admin) & điểm trình độ ELO' },
-      { key: 'facilities', label: '2. CỤM SÂN (facilities)', icon: 'fa-building-user', desc: 'Bảng 2: Danh sách 13 cụm cơ sở thể thao cầu lông tại TP.HCM & tọa độ GPS ghim vị trí' },
+      { key: 'facilities', label: '2. CỤM SÂN (facilities)', icon: 'fa-building-user', desc: 'Bảng 2: Danh sách các cụm cơ sở thể thao cầu lông tại Hà Nội & tọa độ GPS ghim vị trí' },
       { key: 'courts', label: '3. SÂN CON (courts)', icon: 'fa-layer-group', desc: 'Bảng 3: Danh sách từng sân con thi đấu (loại thảm Yonex Pro/VIP Cushion, giá niêm yết cơ bản)' },
       { key: 'time_slots', label: '4. KHUNG GIỜ (time_slots)', icon: 'fa-clock', desc: 'Bảng 4: Ma trận ô giờ đặt sân (Giờ bình thường 5h-17h: 120k/h, Giờ cao điểm 18h-22h: 160k/h)' },
       { key: 'equipments', label: '5. VỢT & DỤNG CỤ (equipments)', icon: 'fa-boxes-stacked', desc: 'Bảng 5: Danh mục 6 loại vợt (Yonex, Victor, Li-Ning, Kumpoo), Hộp cầu Thành Công, Nước Pocari & Khăn' },
@@ -3501,6 +3557,174 @@ class BadmintonAIApp {
     downloadAnchor.click();
     downloadAnchor.remove();
     this.showToast("Đã tải xuống thành công toàn bộ Tệp CSDL JSON (badminton_ai_database.json)!");
+  }
+
+  async exportSQLiteDatabase() {
+    try {
+      // 1. First attempt to download binary .db directly from server if available
+      const response = await fetch('http://localhost:8085/api/sqlite/download');
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "badminton.db";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        this.showToast("💾 Đã tải xuống tệp nhị phân SQLite (badminton.db) trực tiếp từ máy chủ!");
+        return;
+      }
+    } catch (e) {
+      console.log("Central SQLite binary server not active, generating standard SQLite SQL dump...");
+    }
+
+    // 2. Client-side generate comprehensive SQLite SQL script (.sql)
+    this.generateSQLiteSQLDump();
+  }
+
+  generateSQLiteSQLDump() {
+    let sql = `-- ==========================================================================\n`;
+    sql += `-- BADMINTON AI MANAGEMENT SYSTEM - SQLITE3 DATABASE DUMP\n`;
+    sql += `-- Generated: ${new Date().toISOString()}\n`;
+    sql += `-- Compatibility: SQLite 3.x / DB Browser for SQLite\n`;
+    sql += `-- ==========================================================================\n\n`;
+    sql += `PRAGMA foreign_keys = ON;\nBEGIN TRANSACTION;\n\n`;
+
+    // 1. users
+    sql += `-- 1. BẢNG users\n`;
+    sql += `CREATE TABLE IF NOT EXISTS users (\n  id INTEGER PRIMARY KEY,\n  name TEXT NOT NULL,\n  phone TEXT UNIQUE NOT NULL,\n  password TEXT,\n  role TEXT DEFAULT 'CUSTOMER',\n  elo_rating INTEGER DEFAULT 1000,\n  avatar TEXT,\n  facility_id INTEGER,\n  is_approved INTEGER DEFAULT 1\n);\n`;
+    (MockData.users || []).forEach(u => {
+      const name = (u.name || '').replace(/'/g, "''");
+      const phone = (u.phone || '').replace(/'/g, "''");
+      const pwd = (u.password || '123456').replace(/'/g, "''");
+      const role = (u.role || 'CUSTOMER').replace(/'/g, "''");
+      const avatar = (u.avatar || 'U').replace(/'/g, "''");
+      const facId = u.facility_id ? u.facility_id : 'NULL';
+      const isApp = u.is_approved ? 1 : 0;
+      sql += `INSERT OR REPLACE INTO users (id, name, phone, password, role, elo_rating, avatar, facility_id, is_approved) VALUES (${u.id}, '${name}', '${phone}', '${pwd}', '${role}', ${u.elo_rating || 1000}, '${avatar}', ${facId}, ${isApp});\n`;
+    });
+    sql += `\n`;
+
+    // 2. facilities
+    sql += `-- 2. BẢNG facilities\n`;
+    sql += `CREATE TABLE IF NOT EXISTS facilities (\n  id INTEGER PRIMARY KEY,\n  name TEXT NOT NULL,\n  address TEXT NOT NULL,\n  distance TEXT,\n  latitude REAL,\n  longitude REAL,\n  open_time TEXT,\n  close_time TEXT,\n  rating REAL,\n  reviews_count INTEGER,\n  courts_count INTEGER,\n  is_approved INTEGER DEFAULT 1\n);\n`;
+    (MockData.facilities || []).forEach(f => {
+      const name = (f.name || '').replace(/'/g, "''");
+      const addr = (f.address || '').replace(/'/g, "''");
+      const dist = (f.distance || '').replace(/'/g, "''");
+      const lat = f.latitude || 21.0285;
+      const lng = f.longitude || 105.8542;
+      const ot = (f.open_time || '05:00').replace(/'/g, "''");
+      const ct = (f.close_time || '23:00').replace(/'/g, "''");
+      const rating = f.rating || 5.0;
+      const rev = f.reviews_count || 0;
+      const cc = f.courts_count || 8;
+      const isApp = f.is_approved ? 1 : 0;
+      sql += `INSERT OR REPLACE INTO facilities (id, name, address, distance, latitude, longitude, open_time, close_time, rating, reviews_count, courts_count, is_approved) VALUES (${f.id}, '${name}', '${addr}', '${dist}', ${lat}, ${lng}, '${ot}', '${ct}', ${rating}, ${rev}, ${cc}, ${isApp});\n`;
+    });
+    sql += `\n`;
+
+    // 3. courts
+    sql += `-- 3. BẢNG courts\n`;
+    sql += `CREATE TABLE IF NOT EXISTS courts (\n  id INTEGER PRIMARY KEY,\n  facility_id INTEGER,\n  name TEXT NOT NULL,\n  court_type TEXT,\n  base_price REAL,\n  status TEXT\n);\n`;
+    (MockData.courts || []).forEach(c => {
+      const name = (c.name || '').replace(/'/g, "''");
+      const ct = (c.court_type || 'Thảm Yonex').replace(/'/g, "''");
+      const bp = c.base_price || 120000;
+      const st = (c.status || 'AVAILABLE').replace(/'/g, "''");
+      sql += `INSERT OR REPLACE INTO courts (id, facility_id, name, court_type, base_price, status) VALUES (${c.id}, ${c.facility_id || 101}, '${name}', '${ct}', ${bp}, '${st}');\n`;
+    });
+    sql += `\n`;
+
+    // 4. time_slots
+    sql += `-- 4. BẢNG time_slots\n`;
+    sql += `CREATE TABLE IF NOT EXISTS time_slots (\n  id INTEGER PRIMARY KEY,\n  court_id INTEGER,\n  start_time TEXT,\n  end_time TEXT,\n  price REAL,\n  is_ai_dynamic INTEGER,\n  price_type TEXT,\n  status TEXT\n);\n`;
+    (MockData.time_slots || []).forEach(s => {
+      const st = (s.start_time || '').replace(/'/g, "''");
+      const et = (s.end_time || '').replace(/'/g, "''");
+      const isAi = s.is_ai_dynamic ? 1 : 0;
+      const pt = (s.price_type || 'Tiêu chuẩn').replace(/'/g, "''");
+      const status = (s.status || 'AVAILABLE').replace(/'/g, "''");
+      sql += `INSERT OR REPLACE INTO time_slots (id, court_id, start_time, end_time, price, is_ai_dynamic, price_type, status) VALUES (${s.id}, ${s.court_id || 1}, '${st}', '${et}', ${s.price || 120000}, ${isAi}, '${pt}', '${status}');\n`;
+    });
+    sql += `\n`;
+
+    // 5. equipments
+    sql += `-- 5. BẢNG equipments\n`;
+    sql += `CREATE TABLE IF NOT EXISTS equipments (\n  id INTEGER PRIMARY KEY,\n  name TEXT NOT NULL,\n  price REAL,\n  quantity INTEGER,\n  unit TEXT\n);\n`;
+    (MockData.equipments || []).forEach(eq => {
+      const name = (eq.name || '').replace(/'/g, "''");
+      const unit = (eq.unit || 'cái').replace(/'/g, "''");
+      sql += `INSERT OR REPLACE INTO equipments (id, name, price, quantity, unit) VALUES (${eq.id}, '${name}', ${eq.price || 0}, ${eq.quantity || 10}, '${unit}');\n`;
+    });
+    sql += `\n`;
+
+    // 6. booking_orders
+    sql += `-- 6. BẢNG booking_orders\n`;
+    sql += `CREATE TABLE IF NOT EXISTS booking_orders (\n  id INTEGER PRIMARY KEY,\n  booking_code TEXT UNIQUE NOT NULL,\n  user_name TEXT,\n  user_phone TEXT,\n  facility_name TEXT,\n  court_name TEXT,\n  slot_time TEXT,\n  booking_date TEXT,\n  total_amount REAL,\n  deposit_amount REAL,\n  deposit_status TEXT,\n  order_status TEXT\n);\n`;
+    (MockData.booking_orders || []).forEach(b => {
+      const code = (b.booking_code || '').replace(/'/g, "''");
+      const uName = (b.user_name || '').replace(/'/g, "''");
+      const uPhone = (b.user_phone || '').replace(/'/g, "''");
+      const facName = (b.facility_name || '').replace(/'/g, "''");
+      const courtName = (b.court_name || '').replace(/'/g, "''");
+      const slotTime = (b.slot_time || '').replace(/'/g, "''");
+      const bDate = (b.booking_date || '').replace(/'/g, "''");
+      const depSt = (b.deposit_status || '').replace(/'/g, "''");
+      const ordSt = (b.order_status || '').replace(/'/g, "''");
+      sql += `INSERT OR REPLACE INTO booking_orders (id, booking_code, user_name, user_phone, facility_name, court_name, slot_time, booking_date, total_amount, deposit_amount, deposit_status, order_status) VALUES (${b.id}, '${code}', '${uName}', '${uPhone}', '${facName}', '${courtName}', '${slotTime}', '${bDate}', ${b.total_amount || 0}, ${b.deposit_amount || 0}, '${depSt}', '${ordSt}');\n`;
+    });
+    sql += `\n`;
+
+    // 7. invoices
+    sql += `-- 7. BẢNG invoices\n`;
+    sql += `CREATE TABLE IF NOT EXISTS invoices (\n  id INTEGER PRIMARY KEY,\n  invoice_code TEXT UNIQUE NOT NULL,\n  customer_name TEXT,\n  facility_name TEXT,\n  final_amount REAL,\n  payment_method TEXT,\n  created_at TEXT\n);\n`;
+    (MockData.invoices || []).forEach(inv => {
+      const invCode = (inv.invoice_code || '').replace(/'/g, "''");
+      const cName = (inv.customer_name || '').replace(/'/g, "''");
+      const fName = (inv.facility_name || '').replace(/'/g, "''");
+      const pm = (inv.payment_method || 'CASH').replace(/'/g, "''");
+      const cat = (inv.created_at || '').replace(/'/g, "''");
+      sql += `INSERT OR REPLACE INTO invoices (id, invoice_code, customer_name, facility_name, final_amount, payment_method, created_at) VALUES (${inv.id}, '${invCode}', '${cName}', '${fName}', ${inv.final_amount || 0}, '${pm}', '${cat}');\n`;
+    });
+    sql += `\n`;
+
+    // 8. matchmaking_rooms
+    sql += `-- 8. BẢNG matchmaking_rooms\n`;
+    sql += `CREATE TABLE IF NOT EXISTS matchmaking_rooms (\n  id INTEGER PRIMARY KEY,\n  room_name TEXT,\n  facility_name TEXT,\n  required_elo_min INTEGER,\n  required_elo_max INTEGER,\n  match_type TEXT,\n  current_players INTEGER,\n  max_players INTEGER,\n  status TEXT,\n  host_name TEXT,\n  host_elo INTEGER\n);\n`;
+    (MockData.matchmaking_rooms || []).forEach(r => {
+      const rName = (r.room_name || '').replace(/'/g, "''");
+      const fName = (r.facility_name || '').replace(/'/g, "''");
+      const mt = (r.match_type || '').replace(/'/g, "''");
+      const st = (r.status || 'OPEN').replace(/'/g, "''");
+      const hName = (r.host_name || '').replace(/'/g, "''");
+      sql += `INSERT OR REPLACE INTO matchmaking_rooms (id, room_name, facility_name, required_elo_min, required_elo_max, match_type, current_players, max_players, status, host_name, host_elo) VALUES (${r.id}, '${rName}', '${fName}', ${r.required_elo_min || 1000}, ${r.required_elo_max || 2000}, '${mt}', ${r.current_players || 1}, ${r.max_players || 4}, '${st}', '${hName}', ${r.host_elo || 1200});\n`;
+    });
+    sql += `\n`;
+
+    // 9. occupancy_heatmap
+    sql += `-- 9. BẢNG occupancy_heatmap\n`;
+    sql += `CREATE TABLE IF NOT EXISTS occupancy_heatmap (\n  hour TEXT PRIMARY KEY,\n  rate INTEGER,\n  status TEXT\n);\n`;
+    (MockData.occupancy_heatmap || []).forEach(h => {
+      const hr = (h.hour || '').replace(/'/g, "''");
+      const st = (h.status || '').replace(/'/g, "''");
+      sql += `INSERT OR REPLACE INTO occupancy_heatmap (hour, rate, status) VALUES ('${hr}', ${h.rate || 0}, '${st}');\n`;
+    });
+
+    sql += `\nCOMMIT;\n`;
+
+    const blob = new Blob([sql], { type: 'text/sql;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "badminton_database_sqlite.sql";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    this.showToast("📄 Đã xuất thành công kịch bản CSDL SQLite chuẩn (.sql)!");
   }
 
   openImportDatabaseModal() {

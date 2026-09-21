@@ -6,17 +6,34 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from app.config import settings
 
+try:
+    import bcrypt
+    _use_direct_bcrypt = True
+except ImportError:
+    _use_direct_bcrypt = False
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     # Support plain password matching for mock/quick demo users if not hashed
-    if hashed_password and not hashed_password.startswith("$2b$"):
+    if hashed_password and not hashed_password.startswith("$2b$") and not hashed_password.startswith("$2a$"):
         return plain_password == hashed_password
-    return pwd_context.verify(plain_password, hashed_password)
+    if _use_direct_bcrypt:
+        try:
+            return bcrypt.checkpw(plain_password.encode('utf-8')[:72], hashed_password.encode('utf-8'))
+        except Exception:
+            pass
+    try:
+        return pwd_context.verify(plain_password[:72], hashed_password)
+    except Exception:
+        return False
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    if _use_direct_bcrypt:
+        salt = bcrypt.gensalt()
+        return bcrypt.hashpw(password.encode('utf-8')[:72], salt).decode('utf-8')
+    return pwd_context.hash(password[:72])
 
 def create_access_token(subject: Union[str, Any], role: str, expires_delta: Optional[timedelta] = None) -> str:
     if expires_delta:
