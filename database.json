@@ -58,6 +58,17 @@
       "elo_rating": 1200,
       "avatar": "V",
       "is_approved": true
+    },
+    {
+      "id": 7,
+      "name": "Trương Quốc Khánh (Chủ Sân)",
+      "phone": "0123456789",
+      "password": "02092006",
+      "role": "OWNER",
+      "facility_id": 101,
+      "elo_rating": "N/A",
+      "avatar": "K",
+      "is_approved": true
     }
   ],
   "facilities": [

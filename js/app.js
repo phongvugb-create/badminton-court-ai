@@ -3090,6 +3090,7 @@ class BadmintonAIApp {
     const phoneInput = document.getElementById('add-owner-phone');
     const facNameInput = document.getElementById('add-owner-facility-name');
     const facAddrInput = document.getElementById('add-owner-facility-address');
+    const passInput = document.getElementById('add-owner-password');
 
     if (!nameInput || !phoneInput || !facNameInput) return;
 
@@ -3097,6 +3098,7 @@ class BadmintonAIApp {
     const phone = phoneInput.value.trim();
     const facName = facNameInput.value.trim();
     const facAddr = facAddrInput ? facAddrInput.value.trim() : 'Hà Nội';
+    const password = passInput && passInput.value.trim() ? passInput.value.trim() : '123456';
 
     const newFacId = MockData.facilities.length > 0 ? Math.max(...MockData.facilities.map(f => f.id)) + 1 : 101;
     const newFacility = {
@@ -3121,8 +3123,10 @@ class BadmintonAIApp {
       id: newUserId,
       name: name + " (Chủ Sân)",
       phone: phone,
+      password: password,
       role: 'OWNER',
       facility_id: newFacId,
+      elo_rating: 'N/A',
       avatar: avatar,
       is_approved: true,
       created_at: new Date().toLocaleDateString('vi-VN')
@@ -3136,7 +3140,8 @@ class BadmintonAIApp {
     if (typeof this.renderAdminOverviewFacilities === 'function') {
       this.renderAdminOverviewFacilities();
     }
-    this.showToast(`🎉 ADMIN đã tạo thành công tài khoản Chủ Sân: ${name}!`);
+    if (this.currentView === 'ui-20') this.renderDatabaseInspector();
+    this.showToast(`🎉 ADMIN đã tạo thành công tài khoản Chủ Sân: ${name} (Mật khẩu: ${password})!`);
   }
 
   saveNewStaff(e) {
@@ -3145,6 +3150,7 @@ class BadmintonAIApp {
     const phoneInput = document.getElementById('add-staff-phone');
     const facInput = document.getElementById('add-staff-facility');
     const roleInput = document.getElementById('add-staff-role');
+    const passInput = document.getElementById('add-staff-password');
 
     if (!nameInput || !phoneInput) return;
 
@@ -3152,6 +3158,7 @@ class BadmintonAIApp {
     const phone = phoneInput.value.trim();
     const facility_id = parseInt(facInput ? facInput.value : 101);
     const role = roleInput ? roleInput.value : 'STAFF';
+    const password = passInput && passInput.value.trim() ? passInput.value.trim() : '123456';
 
     const newId = MockData.users.length > 0 ? Math.max(...MockData.users.map(u => u.id)) + 1 : 1;
     const avatar = name.split(' ').pop().charAt(0).toUpperCase() || 'S';
@@ -3160,8 +3167,10 @@ class BadmintonAIApp {
       id: newId,
       name: name + " (Thu Ngân)",
       phone: phone,
+      password: password,
       role: role,
       facility_id: facility_id,
+      elo_rating: 'N/A',
       avatar: avatar,
       is_approved: true,
       created_at: new Date().toLocaleDateString('vi-VN')
@@ -3172,7 +3181,8 @@ class BadmintonAIApp {
 
     this.closeModal();
     this.renderOwnerStaff();
-    this.showToast(`🎉 CHỦ SÂN đã tạo thành công tài khoản Thu Ngân: ${name}!`);
+    if (this.currentView === 'ui-20') this.renderDatabaseInspector();
+    this.showToast(`🎉 CHỦ SÂN đã tạo thành công tài khoản Thu Ngân: ${name} (Mật khẩu: ${password})!`);
   }
 
   deleteStaff(staffId) {
@@ -3646,6 +3656,7 @@ class BadmintonAIApp {
             <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;">
               ${approveBtn}
               <button class="btn btn-secondary btn-sm" onclick="app.viewUserDetail(${u.id})" title="Xem thông tin chi tiết tài khoản"><i class="fa-solid fa-eye"></i> Xem</button>
+              <button class="btn btn-sm" style="background: rgba(14, 165, 233, 0.2); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.35);" onclick="app.editUserAccount(${u.id})" title="Chỉnh sửa thông tin & Đổi mật khẩu"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>
               <button class="btn btn-sm" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35);" onclick="app.deleteUserAccount(${u.id})" title="Xóa tài khoản này khỏi hệ thống"><i class="fa-solid fa-trash-can"></i> Xóa</button>
             </div>
           </td>
@@ -3662,15 +3673,18 @@ class BadmintonAIApp {
 
     const modalBody = document.getElementById('modal-body');
     const isApproved = u.is_approved !== false;
+    const pwdDisplay = u.password ? u.password : '123456';
+
     modalBody.innerHTML = `
       <div style="text-align: left;">
         <h3 style="color: var(--primary); display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-id-card"></i> Chi Tiết Tài Khoản #${u.id}
         </h3>
         <hr style="border-color: var(--border-color); margin: 0.75rem 0;">
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+        <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem;">
           <div><strong>Họ và tên:</strong> <span style="color: var(--text-main); font-weight: 700;">${u.name}</span></div>
           <div><strong>Số điện thoại / Login:</strong> <code style="color: var(--accent-cyan); font-weight: 700;">${u.phone}</code></div>
+          <div><strong>Mật khẩu hiện tại:</strong> <code style="background: rgba(22,121,70,0.15); color: var(--primary); font-weight: 700; padding: 2px 8px; border-radius: 4px;">${pwdDisplay}</code></div>
           <div><strong>Phân hệ vai trò:</strong> <span class="tag-badge tag-ai">${u.role}</span></div>
           <div><strong>Trình độ ELO:</strong> <span style="color: #f59e0b; font-weight: 700;">${u.elo_rating || 'N/A'} ELO</span></div>
           <div><strong>Trạng thái phê duyệt:</strong> ${isApproved ? '<span style="color: var(--primary); font-weight: bold;">✅ Đã kích hoạt (Active)</span>' : '<span style="color: #ef4444; font-weight: bold;">⏳ Chờ duyệt</span>'}</div>
@@ -3678,13 +3692,112 @@ class BadmintonAIApp {
         </div>
         <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
           <button class="btn btn-secondary btn-sm" onclick="app.closeModal()">Đóng</button>
+          <button class="btn btn-primary btn-sm" onclick="app.closeModal(); app.editUserAccount(${u.id});">
+            <i class="fa-solid fa-pen-to-square"></i> Đổi Mật Khẩu / Sửa
+          </button>
           <button class="btn btn-danger btn-sm" onclick="app.closeModal(); app.deleteUserAccount(${u.id});">
-            <i class="fa-solid fa-trash-can"></i> Xóa Tài Khoản Này
+            <i class="fa-solid fa-trash-can"></i> Xóa Tài Khoản
           </button>
         </div>
       </div>
     `;
     this.openModal();
+  }
+
+  editUserAccount(userId) {
+    const u = MockData.users.find(user => user.id === userId);
+    if (!u) return;
+
+    const modalBody = document.getElementById('modal-body');
+    const pwdDisplay = u.password ? u.password : '123456';
+    const isApproved = u.is_approved !== false;
+
+    modalBody.innerHTML = `
+      <div style="text-align: left;">
+        <h3 style="color: var(--primary); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-user-pen"></i> Chỉnh Sửa Tài Khoản #${u.id}
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Cập nhật thông tin định danh và quản trị mật khẩu đăng nhập</p>
+        
+        <form onsubmit="app.saveEditUser(event, ${u.id})" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-signature text-primary"></i> Họ và Tên</label>
+            <input type="text" id="edit-user-name" class="form-control" value="${u.name}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-phone text-primary"></i> Số Điện Thoại Đăng Nhập</label>
+            <input type="tel" id="edit-user-phone" class="form-control" value="${u.phone}" pattern="[0-9]{10}" title="Nhập số điện thoại 10 chữ số" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-lock text-primary"></i> Mật Khẩu Đăng Nhập</label>
+            <div style="position: relative;">
+              <input type="password" id="edit-user-password" class="form-control" value="${pwdDisplay}" required style="padding-right: 2.5rem;">
+              <button type="button" onclick="app.togglePasswordVisibility('edit-user-password', this)" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; cursor: pointer; font-size: 1rem;">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-shield-halved text-primary"></i> Phân Hệ Vai Trò</label>
+            <select id="edit-user-role" class="form-control">
+              <option value="CUSTOMER" ${u.role === 'CUSTOMER' ? 'selected' : ''}>Khách Hàng (CUSTOMER)</option>
+              <option value="OWNER" ${u.role === 'OWNER' ? 'selected' : ''}>Chủ Sân (OWNER)</option>
+              <option value="STAFF" ${u.role === 'STAFF' ? 'selected' : ''}>Thu Ngân Quầy (STAFF)</option>
+              <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>Quản Trị Viên (ADMIN)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-trophy text-primary"></i> Điểm ELO Trình Độ</label>
+            <input type="number" id="edit-user-elo" class="form-control" value="${typeof u.elo_rating === 'number' ? u.elo_rating : 1200}">
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-circle-check text-primary"></i> Trạng Thái Duyệt</label>
+            <select id="edit-user-status" class="form-control">
+              <option value="true" ${isApproved ? 'selected' : ''}>Đã Phê Duyệt (Kích Hoạt Hoạt Động)</option>
+              <option value="false" ${!isApproved ? 'selected' : ''}>Chờ Phê Duyệt (Khóa Tạm Thời)</option>
+            </select>
+          </div>
+
+          <div style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="app.closeModal()">Hủy</button>
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+    this.openModal();
+  }
+
+  saveEditUser(e, userId) {
+    if (e) e.preventDefault();
+    const user = MockData.users.find(u => u.id === userId);
+    if (!user) return;
+
+    const nameInput = document.getElementById('edit-user-name');
+    const phoneInput = document.getElementById('edit-user-phone');
+    const passInput = document.getElementById('edit-user-password');
+    const roleInput = document.getElementById('edit-user-role');
+    const eloInput = document.getElementById('edit-user-elo');
+    const statusInput = document.getElementById('edit-user-status');
+
+    if (nameInput) user.name = nameInput.value.trim();
+    if (phoneInput) user.phone = phoneInput.value.trim();
+    if (passInput && passInput.value.trim()) user.password = passInput.value.trim();
+    if (roleInput) user.role = roleInput.value;
+    if (eloInput) user.elo_rating = parseInt(eloInput.value) || 1200;
+    if (statusInput) user.is_approved = statusInput.value === 'true';
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.closeModal();
+    this.renderAdminUsers();
+    this.renderOwnerStaff();
+    if (this.currentView === 'ui-20') this.renderDatabaseInspector();
+    this.showToast(`🎉 Đã cập nhật thành công thông tin & mật khẩu cho tài khoản "${user.name}"!`);
   }
 
   deleteUserAccount(userId) {
@@ -3864,8 +3977,13 @@ class BadmintonAIApp {
       return;
     }
 
-    // 2. Kiem tra mat khau chinh xac
-    const expectedPassword = user.password || '123456';
+    // 2. Kiem tra mat khau chinh xac (tu dong khoi phuc neu mat khau cu bi loi undefined)
+    let expectedPassword = user.password;
+    if (!expectedPassword || expectedPassword === 'undefined' || expectedPassword === 'null' || !expectedPassword.trim()) {
+      expectedPassword = (user.phone === '0123456789' ? '02092006' : '123456');
+      user.password = expectedPassword;
+      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+    }
     if (password !== expectedPassword) {
       this.showToast(`⛔ Đăng nhập thất bại: Mật khẩu nhập vào không chính xác! Vui lòng thử lại.`, 'error');
       return;

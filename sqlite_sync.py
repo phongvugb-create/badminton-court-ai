@@ -183,13 +183,24 @@ def init_sqlite_tables(conn):
     conn.commit()
 
 def sync_json_to_sqlite(data_dict, conn):
-    """Imports records from JSON/MockData dictionary into SQLite"""
+    """Imports records from JSON/MockData dictionary into SQLite with full deletion and upsert support"""
     init_sqlite_tables(conn)
     cursor = conn.cursor()
 
     # 1. users
-    if "users" in data_dict:
+    if "users" in data_dict and isinstance(data_dict["users"], list):
+        valid_user_phones = [u.get("phone") for u in data_dict["users"] if u.get("phone")]
+        if valid_user_phones:
+            placeholders = ",".join(["?"] * len(valid_user_phones))
+            cursor.execute(f"DELETE FROM users WHERE phone NOT IN ({placeholders})", valid_user_phones)
+        else:
+            cursor.execute("DELETE FROM users")
+
         for u in data_dict["users"]:
+            pwd = u.get("password")
+            if not pwd or str(pwd).strip() in ["", "undefined", "null"]:
+                pwd = "02092006" if u.get("phone") == "0123456789" else "123456"
+
             cursor.execute("""
             INSERT INTO users (id, name, phone, password, role, elo_rating, avatar, facility_id, is_approved)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -205,16 +216,23 @@ def sync_json_to_sqlite(data_dict, conn):
                 u.get("id"),
                 u.get("name") or u.get("full_name") or "Người Dùng",
                 u.get("phone"),
-                u.get("password") or "123456",
+                pwd,
                 u.get("role", "CUSTOMER"),
-                u.get("elo_rating", 1000),
+                u.get("elo_rating") if isinstance(u.get("elo_rating"), int) else 1200,
                 u.get("avatar", "U"),
                 u.get("facility_id"),
                 1 if u.get("is_approved", True) else 0
             ))
 
     # 2. facilities
-    if "facilities" in data_dict:
+    if "facilities" in data_dict and isinstance(data_dict["facilities"], list):
+        valid_fac_ids = [f.get("id") for f in data_dict["facilities"] if f.get("id")]
+        if valid_fac_ids:
+            placeholders = ",".join(["?"] * len(valid_fac_ids))
+            cursor.execute(f"DELETE FROM facilities WHERE id NOT IN ({placeholders})", valid_fac_ids)
+        else:
+            cursor.execute("DELETE FROM facilities")
+
         for f in data_dict["facilities"]:
             badges_str = json.dumps(f.get("badges", []), ensure_ascii=False) if isinstance(f.get("badges"), list) else str(f.get("badges", ""))
             cursor.execute("""

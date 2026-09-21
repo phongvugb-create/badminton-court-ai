@@ -546,44 +546,28 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
 
                 merged_database = {**current_data}
 
-                # 1. Merge users: match by phone, preserve all users from both
-                merged_users = []
-                user_phones = set()
-                for u in current_data.get("users", []):
-                    if u.get("phone") and u.get("phone") not in user_phones:
-                        user_phones.add(u.get("phone"))
-                        merged_users.append(u)
-                for u in incoming_data.get("users", []):
-                    if u.get("phone") not in user_phones:
-                        user_phones.add(u.get("phone"))
-                        merged_users.append(u)
-                    else:
-                        for idx, eu in enumerate(merged_users):
-                            if eu.get("phone") == u.get("phone"):
-                                merged_users[idx] = {**eu, **u}
-                merged_database["users"] = merged_users
+                # 1. Authoritative sync for users (preserves deletions and sanitizes passwords)
+                if "users" in incoming_data and isinstance(incoming_data["users"], list):
+                    sanitized_users = []
+                    for u in incoming_data["users"]:
+                        pwd = u.get("password")
+                        if not pwd or str(pwd).strip() in ["", "undefined", "null"]:
+                            pwd = "02092006" if u.get("phone") == "0123456789" else "123456"
+                        
+                        user_copy = {**u, "password": str(pwd)}
+                        if "elo_rating" not in user_copy or user_copy["elo_rating"] is None or str(user_copy["elo_rating"]) == "undefined":
+                            user_copy["elo_rating"] = 1200 if user_copy.get("role") == "CUSTOMER" else "N/A"
+                        sanitized_users.append(user_copy)
+                    merged_database["users"] = sanitized_users
 
-                # 2. Merge facilities: match by id
-                merged_facilities = []
-                fac_ids = set()
-                for f in current_data.get("facilities", []):
-                    if f.get("id") and f.get("id") not in fac_ids:
-                        fac_ids.add(f.get("id"))
-                        merged_facilities.append(f)
-                for f in incoming_data.get("facilities", []):
-                    if f.get("id") not in fac_ids:
-                        fac_ids.add(f.get("id"))
-                        merged_facilities.append(f)
-                    else:
-                        for idx, ef in enumerate(merged_facilities):
-                            if ef.get("id") == f.get("id"):
-                                merged_facilities[idx] = {**ef, **f}
-                merged_database["facilities"] = merged_facilities
+                # 2. Authoritative sync for facilities (preserves deletions)
+                if "facilities" in incoming_data and isinstance(incoming_data["facilities"], list):
+                    merged_database["facilities"] = incoming_data["facilities"]
 
-                # 3. Merge other tables: courts, bookings, booking_orders, etc
+                # 3. Other tables: courts, bookings, booking_orders, etc
                 other_keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders']
                 for k in other_keys:
-                    if k in incoming_data and isinstance(incoming_data[k], list) and len(incoming_data[k]) > 0:
+                    if k in incoming_data and isinstance(incoming_data[k], list):
                         merged_database[k] = incoming_data[k]
                     elif k in current_data:
                         merged_database[k] = current_data[k]

@@ -9,7 +9,9 @@ const MockData = {
     { id: 2, name: "Trần Thị Mai", phone: "0912345678", password: "123456", role: "CUSTOMER", elo_rating: 1680, avatar: "M", is_approved: true },
     { id: 3, name: "Lê Hoàng Nam (Chủ Sân)", phone: "0988888888", password: "owner123", role: "OWNER", facility_id: 101, avatar: "N", is_approved: true },
     { id: 4, name: "Phạm Quốc Tuấn (Thu Ngân)", phone: "0922334455", password: "staff123", role: "STAFF", facility_id: 101, avatar: "T", is_approved: true },
-    { id: 5, name: "Admin Quản Trị", phone: "0999888777", password: "admin123", role: "ADMIN", avatar: "A", is_approved: true }
+    { id: 5, name: "Admin Quản Trị", phone: "0999888777", password: "admin123", role: "ADMIN", avatar: "A", is_approved: true },
+    { id: 6, name: "Vũ Nhất Phong", phone: "0983582321", password: "password123", role: "CUSTOMER", elo_rating: 1200, avatar: "V", is_approved: true },
+    { id: 7, name: "Trương Quốc Khánh (Chủ Sân)", phone: "0123456789", password: "02092006", role: "OWNER", facility_id: 101, elo_rating: "N/A", avatar: "K", is_approved: true }
   ],
 
   // 2. BẢNG facilities (Danh mục cụm cơ sở Sân Cầu Lông chuyên nghiệp toàn khu vực)
@@ -1582,57 +1584,33 @@ function applyDataToMockData(sourceData) {
   if (!sourceData) return;
   const keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'occupancy_heatmap', 'bookings', 'orders'];
   keys.forEach(k => {
-    if (sourceData[k] && Array.isArray(sourceData[k]) && sourceData[k].length > 0) {
+    if (sourceData[k] && Array.isArray(sourceData[k])) {
       MockData[k] = sourceData[k];
     }
   });
 
-  // Hop nhat matchmaking_rooms thong minh (giu cac phong moi nhat va merge)
-  if (sourceData.matchmaking_rooms && Array.isArray(sourceData.matchmaking_rooms) && sourceData.matchmaking_rooms.length > 0) {
-    const existingRoomIds = new Set(MockData.matchmaking_rooms.map(r => r.id));
-    sourceData.matchmaking_rooms.forEach(r => {
-      if (!existingRoomIds.has(r.id)) {
-        MockData.matchmaking_rooms.push(r);
-        existingRoomIds.add(r.id);
-      } else {
-        const idx = MockData.matchmaking_rooms.findIndex(item => item.id === r.id);
-        if (idx !== -1) {
-          MockData.matchmaking_rooms[idx] = { ...MockData.matchmaking_rooms[idx], ...r };
-        }
-      }
-    });
+  if (sourceData.matchmaking_rooms && Array.isArray(sourceData.matchmaking_rooms)) {
+    MockData.matchmaking_rooms = sourceData.matchmaking_rooms;
   }
 
-  // 1. Hop nhat danh sach co so san (facilities) thong minh
-  if (sourceData.facilities && Array.isArray(sourceData.facilities) && sourceData.facilities.length > 0) {
-    const existingFacIds = new Set(MockData.facilities.map(f => f.id));
-    sourceData.facilities.forEach(fac => {
-      if (!existingFacIds.has(fac.id)) {
-        MockData.facilities.push(fac);
-        existingFacIds.add(fac.id);
-      } else {
-        const idx = MockData.facilities.findIndex(item => item.id === fac.id);
-        if (idx !== -1) {
-          MockData.facilities[idx] = { ...MockData.facilities[idx], ...fac };
-        }
-      }
-    });
+  // 1. Cap nhat danh sach co so san (facilities)
+  if (sourceData.facilities && Array.isArray(sourceData.facilities)) {
+    MockData.facilities = sourceData.facilities;
   }
 
-  // 2. Hop nhat danh sach nguoi dung (users) thong minh giua server va client
-  if (sourceData.users && Array.isArray(sourceData.users) && sourceData.users.length > 0) {
-    const existingPhones = new Set(MockData.users.map(u => u.phone));
+  // 2. Cap nhat danh sach nguoi dung (users) & chuan hoa mat khau / ELO
+  if (sourceData.users && Array.isArray(sourceData.users)) {
     sourceData.users.forEach(u => {
-      if (!existingPhones.has(u.phone)) {
-        MockData.users.push(u);
-        existingPhones.add(u.phone);
-      } else {
-        const idx = MockData.users.findIndex(item => item.phone === u.phone);
-        if (idx !== -1) {
-          MockData.users[idx] = { ...MockData.users[idx], ...u };
-        }
+      // Chuan hoa mat khau neu bi null / undefined
+      if (!u.password || u.password === 'undefined' || u.password === 'null' || typeof u.password !== 'string' || !u.password.trim()) {
+        u.password = (u.phone === '0123456789' ? '02092006' : '123456');
+      }
+      // Chuan hoa ELO neu bi undefined
+      if (u.elo_rating === undefined || u.elo_rating === null || u.elo_rating === 'undefined') {
+        u.elo_rating = (u.role === 'CUSTOMER' ? 1200 : 'N/A');
       }
     });
+    MockData.users = sourceData.users;
   }
 }
 
