@@ -2310,6 +2310,196 @@ class BadmintonAIApp {
     }
   }
 
+  // Dynamic Multi-Tier Geocoding Engine (Nominatim -> Progressive Cleaning -> Photon -> VN Geo Dictionary)
+  async geocodeAddress(query) {
+    if (!query || !query.trim()) return null;
+    const rawQuery = query.trim();
+
+    // 1. Prepare search variations
+    // Remove micro-administrative prefixes like "Tổ 5", "TDP 12", "Số 123", "Ngõ 45/6", "Xóm 3", "Thôn 2", "Khu phố 1"
+    const cleanedQuery = rawQuery
+      .replace(/^(tổ|tdp|tổ dân phố|số nhà|số|ngõ|ngách|hẻm|xóm|thôn|khu phố|khu)\s+[\w\d\.\/\-]+\s*[,-\s]*/gi, '')
+      .trim();
+
+    const hasCountry = /vi[eệ]t\s*nam|vn/i.test(rawQuery);
+    const queryTier1 = hasCountry ? rawQuery : `${rawQuery}, Việt Nam`;
+    const queryTier2 = cleanedQuery && cleanedQuery.toLowerCase() !== rawQuery.toLowerCase() 
+      ? (hasCountry ? cleanedQuery : `${cleanedQuery}, Việt Nam`) 
+      : null;
+
+    // Helper: Nominatim fetch
+    const fetchNominatim = async (q) => {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'vi,en' } });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            return {
+              lat: parseFloat(data[0].lat),
+              lng: parseFloat(data[0].lon),
+              displayName: data[0].display_name.split(',')[0] || data[0].display_name,
+              source: 'Nominatim'
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('Nominatim error:', e);
+      }
+      return null;
+    };
+
+    // Helper: Photon API fetch
+    const fetchPhoton = async (q) => {
+      try {
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.features && data.features.length > 0) {
+            const vnFeature = data.features.find(f => f.properties && f.properties.countrycode === 'VN') || data.features[0];
+            if (vnFeature && vnFeature.geometry && vnFeature.geometry.coordinates) {
+              const coords = vnFeature.geometry.coordinates;
+              return {
+                lat: coords[1],
+                lng: coords[0],
+                displayName: vnFeature.properties.name || vnFeature.properties.city || rawQuery,
+                source: 'Photon'
+              };
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Photon error:', e);
+      }
+      return null;
+    };
+
+    // Helper: Built-in Vietnamese Regional & District Geo Dictionary (Guarantees 100% offline & fallback match)
+    const matchGeoDictionary = (q) => {
+      const norm = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+      
+      const geoDict = [
+        // Thái Nguyên & wards / districts
+        { keys: ['quan trieu', 'phuong quan trieu'], lat: 21.6247, lng: 105.8194, name: 'Phường Quan Triều, TP. Thái Nguyên' },
+        { keys: ['tan thinh', 'phuong tan thinh'], lat: 21.5670, lng: 105.8234, name: 'Phường Tân Thịnh, TP. Thái Nguyên' },
+        { keys: ['phan dinh phung'], lat: 21.5889, lng: 105.8398, name: 'Phường Phan Đình Phùng, TP. Thái Nguyên' },
+        { keys: ['hoang van thu'], lat: 21.5954, lng: 105.8385, name: 'Phường Hoàng Văn Thụ, TP. Thái Nguyên' },
+        { keys: ['linh son'], lat: 21.6050, lng: 105.8750, name: 'Xã Linh Sơn, TP. Thái Nguyên' },
+        { keys: ['song cong'], lat: 21.4921, lng: 105.8166, name: 'TP. Sông Công, Thái Nguyên' },
+        { keys: ['pho yen'], lat: 21.4172, lng: 105.8703, name: 'TP. Phổ Yên, Thái Nguyên' },
+        { keys: ['dong hy'], lat: 21.6358, lng: 105.8825, name: 'Huyện Đồng Hỷ, Thái Nguyên' },
+        { keys: ['thai nguyen', 'tp thai nguyen', 'tinh thai nguyen'], lat: 21.5928, lng: 105.8442, name: 'TP. Thái Nguyên, Tỉnh Thái Nguyên' },
+
+        // Hà Nội & districts / landmarks
+        { keys: ['dong da', 'lang ha', 'chua boc', 'thai ha', 'o cho dua'], lat: 21.0153, lng: 105.8152, name: 'Quận Đống Đa, Hà Nội' },
+        { keys: ['cau giay', 'duy tan', 'xuan thuy', 'tran thai tong', 'trung hoa'], lat: 21.0362, lng: 105.7906, name: 'Quận Cầu Giấy, Hà Nội' },
+        { keys: ['hoan kiem', 'ho guom', 'pho co', 'trang tien', 'hang bai'], lat: 21.0285, lng: 105.8542, name: 'Quận Hoàn Kiếm, Hà Nội' },
+        { keys: ['ba dinh', 'kim ma', 'lieu giai', 'doi can', 'giang vo'], lat: 21.0341, lng: 105.8242, name: 'Quận Ba Đình, Hà Nội' },
+        { keys: ['thanh xuan', 'nguyen trai', 'khuat duy tien', 'le van luong'], lat: 20.9980, lng: 105.8071, name: 'Quận Thanh Xuân, Hà Nội' },
+        { keys: ['hai ba trung', 'ba trieu', 'pho hue', 'bach mai', 'dai co viet'], lat: 21.0068, lng: 105.8524, name: 'Quận Hai Bà Trưng, Hà Nội' },
+        { keys: ['nam tu liem', 'my dinh', 'le duc tho', 'me tri'], lat: 21.0135, lng: 105.7656, name: 'Quận Nam Từ Liêm, Hà Nội' },
+        { keys: ['bac tu liem', 'co nhue', 'xuan dinh'], lat: 21.0620, lng: 105.7602, name: 'Quận Bắc Từ Liêm, Hà Nội' },
+        { keys: ['tay ho', 'ho tay', 'lac long quan', 'thuy khue', 'quang an'], lat: 21.0718, lng: 105.8245, name: 'Quận Tây Hồ, Hà Nội' },
+        { keys: ['hoang mai', 'linh dam', 'dinh cong', 'giai phong'], lat: 20.9765, lng: 105.8521, name: 'Quận Hoàng Mai, Hà Nội' },
+        { keys: ['long bien', 'viet hung', 'nguyen van cu'], lat: 21.0487, lng: 105.8885, name: 'Quận Long Biên, Hà Nội' },
+        { keys: ['ha dong', 'quang trung', 'van quan', 'mo lao'], lat: 20.9634, lng: 105.7725, name: 'Quận Hà Đông, Hà Nội' },
+        { keys: ['ha noi', 'tp ha noi', 'thanh pho ha noi', 'thu do'], lat: 21.0285, lng: 105.8542, name: 'Hà Nội' },
+
+        // TP. Hồ Chí Minh
+        { keys: ['quan 1', 'q1', 'ben nghe', 'ben thanh', 'nguyen hue', 'dong khoi'], lat: 10.7769, lng: 106.7009, name: 'Quận 1, TP. Hồ Chí Minh' },
+        { keys: ['quan 3', 'q3', 'vo thi sau'], lat: 10.7844, lng: 106.6843, name: 'Quận 3, TP. Hồ Chí Minh' },
+        { keys: ['quan 7', 'q7', 'phu my hung', 'tan phong'], lat: 10.7340, lng: 106.7218, name: 'Quận 7, TP. Hồ Chí Minh' },
+        { keys: ['binh thanh', 'hang xanh', 'bach dang', 'xo viet nghe tinh'], lat: 10.8015, lng: 106.7114, name: 'Quận Bình Thạnh, TP. Hồ Chí Minh' },
+        { keys: ['tan binh', 'cong hoa', 'truong chinh', 'san bay tan son nhat'], lat: 10.8014, lng: 106.6526, name: 'Quận Tân Bình, TP. Hồ Chí Minh' },
+        { keys: ['thu duc', 'tp thu duc', 'thao dien', 'an phu'], lat: 10.8494, lng: 106.7537, name: 'TP. Thủ Đức, TP. Hồ Chí Minh' },
+        { keys: ['go vap', 'quang trung go vap'], lat: 10.8387, lng: 106.6653, name: 'Quận Gò Vấp, TP. Hồ Chí Minh' },
+        { keys: ['phu nhuan', 'phan xich long'], lat: 10.7992, lng: 106.6803, name: 'Quận Phú Nhuận, TP. Hồ Chí Minh' },
+        { keys: ['quan 10', 'q10', 'su van hanh', '3 thang 2'], lat: 10.7716, lng: 106.6675, name: 'Quận 10, TP. Hồ Chí Minh' },
+        { keys: ['quan 5', 'q5', 'cho lon', 'an dong'], lat: 10.7554, lng: 106.6669, name: 'Quận 5, TP. Hồ Chí Minh' },
+        { keys: ['ho chi minh', 'tp hcm', 'tphcm', 'sai gon', 'tp ho chi minh'], lat: 10.7769, lng: 106.7009, name: 'TP. Hồ Chí Minh' },
+
+        // Các tỉnh thành trọng điểm toàn quốc
+        { keys: ['da nang', 'hai chau', 'son tra', 'ngu hanh son'], lat: 16.0544, lng: 108.2022, name: 'TP. Đà Nẵng' },
+        { keys: ['hai phong', 'hong bang', 'ngo quyen', 'le chan', 'do son'], lat: 20.8449, lng: 106.6881, name: 'TP. Hải Phòng' },
+        { keys: ['can tho', 'ninh kieu', 'cai rang'], lat: 10.0452, lng: 105.7469, name: 'TP. Cần Thơ' },
+        { keys: ['bac ninh', 'tu son', 'yen phong'], lat: 21.1861, lng: 106.0763, name: 'Tỉnh Bắc Ninh' },
+        { keys: ['bac giang', 'viet yen'], lat: 21.2731, lng: 106.1946, name: 'Tỉnh Bắc Giang' },
+        { keys: ['vinh phuc', 'vinh yen', 'phuc yen'], lat: 21.3089, lng: 105.6049, name: 'Tỉnh Vĩnh Phúc' },
+        { keys: ['phu tho', 'viet tri'], lat: 21.3228, lng: 105.4019, name: 'Tỉnh Phú Thọ' },
+        { keys: ['quang ninh', 'ha long', 'cam pha', 'bai chay'], lat: 20.9505, lng: 107.0734, name: 'Tỉnh Quảng Ninh' },
+        { keys: ['hai duong', 'chi linh'], lat: 20.9372, lng: 106.3146, name: 'Tỉnh Hải Dương' },
+        { keys: ['hung yen', 'pho noi', 'van giang'], lat: 20.6464, lng: 106.0511, name: 'Tỉnh Hưng Yên' },
+        { keys: ['nam dinh'], lat: 20.4347, lng: 106.1772, name: 'Tỉnh Nam Định' },
+        { keys: ['ninh binh', 'tam diep'], lat: 20.2506, lng: 105.9745, name: 'Tỉnh Ninh Bình' },
+        { keys: ['thanh hoa', 'sam son'], lat: 19.8067, lng: 105.7852, name: 'Tỉnh Thanh Hóa' },
+        { keys: ['nghe an', 'tp vinh', 'cua lo'], lat: 18.6734, lng: 105.6813, name: 'Tỉnh Nghệ An' },
+        { keys: ['ha tinh'], lat: 18.3435, lng: 105.9058, name: 'Tỉnh Hà Tĩnh' },
+        { keys: ['quang binh', 'dong hoi'], lat: 17.4690, lng: 106.6225, name: 'Tỉnh Quảng Bình' },
+        { keys: ['thua thien hue', 'hue', 'tp hue'], lat: 16.4637, lng: 107.5909, name: 'Thừa Thiên Huế' },
+        { keys: ['quang nam', 'hoi an', 'tam ky'], lat: 15.5658, lng: 108.4795, name: 'Tỉnh Quảng Nam' },
+        { keys: ['quang ngai'], lat: 15.1205, lng: 108.7923, name: 'Tỉnh Quảng Ngãi' },
+        { keys: ['binh dinh', 'quy nhon'], lat: 13.7820, lng: 109.2197, name: 'Tỉnh Bình Định' },
+        { keys: ['phu yen', 'tuy hoa'], lat: 13.0882, lng: 109.3075, name: 'Tỉnh Phú Yên' },
+        { keys: ['khanh hoa', 'nha trang', 'cam ranh'], lat: 12.2388, lng: 109.1967, name: 'Tỉnh Khánh Hòa' },
+        { keys: ['binh thuan', 'phan thiet', 'mui ne'], lat: 10.9289, lng: 108.1021, name: 'Tỉnh Bình Thuận' },
+        { keys: ['dak lak', 'buon ma thuot', 'bmt'], lat: 12.6675, lng: 108.0383, name: 'Tỉnh Đắk Lắk' },
+        { keys: ['gia lai', 'pleiku'], lat: 13.9833, lng: 108.0000, name: 'Tỉnh Gia Lai' },
+        { keys: ['lam dong', 'da lat', 'bao loc'], lat: 11.9404, lng: 108.4583, name: 'Tỉnh Lâm Đồng' },
+        { keys: ['binh duong', 'thu dau mot', 'di an', 'thuan an'], lat: 10.9805, lng: 106.6519, name: 'Tỉnh Bình Dương' },
+        { keys: ['dong nai', 'bien hoa', 'long khanh'], lat: 10.9574, lng: 106.8427, name: 'Tỉnh Đồng Nai' },
+        { keys: ['ba ria vung tau', 'vung tau', 'ba ria'], lat: 10.3460, lng: 107.0843, name: 'Bà Rịa - Vũng Tàu' },
+        { keys: ['long an', 'tan an'], lat: 10.5361, lng: 106.4116, name: 'Tỉnh Long An' },
+        { keys: ['tien giang', 'my tho'], lat: 10.3541, lng: 106.3653, name: 'Tỉnh Tiền Giang' },
+        { keys: ['kien giang', 'rach gia', 'phu quoc'], lat: 10.0125, lng: 105.0809, name: 'Tỉnh Kiên Giang' },
+        { keys: ['an giang', 'long xuyen', 'chau doc'], lat: 10.3759, lng: 105.4389, name: 'Tỉnh An Giang' },
+        { keys: ['dong thap', 'cao lanh', 'sa dec'], lat: 10.4578, lng: 105.6322, name: 'Tỉnh Đồng Tháp' },
+        { keys: ['ben tre'], lat: 10.2433, lng: 106.3759, name: 'Tỉnh Bến Tre' },
+        { keys: ['vinh long'], lat: 10.2537, lng: 105.9722, name: 'Tỉnh Vĩnh Long' },
+        { keys: ['ca mau'], lat: 9.1769, lng: 105.1501, name: 'Tỉnh Cà Mau' }
+      ];
+
+      for (const item of geoDict) {
+        for (const k of item.keys) {
+          if (norm.includes(k)) {
+            return {
+              lat: item.lat,
+              lng: item.lng,
+              displayName: item.name,
+              source: 'GeoDictionary'
+            };
+          }
+        }
+      }
+      return null;
+    };
+
+    // 1. Try Nominatim (Tier 1)
+    let result = await fetchNominatim(queryTier1);
+    if (result) return result;
+
+    // 2. Try Nominatim simplified (Tier 2)
+    if (queryTier2) {
+      result = await fetchNominatim(queryTier2);
+      if (result) return result;
+    }
+
+    // 3. Try Photon (Tier 3)
+    result = await fetchPhoton(queryTier1);
+    if (result) return result;
+
+    if (queryTier2) {
+      result = await fetchPhoton(queryTier2);
+      if (result) return result;
+    }
+
+    // 4. Try Built-in Geo Dictionary (Tier 4)
+    result = matchGeoDictionary(rawQuery);
+    if (result) return result;
+
+    return null;
+  }
+
   async searchOwnerMapAddress(e) {
     if (e) e.preventDefault();
     const input = document.getElementById('owner-map-search-input') || document.getElementById('map-search-address-input');
@@ -2319,13 +2509,10 @@ class BadmintonAIApp {
     this.showToast(`🔍 Đang tìm địa chỉ: "${query}"...`);
 
     try {
-      const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Hà Nội, Việt Nam')}`;
-      const resp = await fetch(searchUrl);
-      const data = await resp.json();
+      const result = await this.geocodeAddress(query);
 
-      if (data && data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
+      if (result) {
+        const { lat, lng, displayName } = result;
         if (this.ownerGoogleMap) {
           this.ownerGoogleMap.setView([lat, lng], 16, { animate: true });
         }
@@ -2333,9 +2520,9 @@ class BadmintonAIApp {
           this.ownerMarker.setLatLng([lat, lng]);
         }
         this.updateGPSCoordsDisplay(lat, lng);
-        this.showToast(`🎯 Đã ghim vị trí: ${data[0].display_name.split(',')[0]}!`);
+        this.showToast(`🎯 Đã ghim vị trí: ${displayName}!`);
       } else {
-        this.showToast(`⚠️ Không tìm thấy địa chỉ "${query}". Hãy thử gõ thêm tên quận hoặc đường!`);
+        this.showToast(`⚠️ Không tìm thấy địa chỉ "${query}". Hãy thử gõ thêm tên quận, huyện hoặc thành phố!`);
       }
     } catch (err) {
       console.warn("Geocoding error:", err);
@@ -2592,8 +2779,9 @@ class BadmintonAIApp {
     this.filterMapBadminton(sportType, btn);
   }
 
-  handleMapSearch(e) {
-    const keyword = e.target.value.toLowerCase().trim();
+  async handleMapSearch(e) {
+    const rawVal = e && e.target ? e.target.value : '';
+    const keyword = rawVal.toLowerCase().trim();
     if (!keyword) {
       this.currentMapSportFilter = 'all';
       this.renderGoogleSportsMarkers();
@@ -2603,8 +2791,8 @@ class BadmintonAIApp {
     if (this.googleSportsMap && this.sportsMarkerGroup) {
       this.sportsMarkerGroup.clearLayers();
       const facilities = MockData.facilities.filter(f => 
-        f.name.toLowerCase().includes(keyword) || 
-        f.address.toLowerCase().includes(keyword)
+        (f.name && f.name.toLowerCase().includes(keyword)) || 
+        (f.address && f.address.toLowerCase().includes(keyword))
       );
 
       facilities.forEach(fac => {
@@ -2632,14 +2820,21 @@ class BadmintonAIApp {
       if (facilities.length > 0) {
         this.googleSportsMap.panTo([facilities[0].latitude, facilities[0].longitude], { animate: true });
         this.showFacilityPreviewCard(facilities[0]);
+      } else {
+        // If no direct facility match, try geocoding the address/area
+        const geoResult = await this.geocodeAddress(rawVal);
+        if (geoResult && this.googleSportsMap) {
+          this.googleSportsMap.setView([geoResult.lat, geoResult.lng], 14, { animate: true });
+          this.showToast(`📍 Đã chuyển bản đồ đến khu vực: ${geoResult.displayName}!`);
+        }
       }
     }
   }
 
-  executeMapSearch() {
+  async executeMapSearch() {
     const input = document.getElementById('map-explore-search-input');
     if (input) {
-      this.handleMapSearch({ target: input });
+      await this.handleMapSearch({ target: input });
     }
   }
 
