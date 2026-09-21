@@ -197,6 +197,7 @@ class BadmintonAIApp {
         items: [
           { id: 'ui-02', icon: 'fa-compass', text: 'Tìm Kiếm Sân AI' },
           { id: 'ui-map', icon: 'fa-map-location-dot', text: 'Bản Đồ Thể Thao GPS' },
+          { id: 'ui-trending', icon: 'fa-fire', text: 'Sự Kiện & Nổi Bật' },
           { id: 'ui-03', icon: 'fa-calendar-days', text: 'Đặt Sân & Thuê Đồ' },
           { id: 'ui-04', icon: 'fa-qrcode', text: 'Thanh Toán Cọc QR' },
           { id: 'ui-05', icon: 'fa-ticket', text: 'Vé QR Điện Tử' },
@@ -285,8 +286,9 @@ class BadmintonAIApp {
 
     if (screenId === 'ui-02') this.updateBottomNavActive('home');
     else if (screenId === 'ui-map') this.updateBottomNavActive('map');
-    else if (screenId === 'ui-06') this.updateBottomNavActive('trending');
+    else if (screenId === 'ui-trending') this.updateBottomNavActive('trending');
     else if (screenId === 'ui-01' || screenId === 'ui-08') this.updateBottomNavActive('account');
+    else this.updateBottomNavActive('');
 
     if (screenId === 'ui-map') this.initGoogleSportsMap();
     if (screenId === 'ui-09') this.renderOwnerDashboardOrders();

@@ -372,7 +372,7 @@ class GeminiAIAssistant {
         "- Hệ thống áp dụng thuật toán phân phối Logistic ELO chuẩn quốc tế: `P(A) = 1 / (1 + 10^((R_B - R_A)/400))`.\n" +
         "- Tự động ghép phòng giao lưu thể thao cân bằng trình độ (chênh lệch dưới ±100 ELO).\n" +
         "- Dự báo trước tỷ lệ thắng (%) và ước tính số điểm ELO tăng/giảm sau trận đấu (K-Factor = 32).\n" +
-        "👉 Bấm vào nút **'AI Dự Đoán Tỉ Lệ Thắng'** tại mục Nổi bật để trực tiếp chạy mô phỏng trận đấu!";
+        "👉 Bấm vào mục **'AI Matchmaking ELO'** (hoặc nút **'AI Dự Đoán Tỉ Lệ Thắng'**) để trực tiếp chạy mô phỏng và ghép phòng thi đấu!";
     }
 
     // 9. Tư vấn cơ chế AI Dynamic Pricing (UC003)
