@@ -1,4 +1,4 @@
-﻿import http.server
+import http.server
 import json
 import os
 import sys
@@ -592,8 +592,8 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     "success": True, 
                     "database_type": "SQLite3 + JSON",
                     "sqlite_file": "badminton.db",
-                    "users_count": len(merged_users),
-                    "facilities_count": len(merged_facilities)
+                    "users_count": len(merged_database.get("users", [])),
+                    "facilities_count": len(merged_database.get("facilities", []))
                 }).encode("utf-8"))
             except Exception as e:
                 self.send_response(400)
