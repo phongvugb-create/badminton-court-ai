@@ -1710,8 +1710,8 @@ class BadmintonAIApp {
     e.preventDefault();
     const name = document.getElementById('add-fac-name').value.trim();
     const address = document.getElementById('add-fac-address').value.trim();
-    const lat = parseFloat(document.getElementById('add-fac-lat').value) || 10.8012;
-    const lng = parseFloat(document.getElementById('add-fac-lng').value) || 106.6211;
+    const lat = parseFloat(document.getElementById('add-fac-lat').value) || 21.0153;
+    const lng = parseFloat(document.getElementById('add-fac-lng').value) || 105.8152;
     const open_time = document.getElementById('add-fac-open').value;
     const close_time = document.getElementById('add-fac-close').value;
     const courts_count = parseInt(document.getElementById('add-fac-courts').value) || 6;
@@ -1732,10 +1732,40 @@ class BadmintonAIApp {
     };
 
     MockData.facilities.push(newFac);
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
     this.closeModal();
     this.renderAdminApprovals();
     this.renderAdminOverviewFacilities();
-    this.showToast("Đã gửi đăng ký cụm sân mới thành công! Hồ sơ đang chờ Admin duyệt.");
+    if (this.currentView === 'ui-20') this.renderDatabaseInspector();
+    this.showToast("🎉 Đã gửi đăng ký cụm sân mới thành công! Hồ sơ đã được lưu và đẩy lên cho Admin phê duyệt.");
+  }
+
+  approveFacility(facId) {
+    const fac = MockData.facilities.find(f => f.id === facId);
+    if (fac) {
+      fac.is_approved = true;
+      if (typeof saveMockDataToLocalStorage === 'function') {
+        saveMockDataToLocalStorage();
+      }
+    }
+    this.renderAdminApprovals();
+    this.renderCustomerFacilities();
+    this.renderAdminOverviewFacilities();
+    if (this.currentView === 'ui-20') this.renderDatabaseInspector();
+    this.showToast("✅ Đã phê duyệt cụm sân thành công! Cụm sân đã được kích hoạt hiển thị công khai.");
+  }
+
+  rejectFacility(facId) {
+    MockData.facilities = MockData.facilities.filter(f => f.id !== facId);
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+    this.renderAdminApprovals();
+    this.renderAdminOverviewFacilities();
+    if (this.currentView === 'ui-20') this.renderDatabaseInspector();
+    this.showToast("Đã gửi yêu cầu từ chối kèm lý do sửa đổi tới Chủ sân.", 'error');
   }
 
   openAddCourtModal() {
@@ -3610,21 +3640,7 @@ class BadmintonAIApp {
     container.innerHTML = html;
   }
 
-  approveFacility(facId) {
-    const fac = MockData.facilities.find(f => f.id === facId);
-    if (fac) fac.is_approved = true;
-    this.renderAdminApprovals();
-    this.renderCustomerFacilities();
-    this.renderAdminOverviewFacilities();
-    this.showToast("Đã phê duyệt cụm sân thành công! Cụm sân đã hiển thị công khai.");
-  }
 
-  rejectFacility(facId) {
-    MockData.facilities = MockData.facilities.filter(f => f.id !== facId);
-    this.renderAdminApprovals();
-    this.renderAdminOverviewFacilities();
-    this.showToast("Đã gửi yêu cầu từ chối kèm lý do sửa đổi tới Chủ sân.", 'error');
-  }
 
   renderAdminUsers() {
     const tbody = document.getElementById('admin-users-table-body');
