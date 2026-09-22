@@ -247,13 +247,18 @@ class BadmintonAIApp {
     const currentConfig = navMenus[this.currentRole];
     titleEl.textContent = currentConfig.title;
 
-    let html = `
-      <a class="nav-item ${this.currentView === 'ui-01' ? 'active' : ''}" onclick="app.navigateTo('ui-01')">
-        <i class="fa-solid fa-right-to-bracket icon"></i>
-        <span>Đăng Nhập / Xác Thực</span>
-      </a>
-      <hr style="border-color: var(--border-color); margin: 0.5rem 0;">
-    `;
+    let html = '';
+
+    // Only show "Đăng Nhập / Xác Thực" in sidebar when NOT logged in
+    if (!this.currentUser) {
+      html += `
+        <a class="nav-item ${this.currentView === 'ui-01' ? 'active' : ''}" onclick="app.navigateTo('ui-01')">
+          <i class="fa-solid fa-right-to-bracket icon"></i>
+          <span>Đăng Nhập / Xác Thực</span>
+        </a>
+        <hr style="border-color: var(--border-color); margin: 0.5rem 0;">
+      `;
+    }
 
     currentConfig.items.forEach(item => {
       html += `
