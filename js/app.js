@@ -3855,7 +3855,10 @@ class BadmintonAIApp {
   toggleTheme() {
     document.body.classList.toggle('light-theme');
     const isLight = document.body.classList.contains('light-theme');
-    document.getElementById('theme-icon').className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    const themeIcon = document.getElementById('theme-icon');
+    if (themeIcon) {
+      themeIcon.className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    }
     this.showToast(`Đã chuyển sang giao diện: ${isLight ? 'Sáng (Light Mode)' : 'Tối (Dark Mode)'}`);
   }
 
