@@ -601,7 +601,7 @@ body {
   flex: 1;
 }
 
-/* Sidebar Navigation */
+/* Sidebar Navigation (Sticky on Desktop) */
 .sidebar {
   width: 270px;
   background: var(--bg-secondary);
@@ -611,6 +611,30 @@ body {
   flex-direction: column;
   gap: 0.5rem;
   transition: var(--transition-normal);
+  position: sticky;
+  top: 58px;
+  height: calc(100vh - 58px - 64px);
+  overflow-y: auto;
+  flex-shrink: 0;
+  align-self: flex-start;
+  z-index: 90;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 
 .sidebar-title {
@@ -2277,24 +2301,6 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
-/* Mobile Media Queries */
-@media (max-width: 992px) {
-  .main-wrapper {
-    flex-direction: column;
-  }
-  .sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 0.5rem;
-  }
-  .sidebar-title { display: none; }
-  .court-search-box {
-    grid-template-columns: 1fr;
-  }
-}
 
 /* ==========================================================================
    ADVANCED MOTION & SPLASH ANIMATIONS (SMOOTH USER EXPERIENCE)
