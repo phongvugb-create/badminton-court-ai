@@ -1300,7 +1300,7 @@ function applyDataToMockData(sourceData) {
 function saveMockDataToLocalStorage() {
   try {
     const payload = {};
-    const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders'];
+    const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'player_profiles', 'elo_histories', 'matches', 'match_players', 'bookings', 'orders'];
     keys.forEach(k => {
       if (MockData[k]) payload[k] = MockData[k];
     });

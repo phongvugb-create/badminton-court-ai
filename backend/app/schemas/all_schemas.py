@@ -124,3 +124,95 @@ class AIChatRequest(BaseModel):
 
 class AIChatResponse(BaseModel):
     reply: str
+
+# =============================================================================
+# RE-ARCHITECTED AI MATCHMAKING & ELO SCHEMAS
+# =============================================================================
+class PlayerProfileCreateOrUpdate(BaseModel):
+    gender: Optional[str] = "Khác"
+    birth_year: Optional[int] = None
+    preferred_area: Optional[str] = "Cầu Giấy, Hà Nội"
+    skill_level: Optional[str] = "Trung Bình Khá"
+    current_elo: Optional[int] = 1200
+    available_time: Optional[str] = "18:00 - 21:00"
+    preferred_court: Optional[str] = None
+    play_style: Optional[str] = "Công thủ toàn diện"
+
+class PlayerProfileResponse(BaseModel):
+    id: int
+    user_id: int
+    full_name: Optional[str] = None
+    gender: str
+    birth_year: Optional[int] = None
+    preferred_area: str
+    skill_level: str
+    tier_display: Optional[str] = None
+    current_elo: int
+    games_played: int
+    wins: int
+    losses: int
+    win_rate_percent: Optional[float] = 0.0
+    rating_confidence: float
+    confidence_level: Optional[str] = "Calibrating"
+    is_searching: bool
+    available_time: str
+    preferred_court: Optional[str] = None
+    play_style: str
+    streak: str
+
+    class Config:
+        from_attributes = True
+
+class MatchFindRequest(BaseModel):
+    match_type: str = "SINGLES" # SINGLES or DOUBLES
+    preferred_date: str = "Hôm nay"
+    preferred_time: str = "18:00 - 20:00"
+    preferred_area: str = "Cầu Giấy"
+    max_elo_delta: Optional[int] = 100
+    wait_time_seconds: Optional[int] = 0
+
+class MatchCandidate(BaseModel):
+    candidate_id: int
+    candidate_name: str
+    candidate_elo: int
+    candidate_tier: str
+    elo_diff: int
+    match_score: float
+    sub_scores: dict
+    win_probability_a: float
+    win_probability_b: float
+    is_recommended: bool
+
+class MatchFindResponse(BaseModel):
+    player_elo: int
+    player_tier: str
+    dynamic_elo_range: int
+    wait_time_seconds: int
+    total_candidates: int
+    candidates: List[MatchCandidate]
+    ai_recommendation: dict
+
+class MatchResultSubmitRequest(BaseModel):
+    match_id: int
+    claimed_winner_id: int
+    score_submission: str # e.g. "21-19, 21-18"
+
+class MatchResultConfirmRequest(BaseModel):
+    match_id: int
+    confirm_agreed: bool # True = agree, False = dispute
+    counter_claimed_winner_id: Optional[int] = None
+    dispute_note: Optional[str] = None
+
+class ELOHistoryItem(BaseModel):
+    id: int
+    player_id: int
+    match_id: Optional[int] = None
+    old_elo: int
+    new_elo: int
+    elo_change: int
+    reason: str
+    opponent_info: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

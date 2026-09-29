@@ -172,3 +172,100 @@ class MatchmakingRoom(Base):
 
     host = relationship("User", back_populates="hosted_rooms")
     facility = relationship("Facility", back_populates="rooms")
+
+# 10. PLAYER_PROFILES (Hồ sơ người chơi ELO & Kỹ năng)
+class PlayerProfile(Base):
+    __tablename__ = "player_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    gender = Column(String(20), default="Khác")
+    birth_year = Column(Integer, nullable=True)
+    preferred_area = Column(String(255), default="Cầu Giấy, Hà Nội")
+    skill_level = Column(String(100), default="Trung Bình Khá")
+    current_elo = Column(Integer, default=1200)
+    games_played = Column(Integer, default=0)
+    wins = Column(Integer, default=0)
+    losses = Column(Integer, default=0)
+    rating_confidence = Column(Float, default=0.20)
+    is_searching = Column(Boolean, default=False)
+    available_time = Column(String(100), default="18:00 - 21:00")
+    preferred_court = Column(String(255), nullable=True)
+    play_style = Column(String(100), default="Công thủ toàn diện")
+    streak = Column(String(50), default="0")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+# 11. MATCH_REQUESTS (Yêu cầu tìm trận của người chơi)
+class MatchRequest(Base):
+    __tablename__ = "match_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    player_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    match_type = Column(String(50), default="SINGLES") # SINGLES (1v1), DOUBLES (2v2)
+    preferred_date = Column(String(20), nullable=False)
+    start_time = Column(String(10), nullable=False)
+    end_time = Column(String(10), nullable=False)
+    preferred_area = Column(String(255), nullable=False)
+    min_elo = Column(Integer, default=1100)
+    max_elo = Column(Integer, default=1300)
+    status = Column(String(50), default="SEARCHING") # SEARCHING, MATCHED, CANCELLED, EXPIRED
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# 12. MATCHES (Trận đấu đã được ghép cặp)
+class Match(Base):
+    __tablename__ = "matches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    court_id = Column(Integer, ForeignKey("courts.id"), nullable=True)
+    facility_id = Column(Integer, ForeignKey("facilities.id"), nullable=True)
+    match_type = Column(String(50), default="SINGLES") # SINGLES, DOUBLES
+    start_time = Column(String(50), nullable=True)
+    end_time = Column(String(50), nullable=True)
+    match_date = Column(String(20), nullable=True)
+    status = Column(String(50), default="SCHEDULED") # SCHEDULED, PLAYING, PENDING_CONFIRMATION, CONFIRMED, DISPUTED
+    final_score = Column(String(100), nullable=True)
+    winner_team = Column(String(10), nullable=True) # A, B
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# 13. MATCH_PLAYERS (Thành viên tham gia trận đấu & kết quả cá nhân)
+class MatchPlayer(Base):
+    __tablename__ = "match_players"
+
+    id = Column(Integer, primary_key=True, index=True)
+    match_id = Column(Integer, ForeignKey("matches.id"), nullable=False)
+    player_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    team = Column(String(10), default="A") # Team A, Team B
+    elo_before = Column(Integer, nullable=False)
+    elo_after = Column(Integer, nullable=True)
+    elo_change = Column(Integer, default=0)
+    score_claimed = Column(String(50), nullable=True)
+    result = Column(String(20), default="PENDING") # WIN, LOSS, DRAW, PENDING
+    confirmation_status = Column(String(50), default="PENDING") # PENDING, CONFIRMED, DISPUTED
+    submitted_at = Column(DateTime(timezone=True), nullable=True)
+
+# 14. ELO_HISTORIES (Sổ cái lịch sử biến động ELO)
+class ELOHistory(Base):
+    __tablename__ = "elo_histories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    player_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    match_id = Column(Integer, ForeignKey("matches.id"), nullable=True)
+    old_elo = Column(Integer, nullable=False)
+    new_elo = Column(Integer, nullable=False)
+    elo_change = Column(Integer, nullable=False)
+    reason = Column(String(255), default="Match Result")
+    opponent_info = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# 15. MATCHMAKING_QUEUES (Hàng đợi tìm trận trực tiếp với Dynamic Range)
+class MatchmakingQueue(Base):
+    __tablename__ = "matchmaking_queues"
+
+    id = Column(Integer, primary_key=True, index=True)
+    player_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    match_request_id = Column(Integer, ForeignKey("match_requests.id"), nullable=True)
+    current_range = Column(Integer, default=50) # 50 -> 100 -> 150 -> 200
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+    status = Column(String(50), default="WAITING") # WAITING, MATCHED, CANCELLED
+

@@ -960,158 +960,318 @@ class BadmintonAIApp {
     this.renderMatchmakingRooms();
   }
 
-  renderMatchmakingRooms() {
+  // =========================================================================
+  // RE-ARCHITECTED AI MATCHMAKING & ELO ENGINE (UC006)
+  // =========================================================================
+  getEloTierInfo(elo) {
+    if (elo < 1000) return { tier: 1, name: "Tân thủ", display: "🟢 Cấp 1: Tân thủ", color: "#16a34a", bg: "#dcfce7", desc: "Mới chơi, làm quen nhịp độ" };
+    if (elo < 1200) return { tier: 2, name: "Trung Bình", display: "🔵 Cấp 2: Trung Bình (Cơ bản)", color: "#2563eb", bg: "#dbeafe", desc: "Kỹ thuật cơ bản, phản tạt tốt" };
+    if (elo < 1400) return { tier: 3, name: "Trung Bình Khá", display: "🟡 Cấp 3: Trung Bình Khá", color: "#ca8a04", bg: "#fef9c3", desc: "Có nền tảng, đánh tương đối ổn" };
+    if (elo < 1600) return { tier: 4, name: "Khá", display: "🟠 Cấp 4: Khá", color: "#ea580c", bg: "#ffedd5", desc: "Kỹ thuật & chiến thuật khá, smash uy lực" };
+    if (elo < 1800) return { tier: 5, name: "Thành Thạo", display: "🔴 Cấp 5: Giỏi (Thành Thạo)", color: "#dc2626", bg: "#fee2e2", desc: "Kỹ năng toàn diện, thi đấu ổn định" };
+    return { tier: 6, name: "Chuyên Nghiệp", display: "🟣 Cấp 6: Tốt (Chuyên Nghiệp)", color: "#7c3aed", bg: "#f3e8ff", desc: "Trình độ rất cao, đẳng cấp vận động viên" };
+  }
+
+  getRatingConfidenceInfo(gamesPlayed) {
+    const games = gamesPlayed || 15;
+    if (games < 10) {
+      return { confidence: Math.min(0.45, 0.15 + games * 0.03), text: "Tân thủ (Thử việc)", kFactor: 48, badge: "Thử Việc (K=48)" };
+    } else if (games < 30) {
+      return { confidence: Math.min(0.85, 0.45 + (games - 10) * 0.02), text: "Đang hiệu chỉnh", kFactor: 32, badge: "Hiệu Chỉnh (K=32)" };
+    }
+    return { confidence: 0.95, text: "Xác thực (Độ tin cậy cao)", kFactor: 24, badge: "Xác Thực (K=24)" };
+  }
+
+  switchDemoPlayerElo(newElo) {
+    const elo = parseInt(newElo, 10);
+    if (!this.currentUser) this.currentUser = { id: 1, name: "Nguyễn Văn Hùng", role: "CUSTOMER" };
+    this.currentUser.elo_rating = elo;
+
+    const tier = this.getEloTierInfo(elo);
+    const conf = this.getRatingConfidenceInfo(28);
+
+    const eloBadge = document.getElementById('player-profile-elo');
+    const tierBadge = document.getElementById('player-profile-tier');
+    const confBadge = document.getElementById('player-profile-confidence-badge');
+
+    if (eloBadge) eloBadge.innerHTML = `<i class="fa-solid fa-trophy"></i> ELO ${elo}`;
+    if (tierBadge) {
+      tierBadge.textContent = tier.display;
+      tierBadge.style.color = tier.color;
+      tierBadge.style.background = tier.bg;
+    }
+    if (confBadge) {
+      confBadge.textContent = `🎯 Rating Confidence: ${Math.round(conf.confidence * 100)}% (${conf.badge})`;
+    }
+
+    this.showToast(`🎯 Đã chuyển sang ${tier.display}! Đang quét lại đối thủ...`);
+    this.executeMatchmakingEngine();
+  }
+
+  handleMatchTypeChange(val) {
+    this.currentMatchType = val;
+    this.executeMatchmakingEngine();
+  }
+
+  simulateDynamicRangeStep() {
+    this.currentWaitTimer = (this.currentWaitTimer || 0) + 30;
+    if (this.currentWaitTimer > 150) this.currentWaitTimer = 0;
+    
+    let range = 50;
+    if (this.currentWaitTimer >= 120) range = 200;
+    else if (this.currentWaitTimer >= 60) range = 150;
+    else if (this.currentWaitTimer >= 30) range = 100;
+
+    const rangeBadge = document.getElementById('dynamic-range-badge');
+    const waitTimerEl = document.getElementById('dynamic-wait-timer');
+    if (rangeBadge) rangeBadge.textContent = `Dải ELO: ±${range}`;
+    if (waitTimerEl) waitTimerEl.textContent = `(Thời gian chờ: ${this.currentWaitTimer}s)`;
+
+    this.showToast(`⚡ Dynamic Range tự động mở rộng lên ±${range} ELO (chờ ${this.currentWaitTimer}s)!`);
+    this.executeMatchmakingEngine();
+  }
+
+  startDynamicMatchmakingSearch() {
+    this.currentWaitTimer = 0;
+    const rangeBadge = document.getElementById('dynamic-range-badge');
+    const waitTimerEl = document.getElementById('dynamic-wait-timer');
+    if (rangeBadge) rangeBadge.textContent = `Dải ELO: ±50`;
+    if (waitTimerEl) waitTimerEl.textContent = `(Thời gian chờ: 0s)`;
+
+    this.showToast("🚀 Khởi động Matching Score Engine & Radar dải động...");
+    this.executeMatchmakingEngine();
+  }
+
+  executeMatchmakingEngine() {
     const container = document.getElementById('matchmaking-rooms-grid');
     if (!container) return;
 
-    let list = [...MockData.matchmaking_rooms];
+    const userElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1450;
+    const userName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : "Nguyễn Văn Hùng";
+    const userTier = this.getEloTierInfo(userElo);
 
-    // Filter by Category
-    if (this.currentMMFilter === 'recommended') {
-      list = list.filter(r => r.is_ai_recommended || (r.ai_compatibility && r.ai_compatibility >= 95));
-    } else if (this.currentMMFilter === 'doubles') {
-      list = list.filter(r => (r.match_type && r.match_type.includes('Đôi')) || r.category === 'doubles');
-    } else if (this.currentMMFilter === 'singles') {
-      list = list.filter(r => (r.match_type && r.match_type.includes('Đơn')) || r.category === 'singles');
-    } else if (this.currentMMFilter === 'handicap') {
-      list = list.filter(r => r.category === 'handicap' || (r.ai_handicap && r.ai_handicap.includes('Chấp')));
-    }
+    const waitSeconds = this.currentWaitTimer || 0;
+    let dynamicRange = 50;
+    if (waitSeconds >= 120) dynamicRange = 200;
+    else if (waitSeconds >= 60) dynamicRange = 150;
+    else if (waitSeconds >= 30) dynamicRange = 100;
 
-    // Filter by Search Query
-    if (this.currentMMSearch) {
-      list = list.filter(r => {
-        const text = `${r.room_name} ${r.facility_name} ${r.district || ''} ${r.match_type} ${r.host_name}`.toLowerCase();
-        return text.includes(this.currentMMSearch);
-      });
-    }
+    const maxDeltaSelect = document.getElementById('finder-max-delta');
+    const selectedDelta = maxDeltaSelect ? parseInt(maxDeltaSelect.value, 10) : 100;
+    const effectiveDelta = Math.max(selectedDelta, dynamicRange);
 
-    // Sort
-    if (this.currentMMSort === 'ai-match') {
-      list.sort((a, b) => (b.ai_compatibility || 0) - (a.ai_compatibility || 0));
-    } else if (this.currentMMSort === 'elo-asc') {
-      list.sort((a, b) => (a.required_elo_min || 0) - (b.required_elo_min || 0));
-    } else if (this.currentMMSort === 'elo-desc') {
-      list.sort((a, b) => (b.required_elo_min || 0) - (a.required_elo_min || 0));
-    } else if (this.currentMMSort === 'time') {
-      list.sort((a, b) => (a.match_time || '').localeCompare(b.match_time || ''));
-    }
+    const matchTypeEl = document.getElementById('finder-match-type');
+    const matchType = matchTypeEl ? matchTypeEl.value : 'SINGLES';
 
-    if (list.length === 0) {
-      container.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; background: #ffffff; border-radius: 16px; border: 1px dashed var(--border-color);">
-          <i class="fa-solid fa-users-slash" style="font-size: 2.5rem; color: var(--text-dim); margin-bottom: 0.75rem;"></i>
-          <h3 style="margin: 0; color: var(--text-main);">Không tìm thấy phòng ghép phù hợp</h3>
-          <p style="color: var(--text-muted); font-size: 0.88rem; margin: 6px 0 1rem;">Hãy thử tìm kiếm với từ khóa khác hoặc tạo một phòng ghép mới theo trình độ của bạn!</p>
-          <button class="btn btn-primary btn-sm" onclick="app.openCreateRoomModal()">
-            <i class="fa-solid fa-plus"></i> Tạo Phòng Ghép Ngay
-          </button>
-        </div>
-      `;
-      return;
-    }
+    const preferredArea = document.getElementById('finder-area')?.value || 'Cầu Giấy';
+    const preferredTime = document.getElementById('finder-time')?.value || '18:00 - 20:00';
 
-    let html = '';
-    list.forEach(room => {
-      const matchScore = room.ai_compatibility || 90;
-      let badgeClass = 'high';
-      if (matchScore < 75) badgeClass = 'challenge';
-      else if (matchScore < 90) badgeClass = 'mid';
+    // Weights: ELO 50%, Time 20%, Location 15%, Skill 10%, History 5%
+    const weights = { elo: 0.50, time: 0.20, loc: 0.15, skill: 0.10, hist: 0.05 };
 
-      const userElo = (this.currentUser && this.currentUser.elo_rating) ? this.currentUser.elo_rating : 1450;
-      const isDoubles = room.match_type && room.match_type.includes('Đôi');
-      const maxSlots = room.max_players || (isDoubles ? 4 : 2);
-      const curSlots = room.current_players || (room.players ? room.players.length : 1);
-      const emptySlots = Math.max(0, maxSlots - curSlots);
+    let candidatePool = [];
 
-      // Render player avatar pills
-      let avatarsHtml = '';
-      if (room.players && Array.isArray(room.players)) {
-        room.players.forEach(p => {
-          const isHost = p.role === 'Host';
-          const bg = isHost ? 'linear-gradient(135deg, #167946, #059669)' : 'linear-gradient(135deg, #0284c7, #0369a1)';
-          avatarsHtml += `
-            <div class="mm-player-avatar-item" style="background: ${bg};" title="${p.name} (ELO ${p.elo}) - ${p.style || 'Đấu thủ'}">
-              ${p.avatar || p.name.charAt(0)}
-              ${isHost ? '<span style="position: absolute; top: -6px; right: -6px; background: #f59e0b; color: #fff; font-size: 0.6rem; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-crown" style="font-size: 7px;"></i></span>' : ''}
-            </div>
-          `;
+    // 1. Gather other players
+    (MockData.users || []).forEach(u => {
+      if (u.role === 'CUSTOMER' && u.name !== userName) {
+        const cElo = typeof u.elo_rating === 'number' ? u.elo_rating : 1200;
+        const diff = Math.abs(userElo - cElo);
+
+        if (diff <= effectiveDelta) {
+          const sElo = Math.max(0, 100 - (diff * 0.5));
+          const sTime = 95.0; // High overlap in preferred slot
+          const sLoc = preferredArea === 'Cầu Giấy' ? 95.0 : 80.0;
+          const sSkill = Math.max(30, 100 - (Math.abs(userTier.tier - this.getEloTierInfo(cElo).tier) * 20));
+          const sHist = 90.0;
+
+          const matchScore = Math.round((sElo * weights.elo + sTime * weights.time + sLoc * weights.loc + sSkill * weights.skill + sHist * weights.hist) * 10) / 10;
+          
+          // Logistic probability: P(A) = 1 / (1 + 10^((cElo - userElo)/400))
+          const expA = 1.0 / (1.0 + Math.pow(10, (cElo - userElo) / 400.0));
+          const winRateA = Math.round(expA * 100);
+          const winRateB = 100 - winRateA;
+
+          candidatePool.push({
+            id: u.id,
+            name: u.name,
+            elo: cElo,
+            tier: this.getEloTierInfo(cElo),
+            diff: diff,
+            matchScore: matchScore,
+            subScores: { elo: Math.round(sElo), time: Math.round(sTime), loc: Math.round(sLoc), skill: Math.round(sSkill) },
+            winRateA: winRateA,
+            winRateB: winRateB,
+            matchType: matchType,
+            facility: preferredArea === 'Cầu Giấy' ? 'CLB Cầu Giấy Pro Center' : 'CLB Catchy Badminton Arena',
+            time: preferredTime,
+            isRoom: false
+          });
+        }
+      }
+    });
+
+    // 2. Also incorporate matchmaking rooms
+    (MockData.matchmaking_rooms || []).forEach(r => {
+      const rMin = r.required_elo_min || 1200;
+      const rMax = r.required_elo_max || 1600;
+      const rMid = Math.round((rMin + rMax) / 2);
+      const diff = Math.abs(userElo - rMid);
+
+      if (diff <= effectiveDelta + 50) {
+        const sElo = Math.max(0, 100 - (diff * 0.5));
+        const sTime = 90.0;
+        const sLoc = (r.district && r.district.includes(preferredArea)) ? 100.0 : 80.0;
+        const sSkill = 90.0;
+        const sHist = (matchType === 'DOUBLES' && r.match_type.includes('Đôi')) ? 100.0 : 75.0;
+
+        const matchScore = Math.round((sElo * weights.elo + sTime * weights.time + sLoc * weights.loc + sSkill * weights.skill + sHist * weights.hist) * 10) / 10;
+        const expA = 1.0 / (1.0 + Math.pow(10, (rMid - userElo) / 400.0));
+
+        candidatePool.push({
+          id: r.id,
+          roomId: r.id,
+          name: r.room_name,
+          hostName: r.host_name,
+          elo: rMid,
+          tier: this.getEloTierInfo(rMid),
+          diff: diff,
+          matchScore: matchScore,
+          subScores: { elo: Math.round(sElo), time: Math.round(sTime), loc: Math.round(sLoc), skill: Math.round(sSkill) },
+          winRateA: Math.round(expA * 100),
+          winRateB: 100 - Math.round(expA * 100),
+          matchType: r.match_type,
+          facility: r.facility_name,
+          time: `${r.match_date} (${r.match_time})`,
+          isRoom: true,
+          roomObj: r
         });
-      } else {
-        avatarsHtml += `
-          <div class="mm-player-avatar-item" style="background: linear-gradient(135deg, #167946, #059669);" title="${room.host_name} (ELO ${room.host_elo})">
-            ${(room.host_name || 'H').charAt(0)}
-          </div>
-        `;
       }
+    });
 
-      for (let i = 0; i < emptySlots; i++) {
-        avatarsHtml += `
-          <div class="mm-player-avatar-item empty" title="Chỗ trống sẵn sàng ghép">
-            <i class="fa-solid fa-plus" style="font-size: 0.75rem;"></i>
-          </div>
+    // Sort descending by matchScore
+    candidatePool.sort((a, b) => b.matchScore - a.matchScore);
+
+    // Update total count
+    const countEl = document.getElementById('mm-total-count');
+    if (countEl) countEl.textContent = candidatePool.length;
+
+    // Generate explainable AI Recommendation Narrative
+    const narrativeEl = document.getElementById('ai-recom-narrative');
+    const tipEl = document.getElementById('ai-recom-tactical-tip');
+    const matchBadge = document.getElementById('ai-recom-match-badge');
+
+    if (candidatePool.length > 0) {
+      const best = candidatePool[0];
+      if (matchBadge) matchBadge.textContent = `🎯 Khớp ${best.matchScore}% (${best.diff <= 50 ? 'Cân bằng hoàn hảo' : 'Độ lệch hợp lý'})`;
+      if (narrativeEl) {
+        narrativeEl.innerHTML = `
+          <strong>AI Recommendation:</strong> Bạn đang có <strong>ELO ${userElo} (${userTier.display})</strong>. 
+          Hệ thống đề xuất ghép tốt nhất với <strong>${best.name} (ELO ${best.elo})</strong> với điểm phù hợp 
+          <strong style="color: #16a34a;">${best.matchScore}%</strong>. 
+          Chênh lệch ELO chỉ <strong>${best.diff} điểm</strong>, xác suất chiến thắng dự kiến <strong>${best.winRateA}% - ${best.winRateB}%</strong>, 
+          cùng rảnh khung giờ <strong>${best.time}</strong> tại cụm sân <strong>${best.facility}</strong>.
         `;
       }
+      if (tipEl) {
+        tipEl.innerHTML = `💡 <em>Chiến thuật AI: Đối thủ có lối đánh phản tạt và smash tốc độ. Bạn nên chủ động ép sâu 2 góc cuối sân và duy trì thế trận bền cầu ở set đầu tiên!</em>`;
+      }
+    } else {
+      if (narrativeEl) narrativeEl.innerHTML = `Chưa tìm thấy đối thủ trong dải ELO ±${effectiveDelta}. Hãy nhấn <strong>"Giả Lập Nới Dải (+30s)"</strong> để hệ thống tự động mở rộng khoảng tìm kiếm!`;
+    }
+
+    // Render Cards in Grid
+    let html = '';
+    candidatePool.forEach(cand => {
+      let badgeBg = '#16a34a';
+      if (cand.matchScore < 80) badgeBg = '#ca8a04';
+      if (cand.matchScore < 70) badgeBg = '#dc2626';
 
       html += `
-        <div class="mm-room-card">
-          <div class="mm-card-header">
-            <span class="mm-ai-badge ${badgeClass}">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> 🎯 AI Match: ${matchScore}%
+        <div class="mm-room-card" style="border: 1.5px solid ${cand.matchScore >= 90 ? '#86efac' : '#e2e8f0'}; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+          <div class="mm-card-header" style="background: ${cand.matchScore >= 90 ? '#f0fdf4' : '#f8fafc'}; padding: 10px 14px;">
+            <span class="mm-ai-badge" style="background: ${badgeBg}; color: #fff; font-weight: 800; font-size: 0.8rem; padding: 4px 10px; border-radius: 9999px;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> MatchScore: ${cand.matchScore}%
             </span>
-            <div style="display: flex; gap: 4px; align-items: center;">
-              <span class="badge ${isDoubles ? 'badge-info' : 'badge-warning'}" style="font-size: 0.75rem;">
-                ${isDoubles ? '🏸 Đôi' : '⚡ Đơn'}
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <span class="badge ${cand.matchType.includes('Đôi') ? 'badge-info' : 'badge-warning'}" style="font-size: 0.75rem;">
+                ${cand.matchType.includes('Đôi') ? '🏸 Đôi 2v2' : '⚡ Đơn 1v1'}
               </span>
-              <span class="elo-badge" style="font-size: 0.75rem; padding: 2px 8px;">
-                ELO ${room.required_elo_min} - ${room.required_elo_max}
+              <span class="elo-badge" style="font-size: 0.78rem; padding: 2px 8px;">
+                ELO ${cand.elo}
               </span>
             </div>
           </div>
 
-          <div class="mm-card-body">
+          <div class="mm-card-body" style="padding: 14px;">
             <div>
-              <h3 style="margin: 0 0 4px; font-size: 1.05rem; font-weight: 700; color: var(--text-main);">${room.room_name}</h3>
-              <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0; display: flex; flex-direction: column; gap: 2px;">
-                <span><i class="fa-solid fa-location-dot text-rose"></i> <strong>${room.facility_name}</strong></span>
-                <span><i class="fa-solid fa-clock text-amber"></i> ${room.match_date} (${room.match_time}) • <span style="color: var(--primary); font-weight: 600;">${room.court_number || 'Sân tiêu chuẩn'}</span></span>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">${cand.name}</h3>
+                <span style="background: ${cand.tier.bg}; color: ${cand.tier.color}; font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">
+                  ${cand.tier.display}
+                </span>
+              </div>
+              <p style="font-size: 0.82rem; color: #64748b; margin: 0 0 10px; line-height: 1.5;">
+                <span><i class="fa-solid fa-location-dot text-rose"></i> ${cand.facility}</span><br>
+                <span><i class="fa-solid fa-clock text-amber"></i> ${cand.time}</span>
               </p>
             </div>
 
-            <!-- Players Lineup -->
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; font-weight: 700; color: var(--text-dim); margin-bottom: 2px;">
-                <span>ĐẤU THỦ TRONG PHÒNG (${curSlots}/${maxSlots})</span>
-                <span style="color: ${emptySlots > 0 ? '#16a34a' : '#ef4444'}; font-weight: 800;">
-                  ${emptySlots > 0 ? `🟢 Còn ${emptySlots} chỗ trống` : '🔴 Đã đủ người'}
-                </span>
+            <!-- Multi-Criteria MatchScore Breakdown -->
+            <div style="background: #f8fafc; border-radius: 10px; padding: 10px 12px; border: 1px solid #e2e8f0; margin-bottom: 12px; font-size: 0.78rem;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: 700; color: #334155;">
+                <span>Phân Rã 5 Tiêu Chí Điểm Match:</span>
+                <span style="color: #166534;">Δ ${cand.diff} ELO</span>
               </div>
-              <div class="mm-player-avatar-group">
-                ${avatarsHtml}
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center;">
+                <div style="background: #fff; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                  <div style="color: #64748b; font-size: 0.7rem;">ELO (50%)</div>
+                  <strong style="color: #16a34a;">${cand.subScores.elo}đ</strong>
+                </div>
+                <div style="background: #fff; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                  <div style="color: #64748b; font-size: 0.7rem;">Giờ (20%)</div>
+                  <strong style="color: #0284c7;">${cand.subScores.time}đ</strong>
+                </div>
+                <div style="background: #fff; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                  <div style="color: #64748b; font-size: 0.7rem;">Sân (15%)</div>
+                  <strong style="color: #e11d48;">${cand.subScores.loc}đ</strong>
+                </div>
+                <div style="background: #fff; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                  <div style="color: #64748b; font-size: 0.7rem;">Trình (10%)</div>
+                  <strong style="color: #7c3aed;">${cand.subScores.skill}đ</strong>
+                </div>
               </div>
             </div>
 
-            <!-- AI Tactical Prediction -->
-            <div class="ai-tactical-tip">
-              <i class="fa-solid fa-robot" style="font-size: 1.1rem; color: #0284c7; flex-shrink: 0;"></i>
-              <div style="line-height: 1.4;">
-                <strong style="color: #0369a1;">AI Phân Tích:</strong> ${room.ai_prediction || 'Trận đấu cân bằng, tốc độ trận đấu nhịp nhàng.'}
-                ${room.ai_handicap ? `<br><span style="color: #6b21a8; font-weight: 700;">⚖️ ${room.ai_handicap}</span>` : ''}
+            <!-- Predicted Win Rate Bar -->
+            <div style="margin-bottom: 6px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.76rem; font-weight: 700; margin-bottom: 3px;">
+                <span style="color: #166534;">Bạn: ${cand.winRateA}%</span>
+                <span style="color: #1e40af;">Đối thủ: ${cand.winRateB}%</span>
+              </div>
+              <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; display: flex;">
+                <div style="width: ${cand.winRateA}%; height: 100%; background: #16a34a;"></div>
+                <div style="width: ${cand.winRateB}%; height: 100%; background: #2563eb;"></div>
               </div>
             </div>
           </div>
 
-          <div class="mm-card-footer">
-            <div>
-              <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Phí chia sân</div>
-              <div style="font-size: 0.95rem; font-weight: 800; color: var(--primary);">${room.price_per_slot || '45.000đ'}/người</div>
-            </div>
+          <div class="mm-card-footer" style="padding: 10px 14px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; color: #64748b;">
+              ${cand.diff <= 50 ? '🟢 Cân kèo hoàn hảo' : '🟡 Kèo thách đấu nhẹ'}
+            </span>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-secondary btn-sm" onclick="app.loadRoomIntoEloSimulator(${room.id})" title="Đưa vào bộ mô phỏng ELO">
-                <i class="fa-solid fa-brain"></i> AI Dự Báo
+              <button class="btn btn-secondary btn-sm" onclick="app.loadRoomIntoEloSimulator(${cand.id})" title="Xem phân tích đối kháng ELO">
+                <i class="fa-solid fa-brain"></i> Mô Phỏng
               </button>
-              <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${room.id})" style="background: linear-gradient(135deg, #167946 0%, #059669 100%);">
-                <i class="fa-solid fa-comments"></i> Vào Phòng Chat
-              </button>
+              ${cand.isRoom ? `
+                <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${cand.roomId})" style="background: #167946;">
+                  <i class="fa-solid fa-users"></i> Vào Phòng
+                </button>
+              ` : `
+                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', ${cand.elo})" style="background: linear-gradient(135deg, #167946, #059669);">
+                  <i class="fa-solid fa-bolt"></i> Ghép Kèo Ngay
+                </button>
+              `}
             </div>
           </div>
         </div>
@@ -1121,89 +1281,207 @@ class BadmintonAIApp {
     container.innerHTML = html;
   }
 
-  // 1-Click AI Auto Matchmaking Scanner with Radar Animation
-  startAIAutoMatch() {
+  challengeOpponentPrompt(opponentName, opponentElo) {
+    this.showToast(`🏸 Đã gửi lời mời giao lưu tới ${opponentName} (ELO ${opponentElo})!`);
+  }
+
+  renderMatchmakingRooms() {
+    this.executeMatchmakingEngine();
+  }
+
+  // =========================================================================
+  // 8. TWO-WAY RESULT CONFIRMATION & DISPUTE MODAL (Component 8 & 9)
+  // =========================================================================
+  openMatchResultModal() {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
 
     modalBody.innerHTML = `
-      <div style="text-align: center; padding: 1rem 0;">
-        <h3 style="margin: 0 0 6px; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <i class="fa-solid fa-bolt text-amber"></i> AI AUTO-MATCHMAKING SCANNER
-        </h3>
-        <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1.5rem;">Hệ thống đang quét phân tích dải điểm ELO 1450 & vị trí sân tối ưu trong bán kính 5km...</p>
-
-        <!-- Radar Display Component -->
-        <div class="ai-radar-container">
-          <div class="radar-sweep-beam"></div>
-          <div class="radar-ring r1"></div>
-          <div class="radar-ring r2"></div>
-          <div class="radar-ring r3"></div>
-          <div class="radar-crosshair-h"></div>
-          <div class="radar-crosshair-v"></div>
-          <div class="radar-blip" style="top: 30%; left: 65%;"></div>
-          <div class="radar-blip" style="top: 70%; left: 35%; animation-delay: 0.5s;"></div>
-          <div class="radar-blip" style="top: 45%; left: 25%; animation-delay: 1s;"></div>
+      <div style="padding: 0.5rem 0;">
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: #f0fdf4; color: #16a34a; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; border: 2px solid #86efac;">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">Xác Nhận Kết Quả Trận Đấu & Cập Nhật ELO</h3>
+          <p style="font-size: 0.84rem; color: #64748b; margin: 4px 0 0;">Quy trình 2 bên đối soát: Không cho phép tự ý cộng ELO nếu đối thủ chưa thống nhất</p>
         </div>
 
-        <!-- Scanning Terminal Logs -->
-        <div id="radar-scan-logs" style="background: #0f172a; color: #38bdf8; font-family: monospace; font-size: 0.82rem; padding: 0.85rem; border-radius: 12px; margin: 1.25rem 0; text-align: left; min-height: 85px; line-height: 1.6; box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);">
-          <div>> [00.3s] Khởi tạo AI Neural Matchmaker v2.6...</div>
-          <div>> [00.8s] Đang quét 48 cụm sân cầu lông tại Hà Nội...</div>
+        <!-- Pending Match Banner -->
+        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 12px; margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="background: #fef3c7; color: #b45309; font-weight: 800; font-size: 0.75rem; padding: 2px 8px; border-radius: 6px;">
+              Trận #103 • Chờ Xác Nhận
+            </span>
+            <span style="font-size: 0.78rem; color: #78350f;">29/09/2026 (18:30 - 19:30)</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.92rem; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+            <span>Nguyễn Văn Hùng (ELO 1450)</span>
+            <span style="color: #ea580c; font-size: 1.1rem;">VS</span>
+            <span>Đỗ Minh Đức (ELO 1520)</span>
+          </div>
+          <div style="background: #ffffff; border-radius: 8px; padding: 8px 12px; border: 1px solid #fcd34d; font-size: 0.84rem; color: #92400e;">
+            📝 <strong>Kết quả do Đấu thủ A khai báo:</strong> Tỷ số <strong>21-18, 19-21, 21-19</strong> (Hùng thắng chung cuộc 2 - 1).
+          </div>
         </div>
 
-        <div id="radar-scan-result" style="display: none; animation: fadeIn 0.4s ease;"></div>
+        <!-- Simulated Potential ELO changes -->
+        <div style="background: #f8fafc; border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; margin-bottom: 1.25rem; font-size: 0.84rem;">
+          <div style="font-weight: 700; color: #334155; margin-bottom: 6px;"><i class="fa-solid fa-chart-line text-primary"></i> Dự kiến biến động ELO (K=24):</div>
+          <div style="display: flex; justify-content: space-between; line-height: 1.6;">
+            <div>• Nguyễn Văn Hùng: <strong style="color: #16a34a;">+16 ELO</strong> (1450 ➔ 1466)</div>
+            <div>• Đỗ Minh Đức: <strong style="color: #ef4444;">-16 ELO</strong> (1520 ➔ 1504)</div>
+          </div>
+        </div>
+
+        <!-- Anti-cheat Shield Tag -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 8px 12px; margin-bottom: 1.5rem; font-size: 0.8rem; color: #166534; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-shield-check" style="font-size: 1.1rem; color: #16a34a;"></i>
+          <span><strong>Anti-Cheat Guard:</strong> Không phát hiện cày điểm lặp lại (Win-Trading) hoặc tỷ lệ thắng dị thường.</span>
+        </div>
+
+        <!-- 2 Actions: Agree or Dispute -->
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" style="flex: 1; background: #167946; font-weight: 700;" onclick="app.confirmMatchResultAction(103, true)">
+            <i class="fa-solid fa-circle-check"></i> Xác Nhận & Cập Nhật ELO
+          </button>
+          <button class="btn btn-secondary" style="border: 1.5px solid #ef4444; color: #dc2626; font-weight: 700;" onclick="app.confirmMatchResultAction(103, false)">
+            <i class="fa-solid fa-triangle-exclamation"></i> Khiếu Nại Tranh Chấp
+          </button>
+        </div>
       </div>
     `;
 
     this.openModal();
+  }
 
-    const logEl = document.getElementById('radar-scan-logs');
-    const resEl = document.getElementById('radar-scan-result');
+  confirmMatchResultAction(matchId, isAgreed) {
+    this.closeModal();
 
-    setTimeout(() => {
-      if (logEl) {
-        logEl.innerHTML += `<div>> [01.4s] Phát hiện 8 phòng ghép mở & 23 vận động viên trực tuyến...</div>`;
-      }
-    }, 900);
+    if (isAgreed) {
+      // Simulate real ELO update
+      if (!this.currentUser) this.currentUser = { id: 1, name: "Nguyễn Văn Hùng", elo_rating: 1450 };
+      this.currentUser.elo_rating = (this.currentUser.elo_rating || 1450) + 16;
 
-    setTimeout(() => {
-      if (logEl) {
-        logEl.innerHTML += `<div>> [02.1s] <span style="color: #4ade80;">[SUCCESS] Đã tìm thấy phòng ghép tối ưu tương thích 98.4%!</span></div>`;
-      }
+      // Add to ELO History
+      if (!MockData.elo_histories) MockData.elo_histories = [];
+      MockData.elo_histories.unshift({
+        id: Date.now(),
+        player_id: 1,
+        match_id: matchId,
+        old_elo: this.currentUser.elo_rating - 16,
+        new_elo: this.currentUser.elo_rating,
+        elo_change: 16,
+        reason: "Thắng trận Đơn vs Đỗ Minh Đức (21-18, 19-21, 21-19)",
+        opponent_info: "Đỗ Minh Đức (ELO 1520)",
+        created_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
+      });
 
-      // Best matched room is 701 (Catchy Badminton Arena, 98% compatibility)
-      const bestRoom = MockData.matchmaking_rooms[0];
+      this.switchDemoPlayerElo(this.currentUser.elo_rating);
+      saveMockDataToLocalStorage();
 
-      if (resEl) {
-        resEl.style.display = 'block';
-        resEl.innerHTML = `
-          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 14px; padding: 1rem; text-align: left; margin-top: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span class="badge badge-success" style="font-size: 0.8rem; font-weight: 800;">
-                <i class="fa-solid fa-circle-check"></i> ĐỘ TƯƠNG THÍCH 98.4%
-              </span>
-              <span class="elo-badge">ELO 1400 - 1550</span>
-            </div>
-            <h4 style="margin: 0 0 4px; color: #166534; font-size: 1.05rem;">${bestRoom.room_name}</h4>
-            <p style="font-size: 0.82rem; color: #475569; margin: 0 0 10px;">
-              <i class="fa-solid fa-map-pin text-rose"></i> ${bestRoom.facility_name} | 
-              <i class="fa-solid fa-clock text-amber"></i> ${bestRoom.match_time} (${bestRoom.match_date})
-            </p>
-            <div style="background: #ffffff; padding: 8px 12px; border-radius: 8px; border: 1px solid #bbf7d0; font-size: 0.8rem; color: #15803d; margin-bottom: 12px;">
-              💡 <strong>Lý do ghép:</strong> Đối thủ trong phòng có dải ELO (1430 - 1480) tương đồng tuyệt đối với ELO 1450 của bạn. Trận đấu hứa hẹn vô cùng kịch tính!
-            </div>
-            <div style="display: flex; gap: 8px;">
-              <button class="btn btn-primary" style="flex: 1; background: #167946;" onclick="app.closeModal(); app.openRoomChat(${bestRoom.id});">
-                <i class="fa-solid fa-arrow-right-to-bracket"></i> Tham Gia & Vào Phòng Ngay
-              </button>
-              <button class="btn btn-secondary" onclick="app.closeModal()">Đóng</button>
+      this.showToast(`🎉 Hai bên đã thống nhất kết quả! Bạn được cộng +16 ELO (Lên ${this.currentUser.elo_rating})!`);
+    } else {
+      this.showToast(`⚠️ Đã ghi nhận tranh chấp tỷ số! Điểm ELO bị đóng băng và chuyển ban trọng tài xem xét.`);
+    }
+  }
+
+  runAntiCheatAudit() {
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    modalBody.innerHTML = `
+      <div style="padding: 0.5rem 0;">
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; border: 2px solid #93c5fd;">
+            <i class="fa-solid fa-shield-virus"></i>
+          </div>
+          <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">Kiểm Tra & Giám Sát Chống Gian Lận ELO (Anti-Cheat)</h3>
+          <p style="font-size: 0.82rem; color: #64748b; margin: 4px 0 0;">Thuật toán quét bất thường trong lịch sử 30 trận gần nhất</p>
+        </div>
+
+        <div style="display: grid; gap: 10px; margin-bottom: 1.5rem;">
+          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 12px; display: flex; align-items: flex-start; gap: 10px;">
+            <i class="fa-solid fa-circle-check text-success" style="font-size: 1.2rem; margin-top: 2px;"></i>
+            <div>
+              <strong style="color: #166534; font-size: 0.88rem;">1. Kiểm tra Win-Trading (Cày Điểm Đối Tác):</strong>
+              <div style="font-size: 0.8rem; color: #334155; margin-top: 2px;">✅ HỢP LỆ: Không có nhóm đấu thủ nào thi đấu lặp lại quá 2 lần trong 48 giờ.</div>
             </div>
           </div>
-        `;
-      }
-    }, 2200);
+
+          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 12px; display: flex; align-items: flex-start; gap: 10px;">
+            <i class="fa-solid fa-circle-check text-success" style="font-size: 1.2rem; margin-top: 2px;"></i>
+            <div>
+              <strong style="color: #166534; font-size: 0.88rem;">2. Kiểm tra Tăng ELO Đột Biến (Rapid Surge):</strong>
+              <div style="font-size: 0.8rem; color: #334155; margin-top: 2px;">✅ HỢP LỆ: Tốc độ tăng ELO đạt +64 điểm / 5 trận (ngưỡng an toàn < +180 điểm).</div>
+            </div>
+          </div>
+
+          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 12px; display: flex; align-items: flex-start; gap: 10px;">
+            <i class="fa-solid fa-circle-check text-success" style="font-size: 1.2rem; margin-top: 2px;"></i>
+            <div>
+              <strong style="color: #166534; font-size: 0.88rem;">3. Kiểm tra Tài Khoản Mới Thắng Cao Thủ (Smurf Suspect):</strong>
+              <div style="font-size: 0.8rem; color: #334155; margin-top: 2px;">✅ HỢP LỆ: Tài khoản đã có 28 trận thi đấu, độ tin cậy xếp hạng đạt 82%.</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" style="width: 100%;" onclick="app.closeModal()">Đóng Báo Cáo</button>
+      </div>
+    `;
+
+    this.openModal();
   }
+
+  showEloHistoryModal() {
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    const list = MockData.elo_histories || [
+      { id: 1, reason: "Thắng trận Đơn vs Bùi Đình Trọng", elo_change: 24, old_elo: 1426, new_elo: 1450, created_at: "2026-09-27 19:45" },
+      { id: 2, reason: "Thắng trận Đôi vs Team Mỹ Đình", elo_change: 18, old_elo: 1408, new_elo: 1426, created_at: "2026-09-25 20:30" },
+      { id: 3, reason: "Thua trận Đơn vs Hoàng Văn Nam", elo_change: -14, old_elo: 1422, new_elo: 1408, created_at: "2026-09-22 21:00" }
+    ];
+
+    let rowsHtml = '';
+    list.forEach(h => {
+      rowsHtml += `
+        <tr>
+          <td style="font-size: 0.8rem; color: #64748b;">${h.created_at || 'Vừa xong'}</td>
+          <td style="font-weight: 700; font-size: 0.85rem;">${h.reason}</td>
+          <td><span class="badge ${h.elo_change >= 0 ? 'badge-success' : 'badge-danger'}" style="font-size: 0.8rem; font-weight: 800;">${h.elo_change >= 0 ? '+' : ''}${h.elo_change} ELO</span></td>
+          <td style="font-size: 0.85rem;"><strong>${h.new_elo}</strong> <span style="color: #94a3b8; font-size: 0.75rem;">(từ ${h.old_elo})</span></td>
+          <td><span style="background: #f0fdf4; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Đã Xác Nhận</span></td>
+        </tr>
+      `;
+    });
+
+    modalBody.innerHTML = `
+      <div style="padding: 0.5rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="margin: 0; font-size: 1.15rem; color: #0f172a;"><i class="fa-solid fa-clock-rotate-left text-primary"></i> Sổ Cái Lịch Sử Biến Động ELO & Trận Đấu</h3>
+          <span style="font-size: 0.78rem; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 6px; font-weight: 700;">Audit Trail</span>
+        </div>
+        <table class="custom-table" style="margin-bottom: 1.25rem;">
+          <thead>
+            <tr>
+              <th>Thời Gian</th>
+              <th>Trận Đấu & Đối Thủ</th>
+              <th>Biến Động</th>
+              <th>ELO Mới</th>
+              <th>Trạng Thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        <button class="btn btn-secondary" style="width: 100%;" onclick="app.closeModal()">Đóng</button>
+      </div>
+    `;
+
+    this.openModal();
+  }
+
 
   openRoomChat(roomId) {
     this.activeRoom = MockData.matchmaking_rooms.find(r => r.id === roomId) || MockData.matchmaking_rooms[0];

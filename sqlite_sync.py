@@ -180,6 +180,95 @@ def init_sqlite_tables(conn):
     );
     """)
 
+    # 10. player_profiles (Hồ sơ người chơi ELO & Kỹ năng)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS player_profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER UNIQUE NOT NULL,
+        gender TEXT DEFAULT 'Khác',
+        birth_year INTEGER,
+        preferred_area TEXT DEFAULT 'Cầu Giấy, Hà Nội',
+        skill_level TEXT DEFAULT 'Trung Bình Khá',
+        current_elo INTEGER DEFAULT 1200,
+        games_played INTEGER DEFAULT 0,
+        wins INTEGER DEFAULT 0,
+        losses INTEGER DEFAULT 0,
+        rating_confidence REAL DEFAULT 0.20,
+        is_searching INTEGER DEFAULT 0,
+        available_time TEXT DEFAULT '18:00 - 21:00',
+        preferred_court TEXT,
+        play_style TEXT DEFAULT 'Công thủ toàn diện',
+        streak TEXT DEFAULT '0',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    # 11. match_requests (Yêu cầu tìm đối thủ ngang trình)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS match_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        player_id INTEGER NOT NULL,
+        match_type TEXT DEFAULT 'SINGLES',
+        preferred_date TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        preferred_area TEXT NOT NULL,
+        min_elo INTEGER DEFAULT 1100,
+        max_elo INTEGER DEFAULT 1300,
+        status TEXT DEFAULT 'SEARCHING',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    # 12. matches (Trận đấu đã ghép cặp)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS matches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        court_id INTEGER,
+        facility_id INTEGER,
+        match_type TEXT DEFAULT 'SINGLES',
+        start_time TEXT,
+        end_time TEXT,
+        match_date TEXT,
+        status TEXT DEFAULT 'SCHEDULED',
+        final_score TEXT,
+        winner_team TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    # 13. match_players (Thành viên tham gia trận & 2-way confirmation)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS match_players (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        match_id INTEGER NOT NULL,
+        player_id INTEGER NOT NULL,
+        team TEXT DEFAULT 'A',
+        elo_before INTEGER NOT NULL,
+        elo_after INTEGER,
+        elo_change INTEGER DEFAULT 0,
+        score_claimed TEXT,
+        result TEXT DEFAULT 'PENDING',
+        confirmation_status TEXT DEFAULT 'PENDING',
+        submitted_at TIMESTAMP
+    );
+    """)
+
+    # 14. elo_histories (Lịch sử biến động ELO)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS elo_histories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        player_id INTEGER NOT NULL,
+        match_id INTEGER,
+        old_elo INTEGER NOT NULL,
+        new_elo INTEGER NOT NULL,
+        elo_change INTEGER NOT NULL,
+        reason TEXT DEFAULT 'Match Result',
+        opponent_info TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
     conn.commit()
 
 def sync_json_to_sqlite(data_dict, conn):
@@ -417,16 +506,66 @@ def sync_json_to_sqlite(data_dict, conn):
                 heat.get("status", "mid")
             ))
 
+    # 10. player_profiles
+    if "player_profiles" in data_dict:
+        for p in data_dict["player_profiles"]:
+            cursor.execute("""
+            INSERT INTO player_profiles (id, user_id, gender, birth_year, preferred_area, skill_level, current_elo, games_played, wins, losses, rating_confidence, is_searching, available_time, preferred_court, play_style, streak)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                current_elo=excluded.current_elo,
+                games_played=excluded.games_played,
+                wins=excluded.wins,
+                losses=excluded.losses,
+                rating_confidence=excluded.rating_confidence,
+                streak=excluded.streak;
+            """, (
+                p.get("id"),
+                p.get("user_id"),
+                p.get("gender", "Khác"),
+                p.get("birth_year", 2000),
+                p.get("preferred_area", "Cầu Giấy, Hà Nội"),
+                p.get("skill_level", "Trung Bình Khá"),
+                p.get("current_elo", 1200),
+                p.get("games_played", 0),
+                p.get("wins", 0),
+                p.get("losses", 0),
+                p.get("rating_confidence", 0.20),
+                1 if p.get("is_searching") else 0,
+                p.get("available_time", "18:00 - 21:00"),
+                p.get("preferred_court", ""),
+                p.get("play_style", "Công thủ toàn diện"),
+                p.get("streak", "0")
+            ))
+
+    # 11. elo_histories
+    if "elo_histories" in data_dict:
+        for eh in data_dict["elo_histories"]:
+            cursor.execute("""
+            INSERT OR IGNORE INTO elo_histories (id, player_id, match_id, old_elo, new_elo, elo_change, reason, opponent_info)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                eh.get("id"),
+                eh.get("player_id"),
+                eh.get("match_id"),
+                eh.get("old_elo"),
+                eh.get("new_elo"),
+                eh.get("elo_change"),
+                eh.get("reason", "Match"),
+                eh.get("opponent_info", "")
+            ))
+
     conn.commit()
 
 def export_sqlite_to_dict(conn):
-    """Exports all 9 tables from SQLite into a Python dictionary"""
+    """Exports all tables from SQLite into a Python dictionary"""
     cursor = conn.cursor()
     data = {}
     table_names = [
         "users", "facilities", "courts", "time_slots",
         "equipments", "booking_orders", "invoices",
-        "matchmaking_rooms", "occupancy_heatmap"
+        "matchmaking_rooms", "occupancy_heatmap",
+        "player_profiles", "match_requests", "matches", "match_players", "elo_histories"
     ]
     for tbl in table_names:
         try:

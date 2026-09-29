@@ -494,6 +494,142 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             }).encode("utf-8"))
             return
 
+        # =========================================================================
+        # MATCHMAKING GET ROUTES
+        # =========================================================================
+        if "/matchmaking/tiers" in self.path:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            from app.ai import elo_engine
+            self.wfile.write(json.dumps({"tiers": elo_engine.DEFAULT_ELO_TIERS}, ensure_ascii=False).encode("utf-8"))
+            return
+
+        if "/matchmaking/profile" in self.path:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            from app.ai import elo_engine
+            user_id = 1
+            if "user_id=" in self.path:
+                try:
+                    user_id = int(self.path.split("user_id=")[1].split("&")[0])
+                except Exception:
+                    pass
+            db_data = {}
+            if os.path.exists(DATA_FILE):
+                try:
+                    with open(DATA_FILE, "r", encoding="utf-8") as f:
+                        db_data = json.load(f)
+                except Exception:
+                    pass
+            users = db_data.get("users", [])
+            profiles = db_data.get("player_profiles", [])
+            user = next((u for u in users if str(u.get("id")) == str(user_id)), users[0] if users else {"id": user_id, "name": "Người chơi"})
+            profile = next((p for p in profiles if str(p.get("user_id")) == str(user_id)), None)
+            if not profile:
+                profile = {
+                    "id": user_id,
+                    "user_id": user_id,
+                    "gender": "Nam",
+                    "birth_year": 1998,
+                    "preferred_area": "Cầu Giấy, Hà Nội",
+                    "skill_level": "Trung Bình Khá",
+                    "current_elo": user.get("elo_rating") if isinstance(user.get("elo_rating"), int) else 1200,
+                    "games_played": 15,
+                    "wins": 10,
+                    "losses": 5,
+                    "rating_confidence": 0.65,
+                    "is_searching": True,
+                    "available_time": "18:00 - 21:00",
+                    "preferred_court": "CLB Cầu Lông Catchy Badminton Arena",
+                    "play_style": "Công thủ toàn diện",
+                    "streak": "+2W"
+                }
+            tier = elo_engine.get_tier_for_elo(profile.get("current_elo", 1200))
+            profile["tier_display"] = tier["display"]
+            profile["full_name"] = user.get("name") or user.get("full_name")
+            self.wfile.write(json.dumps(profile, ensure_ascii=False).encode("utf-8"))
+            return
+
+        if "/matchmaking/history" in self.path:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            db_data = {}
+            if os.path.exists(DATA_FILE):
+                try:
+                    with open(DATA_FILE, "r", encoding="utf-8") as f:
+                        db_data = json.load(f)
+                except Exception:
+                    pass
+            histories = db_data.get("elo_histories", [])
+            self.wfile.write(json.dumps(histories, ensure_ascii=False).encode("utf-8"))
+            return
+
+        if "/matchmaking/simulate" in self.path:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            from app.ai import elo_engine
+            elo_a = 1500
+            elo_b = 1510
+            if "elo_a=" in self.path:
+                try:
+                    elo_a = int(self.path.split("elo_a=")[1].split("&")[0])
+                except Exception:
+                    pass
+            if "elo_b=" in self.path:
+                try:
+                    elo_b = int(self.path.split("elo_b=")[1].split("&")[0])
+                except Exception:
+                    pass
+            exp_a = elo_engine.calculate_expected_score(elo_a, elo_b)
+            k_a = elo_engine.get_dynamic_k_factor(20, elo_a)
+            k_b = elo_engine.get_dynamic_k_factor(20, elo_b)
+            win_delta_a = round(k_a * (1.0 - exp_a))
+            loss_delta_a = round(k_a * (0.0 - exp_a))
+            win_delta_b = round(k_b * (1.0 - (1.0 - exp_a)))
+            loss_delta_b = round(k_b * (0.0 - (1.0 - exp_a)))
+            diff = abs(elo_a - elo_b)
+            res = {
+                "player_a": {
+                    "elo": elo_a, "win_probability": round(exp_a * 100, 1),
+                    "if_win_delta": f"+{win_delta_a}", "if_loss_delta": f"{loss_delta_a}",
+                    "tier": elo_engine.get_tier_for_elo(elo_a)["display"]
+                },
+                "player_b": {
+                    "elo": elo_b, "win_probability": round((1.0 - exp_a) * 100, 1),
+                    "if_win_delta": f"+{win_delta_b}", "if_loss_delta": f"{loss_delta_b}",
+                    "tier": elo_engine.get_tier_for_elo(elo_b)["display"]
+                },
+                "elo_difference": diff,
+                "handicap_suggestion": f"AI Handicap: Chấp {round(diff / 40)} điểm/set" if diff > 150 else "Đồng banh (0 điểm)"
+            }
+            self.wfile.write(json.dumps(res, ensure_ascii=False).encode("utf-8"))
+            return
+
+        if "/matchmaking/anti-cheat/audit" in self.path:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            from app.ai import elo_engine
+            db_data = {}
+            if os.path.exists(DATA_FILE):
+                try:
+                    with open(DATA_FILE, "r", encoding="utf-8") as f:
+                        db_data = json.load(f)
+                except Exception:
+                    pass
+            histories = db_data.get("elo_histories", [])
+            matches_data = [
+                {"match_id": h.get("match_id"), "elo_delta": h.get("elo_change", 0), "result": "WIN" if h.get("elo_change", 0) > 0 else "LOSS", "opponent_elo": 1400}
+                for h in histories
+            ]
+            anomaly_report = elo_engine.detect_match_anomalies(1, matches_data)
+            self.wfile.write(json.dumps(anomaly_report, ensure_ascii=False).encode("utf-8"))
+            return
+
         return super().do_GET()
 
     def do_POST(self):
@@ -564,13 +700,10 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                 if "facilities" in incoming_data and isinstance(incoming_data["facilities"], list):
                     merged_database["facilities"] = incoming_data["facilities"]
 
-                # 3. Other tables: courts, bookings, booking_orders, etc
-                other_keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'bookings', 'orders']
-                for k in other_keys:
-                    if k in incoming_data and isinstance(incoming_data[k], list):
-                        merged_database[k] = incoming_data[k]
-                    elif k in current_data:
-                        merged_database[k] = current_data[k]
+                # 3. Other tables: courts, bookings, booking_orders, player_profiles, elo_histories, etc.
+                for k, v in incoming_data.items():
+                    if k not in ["users", "facilities"] and isinstance(v, list):
+                        merged_database[k] = v
 
                 # Save merged data to JSON
                 with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -595,11 +728,120 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     "users_count": len(merged_database.get("users", [])),
                     "facilities_count": len(merged_database.get("facilities", []))
                 }).encode("utf-8"))
+                return
             except Exception as e:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
                 self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
+                return
+        # =========================================================================
+        # MATCHMAKING POST ROUTES
+        # =========================================================================
+        if "/matchmaking/find" in self.path:
+            content_length = int(self.headers.get("Content-Length", 0))
+            post_data = self.rfile.read(content_length)
+            from app.ai import elo_engine
+            db_data = {}
+            if os.path.exists(DATA_FILE):
+                try:
+                    with open(DATA_FILE, "r", encoding="utf-8") as f:
+                        db_data = json.load(f)
+                except Exception:
+                    pass
+            req = {}
+            try:
+                req = json.loads(post_data.decode("utf-8"))
+            except Exception:
+                pass
+            
+            user_elo = req.get("player_elo", 1450)
+            wait_time = req.get("wait_time_seconds", 0)
+            dynamic_range = elo_engine.get_dynamic_elo_range(wait_time)
+            effective_delta = max(req.get("max_elo_delta", 100), dynamic_range)
+            
+            users = db_data.get("users", [])
+            candidates = []
+            cand_dicts = []
+            player_profile = {
+                "name": req.get("player_name", "Bạn"),
+                "elo": user_elo,
+                "preferred_time": req.get("preferred_time", "18:00 - 20:00"),
+                "preferred_area": req.get("preferred_area", "Cầu Giấy"),
+                "match_type": req.get("match_type", "SINGLES")
+            }
+            for u in users:
+                if u.get("role") != "CUSTOMER":
+                    continue
+                u_elo = u.get("elo_rating") if isinstance(u.get("elo_rating"), int) else 1200
+                diff = abs(user_elo - u_elo)
+                if diff <= effective_delta and u.get("name") != player_profile["name"]:
+                    cand_data = {
+                        "id": u.get("id"),
+                        "name": u.get("name"),
+                        "elo": u_elo,
+                        "preferred_time": req.get("preferred_time", "18:00 - 20:00"),
+                        "preferred_area": req.get("preferred_area", "Cầu Giấy"),
+                        "match_type": req.get("match_type", "SINGLES"),
+                        "distance_km": 2.5
+                    }
+                    score_res = elo_engine.calculate_match_score(player_profile, cand_data)
+                    candidates.append(score_res)
+                    cand_dicts.append(score_res)
+            
+            candidates.sort(key=lambda x: x["match_score"], reverse=True)
+            cand_dicts.sort(key=lambda x: x["match_score"], reverse=True)
+            ai_recom = elo_engine.generate_ai_match_recommendation(player_profile, cand_dicts)
+            
+            res_payload = {
+                "player_elo": user_elo,
+                "player_tier": elo_engine.get_tier_for_elo(user_elo)["display"],
+                "dynamic_elo_range": effective_delta,
+                "wait_time_seconds": wait_time,
+                "total_candidates": len(candidates),
+                "candidates": candidates[:10],
+                "ai_recommendation": ai_recom
+            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(res_payload, ensure_ascii=False).encode("utf-8"))
+            return
+
+        if "/matchmaking/matches/submit-result" in self.path:
+            content_length = int(self.headers.get("Content-Length", 0))
+            post_data = self.rfile.read(content_length)
+            incoming = json.loads(post_data.decode("utf-8"))
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "status": "PENDING_CONFIRMATION",
+                "message": f"Đã ghi nhận kết quả: {incoming.get('score_submission')}. Đang gửi thông báo cho đối thủ xác nhận để cập nhật ELO!",
+                "match_id": incoming.get("match_id", 103)
+            }, ensure_ascii=False).encode("utf-8"))
+            return
+
+        if "/matchmaking/matches/confirm-result" in self.path:
+            content_length = int(self.headers.get("Content-Length", 0))
+            post_data = self.rfile.read(content_length)
+            incoming = json.loads(post_data.decode("utf-8"))
+            is_agreed = incoming.get("confirm_agreed", True)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            if is_agreed:
+                self.wfile.write(json.dumps({
+                    "status": "CONFIRMED",
+                    "message": "Hai bên đã thống nhất kết quả trận đấu! Điểm ELO của cả 2 đấu thủ đã được cập nhật thành công.",
+                    "elo_updated": True
+                }, ensure_ascii=False).encode("utf-8"))
+            else:
+                self.wfile.write(json.dumps({
+                    "status": "DISPUTED",
+                    "message": "⚠️ Đã ghi nhận tranh chấp tỷ số! Điểm ELO tạm thời đóng băng, hồ sơ chuyển trọng tài giải quyết.",
+                    "dispute_note": incoming.get("dispute_note", "Không đồng ý kết quả")
+                }, ensure_ascii=False).encode("utf-8"))
             return
 
         self.send_response(404)
