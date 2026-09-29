@@ -7,7 +7,14 @@ import urllib.request
 import urllib.error
 
 # Ensure backend directory is in path if needed
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
+backend_dir = os.path.join(os.path.dirname(__file__), "backend")
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+try:
+    from backend.app.ai import elo_engine
+except ImportError:
+    from app.ai import elo_engine
 
 PORT = int(os.environ.get("PORT", 8085))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "database.json")
@@ -501,7 +508,6 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            from app.ai import elo_engine
             self.wfile.write(json.dumps({"tiers": elo_engine.DEFAULT_ELO_TIERS}, ensure_ascii=False).encode("utf-8"))
             return
 
@@ -509,7 +515,6 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            from app.ai import elo_engine
             user_id = 1
             if "user_id=" in self.path:
                 try:
@@ -571,7 +576,6 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            from app.ai import elo_engine
             elo_a = 1500
             elo_b = 1510
             if "elo_a=" in self.path:
@@ -613,7 +617,6 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            from app.ai import elo_engine
             db_data = {}
             if os.path.exists(DATA_FILE):
                 try:
@@ -741,7 +744,6 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
         if "/matchmaking/find" in self.path:
             content_length = int(self.headers.get("Content-Length", 0))
             post_data = self.rfile.read(content_length)
-            from app.ai import elo_engine
             db_data = {}
             if os.path.exists(DATA_FILE):
                 try:
