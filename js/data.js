@@ -1256,6 +1256,11 @@ function loadMockDataFromLocalStorage() {
     const savedData = localStorage.getItem('badminton_mock_data');
     if (savedData) {
       const parsed = JSON.parse(savedData);
+      // Failsafe: Neu localStorage bi luu facilities rong hoac duoi 5 san, xoa de khoi phuc 30 san goc
+      if (!parsed.facilities || !Array.isArray(parsed.facilities) || parsed.facilities.length < 5) {
+        delete parsed.facilities;
+        try { localStorage.removeItem('badminton_mock_data'); } catch(e){}
+      }
       applyDataToMockData(parsed);
     }
   } catch (e) {
@@ -1276,8 +1281,8 @@ function applyDataToMockData(sourceData) {
     MockData.matchmaking_rooms = sourceData.matchmaking_rooms;
   }
 
-  // 1. Cap nhat danh sach co so san (facilities)
-  if (sourceData.facilities && Array.isArray(sourceData.facilities)) {
+  // 1. Cap nhat danh sach co so san (facilities) - Failsafe: Khong ghi de neu tap nguon bi rong
+  if (sourceData.facilities && Array.isArray(sourceData.facilities) && sourceData.facilities.length > 0) {
     MockData.facilities = sourceData.facilities;
   }
 
@@ -1345,11 +1350,12 @@ async function fetchCentralServerDatabase() {
         // Re-render moi giao dien neu co du lieu thay doi
         if (window.app) {
           const hasChanges = (prevUsersCount !== MockData.users.length) || (prevFacsCount !== MockData.facilities.length);
-          if (hasChanges || window.app.currentView === 'ui-20' || window.app.currentView === 'ui-19' || window.app.currentView === 'ui-02') {
+          if (hasChanges || window.app.currentView === 'ui-02' || window.app.currentView === 'ui-03' || window.app.currentView === 'ui-20' || window.app.currentView === 'ui-19') {
+            if (window.app.renderCustomerFacilities) window.app.renderCustomerFacilities();
+            if (window.app.initLeafletMap) window.app.initLeafletMap();
             if (window.app.renderAdminUsers) window.app.renderAdminUsers();
             if (window.app.renderDatabaseInspector) window.app.renderDatabaseInspector();
             if (window.app.renderAdminOverviewFacilities) window.app.renderAdminOverviewFacilities();
-            if (window.app.renderCustomerFacilities) window.app.renderCustomerFacilities();
           }
         }
       } else if (MockData.users && MockData.users.length > 0) {
