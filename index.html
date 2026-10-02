@@ -70,15 +70,6 @@
         </a>
 
         <div id="top-header-date" class="top-header-date">Thứ năm, 17/09/2026</div>
-
-        <div class="header-auth-pills" id="header-auth-pills-group">
-          <button class="btn-pill-auth btn-pill-login" onclick="app.switchAuthTab('login'); app.navigateTo('ui-01')">
-            Đăng nhập
-          </button>
-          <button class="btn-pill-auth btn-pill-register" onclick="app.switchAuthTab('register'); app.navigateTo('ui-01')">
-            Đăng kí
-          </button>
-        </div>
       </div>
 
       <!-- Center: Role Switcher Toolbar -->
@@ -692,116 +683,66 @@
         <!-- AI MATCHMAKING & ELO RATING (UC006) - NÂNG CẤP TRÍ TUỆ NHÂN TẠO TOÀN DIỆN -->
         <section id="view-ui-06" class="screen-view">
           
-          <!-- Page Header with AI Badges & Quick Action -->
-          <div class="page-header" style="margin-bottom: 1.25rem;">
+          <!-- Top Control Header: Title, Player Profile Pill & Fast Actions -->
+          <div class="mm-top-header-bar">
             <div>
-              <h1 class="page-title">
-                <i class="fa-solid fa-users-viewfinder text-primary"></i> Hệ Thống Ghép Kèo AI ELO & Tìm Đối Thủ Ngang Trình
-                <span class="badge-ai-sparkle"><i class="fa-solid fa-wand-magic-sparkles"></i> AI UC006</span>
+              <h1 class="page-title" style="margin-bottom: 4px;">
+                <i class="fa-solid fa-users-viewfinder text-primary"></i> Ghép Kèo Thông Minh AI ELO
+                <span class="tag-badge" style="background: #dcfce7; color: #16a34a; border: 1px solid #86efac; font-size: 0.72rem;">
+                  <i class="fa-solid fa-bolt"></i> Cân Bằng Trình Độ
+                </span>
               </h1>
-              <p class="page-subtitle">Kiến trúc 3 lớp: Thuật toán ELO Quốc Tế ➔ Matching Score Engine (5 Tiêu chí) ➔ Lớp AI Đề Xuất & Phân Tích Phong Độ</p>
+              <p class="page-subtitle" style="margin: 0;">Thuật toán Heuristic đa tiêu chí: Tự động ghép đối thủ ngang cơ theo dải ELO, địa điểm và khung giờ</p>
             </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-primary" onclick="app.startDynamicMatchmakingSearch()" style="background: linear-gradient(135deg, #10b981 0%, #0284c7 100%); box-shadow: 0 4px 14px rgba(16,185,129,0.35); font-weight: 700;">
-                <i class="fa-solid fa-bolt"></i> ⚡ Tìm Đối Thủ Ngang Trình
-              </button>
-              <button class="btn btn-secondary" onclick="app.toggleAIEloPredictor()" style="border: 1.5px solid #0284c7; color: #0284c7; font-weight: 700;">
-                <i class="fa-solid fa-brain"></i> AI Dự Báo & Chấp Điểm
-              </button>
-              <button class="btn btn-secondary" onclick="app.openMatchResultModal()" style="border: 1.5px solid #16a34a; color: #166534; font-weight: 700;">
-                <i class="fa-solid fa-square-check"></i> Xác Nhận Kết Quả Trận
-              </button>
-              <button class="btn btn-accent" onclick="app.openCreateRoomModal()">
-                <i class="fa-solid fa-plus"></i> Tạo Phòng Mới
-              </button>
-            </div>
-          </div>
 
-          <!-- 1. USER PROFILE, 6-TIER ELO & RATING CONFIDENCE BAR (Components 1, 2, 10) -->
-          <div class="glass-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 1.5rem; background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1.5px solid #86efac;">
-            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-              <div class="avatar" style="width: 56px; height: 56px; font-size: 1.4rem; background: linear-gradient(135deg, #167946, #059669); color: #fff; box-shadow: 0 4px 12px rgba(22,121,70,0.35); position: relative;">
-                <span id="player-profile-avatar">H</span>
-                <span style="position: absolute; bottom: -4px; right: -4px; background: #16a34a; border: 2px solid #fff; border-radius: 50%; width: 16px; height: 16px;" title="Trạng thái: Sẵn sàng tìm trận"></span>
-              </div>
-              <div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span id="player-profile-name" style="font-weight: 800; font-size: 1.2rem; color: #0f172a;">Nguyễn Văn Hùng</span>
-                  <span class="elo-badge" id="player-profile-elo"><i class="fa-solid fa-trophy"></i> ELO 1450</span>
-                  <span id="player-profile-tier" style="background: #ffedd5; color: #ea580c; font-size: 0.78rem; font-weight: 800; padding: 3px 10px; border-radius: 9999px;">🟠 Cấp 4: Khá</span>
-                  <span id="player-profile-confidence-badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;" title="Độ tin cậy xếp hạng dựa trên số trận đã chơi">
-                    🎯 Rating Confidence: 82% (K=24)
-                  </span>
-                </div>
-                <div style="font-size: 0.85rem; color: #475569; margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap;">
-                  <span><i class="fa-solid fa-gamepad text-primary"></i> Đã đấu: <strong id="profile-games-count">28 trận</strong> (<span style="color: #16a34a; font-weight: 700;" id="profile-wins-count">18 Thắng</span> - <span style="color: #ef4444; font-weight: 700;" id="profile-losses-count">10 Thua</span>)</span>
-                  <span><i class="fa-solid fa-fire text-amber"></i> Phong độ: <strong id="profile-form-streak">Chuỗi 3 thắng (W-W-W-L-W)</strong></span>
-                  <span><i class="fa-solid fa-location-dot text-rose"></i> Sân mong muốn: <strong>Hoàng Mai / Cầu Giấy (18h-20h)</strong></span>
-                </div>
-              </div>
-            </div>
-            
+            <!-- Right Fast Controls -->
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-              <!-- Quick ELO Switcher for Player Profile with 6 Tiers & Custom Choice -->
-              <div style="display: flex; flex-direction: column; gap: 2px;">
-                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">Cấp Độ & Trình Độ ELO:</span>
-                <select id="quick-demo-elo-select" class="form-control" style="font-size: 0.82rem; padding: 4px 8px; border-radius: 8px; font-weight: 600;" onchange="app.switchDemoPlayerElo(this.value)">
-                  <option value="850">🟢 Cấp 1 | Yếu - Tân thủ (0 - 999 ELO)</option>
-                  <option value="1100">🔵 Cấp 2 | Trung Bình - Cơ bản (1000 - 1199 ELO)</option>
-                  <option value="1300">🟡 Cấp 3 | Trung Bình Khá (1200 - 1399 ELO)</option>
-                  <option value="1450" selected>🟠 Cấp 4 | Khá (1400 - 1599 ELO)</option>
-                  <option value="1680">🔴 Cấp 5 | Giỏi - Thành Thạo (1600 - 1799 ELO)</option>
-                  <option value="1850">🟣 Cấp 6 | Tốt - Chuyên Nghiệp (1800+ ELO)</option>
-                  <option value="custom">✏️ Tự chọn trình độ (Nhập ELO tùy ý)...</option>
-                </select>
+              <!-- Current Player Quick Status Pill -->
+              <div class="mm-player-quick-card" onclick="app.showEloTiersGuideModal()" title="Bấm để xem chi tiết 6 phân khúc trình độ ELO">
+                <div class="avatar" id="player-profile-avatar" style="width: 34px; height: 34px; font-size: 0.95rem; background: #167946; color: #fff;">H</div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span id="player-profile-name" style="font-weight: 800; font-size: 0.88rem; color: #0f172a;">Nguyễn Văn Hùng</span>
+                    <span id="player-profile-tier" style="background: #ffedd5; color: #ea580c; font-size: 0.7rem; font-weight: 800; padding: 2px 7px; border-radius: 9999px;">🟠 Cấp 4: Khá</span>
+                  </div>
+                  <div style="font-size: 0.75rem; color: #64748b;">
+                    <span id="player-profile-elo" style="font-weight: 700; color: #167946;"><i class="fa-solid fa-trophy"></i> ELO 1450</span> • Đã đấu: <strong id="profile-games-count">28 trận</strong>
+                  </div>
+                </div>
               </div>
-              <button class="btn btn-secondary btn-sm" onclick="app.promptCustomPlayerElo()" style="border: 1.5px solid #167946; color: #167946; font-weight: 700;" title="Tự do nhập điểm ELO bất kỳ của bạn">
+
+              <!-- Action Buttons -->
+              <button class="btn btn-secondary btn-sm" onclick="app.promptCustomPlayerElo()" title="Tự nhập điểm ELO mong muốn của bạn">
                 <i class="fa-solid fa-pen-to-square"></i> Tự Chọn Trình
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="app.showEloTiersGuideModal()" style="border: 1.5px solid #0284c7; color: #0284c7; font-weight: 700;" title="Xem bảng phân khúc 6 cấp độ ghép trình">
-                <i class="fa-solid fa-table-list"></i> Bảng Phân Khúc
+              <button class="btn btn-secondary btn-sm" onclick="app.toggleAIEloPredictor()" style="border-color: #0284c7; color: #0284c7;" title="Bộ dự báo xác suất thắng & điểm chấp">
+                <i class="fa-solid fa-brain"></i> AI Dự Báo Kèo
               </button>
-              <button class="btn btn-secondary btn-sm" onclick="app.showEloHistoryModal()" style="border: 1.5px solid #475569; color: #334155; font-weight: 700;">
-                <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu
+              <button class="btn btn-primary btn-sm" onclick="app.openCreateRoomModal()" style="background: linear-gradient(135deg, #167946 0%, #059669 100%); font-weight: 700; box-shadow: 0 4px 12px rgba(22, 121, 70, 0.25);">
+                <i class="fa-solid fa-plus"></i> Khởi Tạo Kèo Mới
               </button>
             </div>
           </div>
 
-          <!-- 2. INTERACTIVE MATCH FINDER & DYNAMIC ELO RANGE RADAR (Components 4, 5, 6, 7) -->
-          <div class="glass-card" style="padding: 1.25rem; margin-bottom: 1.5rem; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
-              <div>
-                <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-                  <span style="background: #167946; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;"><i class="fa-solid fa-sliders"></i> ENGINE TIÊU CHÍ</span>
-                  Bộ Lọc Ghép Kèo Ngang Trình & Dải ELO Động (Dynamic Range)
-                </h3>
-                <p style="margin: 3px 0 0; font-size: 0.82rem; color: #64748b;">
-                  Hệ số MatchScore = <strong>50%</strong> Chênh lệch ELO + <strong>20%</strong> Thời gian + <strong>15%</strong> Khoảng cách sân + <strong>10%</strong> Trình độ + <strong>5%</strong> Lịch sử
-                </p>
-              </div>
-              <div style="font-size: 0.8rem; background: #f1f5f9; padding: 4px 10px; border-radius: 9999px; color: #475569; font-weight: 600;">
-                <i class="fa-solid fa-code-compare"></i> Thuật toán Heuristic + AI Explainability
-              </div>
-            </div>
-
-            <!-- Matchmaking Criteria Form Grid -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 1rem;">
-              <div>
-                <label style="font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;"><i class="fa-solid fa-calendar-day text-primary"></i> Ngày Chơi:</label>
-                <input type="text" id="finder-date" class="form-control" value="Hôm nay, 29/09/2026" style="font-size: 0.88rem;">
-              </div>
-              <div>
-                <label style="font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;"><i class="fa-solid fa-clock text-amber"></i> Khung Giờ Rảnh:</label>
-                <select id="finder-time" class="form-control" style="font-size: 0.88rem;">
-                  <option value="18:00 - 20:00" selected>18:00 - 20:00 (Giờ Vàng)</option>
-                  <option value="19:00 - 21:00">19:00 - 21:00 (Sau ca làm)</option>
-                  <option value="20:00 - 22:00">20:00 - 22:00 (Kèo muộn)</option>
-                  <option value="06:00 - 08:00">06:00 - 08:00 (Sáng sớm)</option>
+          <!-- Compact Filter & Search Panel -->
+          <div class="mm-filter-panel">
+            <!-- Filter Fields Grid -->
+            <div class="mm-filter-row">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px;">
+                  <i class="fa-solid fa-people-arrows text-primary"></i> Thể Thức:
+                </label>
+                <select id="finder-match-type" class="form-control" style="font-size: 0.85rem;" onchange="app.handleMatchTypeChange(this.value)">
+                  <option value="SINGLES" selected>🏸 Đánh Đơn (1 vs 1)</option>
+                  <option value="DOUBLES">🏸🏸 Đánh Đôi (2 vs 2)</option>
                 </select>
               </div>
-              <div>
-                <label style="font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;"><i class="fa-solid fa-location-dot text-rose"></i> Khu Vực Ưu Tiên:</label>
-                <select id="finder-area" class="form-control" style="font-size: 0.88rem;">
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px;">
+                  <i class="fa-solid fa-location-dot text-rose"></i> Khu Vực:
+                </label>
+                <select id="finder-area" class="form-control" style="font-size: 0.85rem;">
                   <option value="Cầu Giấy" selected>Quận Cầu Giấy (12 sân)</option>
                   <option value="Hoàng Mai">Quận Hoàng Mai (8 sân)</option>
                   <option value="Đống Đa">Quận Đống Đa (10 sân)</option>
@@ -809,99 +750,95 @@
                   <option value="Nam Từ Liêm">Nam Từ Liêm / Mỹ Đình</option>
                 </select>
               </div>
-              <div>
-                <label style="font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;"><i class="fa-solid fa-people-arrows text-cyan"></i> Thể Thức Đấu:</label>
-                <select id="finder-match-type" class="form-control" style="font-size: 0.88rem;" onchange="app.handleMatchTypeChange(this.value)">
-                  <option value="SINGLES" selected>🏸 Đánh Đơn (1 vs 1)</option>
-                  <option value="DOUBLES">🏸🏸 Đánh Đôi (Team ELO 2v2)</option>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px;">
+                  <i class="fa-solid fa-clock text-amber"></i> Khung Giờ Rảnh:
+                </label>
+                <select id="finder-time" class="form-control" style="font-size: 0.85rem;">
+                  <option value="18:00 - 20:00" selected>18:00 - 20:00 (Giờ Vàng)</option>
+                  <option value="19:00 - 21:00">19:00 - 21:00 (Sau ca làm)</option>
+                  <option value="20:00 - 22:00">20:00 - 22:00 (Kèo muộn)</option>
+                  <option value="06:00 - 08:00">06:00 - 08:00 (Sáng sớm)</option>
                 </select>
               </div>
-              <div>
-                <label style="font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;"><i class="fa-solid fa-gauge-high text-purple"></i> Dải ELO Tối Đa:</label>
-                <select id="finder-max-delta" class="form-control" style="font-size: 0.88rem;">
-                  <option value="50">±50 ELO (Tuyệt đối ngang trình)</option>
-                  <option value="100" selected>±100 ELO (Tiêu chuẩn đề xuất)</option>
-                  <option value="150">±150 ELO (Mở rộng thách đấu)</option>
-                  <option value="200">±200 ELO (Tối đa dải ELO)</option>
+
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px;">
+                  <i class="fa-solid fa-gauge-high text-purple"></i> Dải ELO Tối Đa:
+                </label>
+                <select id="finder-max-delta" class="form-control" style="font-size: 0.85rem;">
+                  <option value="50">±50 ELO (Ngang trình tuyệt đối)</option>
+                  <option value="100" selected>±100 ELO (Khuyên dùng)</option>
+                  <option value="150">±150 ELO (Thách đấu mở rộng)</option>
+                  <option value="200">±200 ELO (Tối đa dải)</option>
                 </select>
+              </div>
+
+              <div style="display: flex; align-items: flex-end;">
+                <button class="btn btn-primary" id="btn-run-matchmaking" onclick="app.executeMatchmakingEngine()" style="width: 100%; height: 38px; font-weight: 700; background: #167946; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                  <i class="fa-solid fa-play"></i> Quét Kèo Phù Hợp
+                </button>
               </div>
             </div>
 
-            <!-- Dynamic ELO Range Radar Live Simulator Bar (Component 6) -->
-            <div id="dynamic-radar-container" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px; padding: 12px 16px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div id="radar-pulse-icon" style="width: 38px; height: 38px; border-radius: 50%; background: #167946; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 0 rgba(22,121,70,0.7); animation: pulseRadar 1.5s infinite;">
-                  <i class="fa-solid fa-radar" style="font-size: 1rem;"></i>
-                </div>
-                <div>
-                  <div style="font-weight: 800; font-size: 0.9rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-                    <span>Dynamic ELO Range Radar:</span>
-                    <span id="dynamic-range-badge" style="background: #167946; color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.78rem;">Dải ELO: ±100</span>
-                    <span id="dynamic-wait-timer" style="color: #64748b; font-size: 0.8rem; font-weight: 600;">(Thời gian chờ: 0s)</span>
-                  </div>
-                  <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
-                    Cơ chế tự động nới lỏng dải: <strong>0–30s (±50)</strong> ➔ <strong>30–60s (±100)</strong> ➔ <strong>60–120s (±150)</strong> ➔ <strong>>120s (±200)</strong>
-                  </div>
-                </div>
+            <!-- Live Radar Status Bar & Action Strip -->
+            <div class="mm-radar-strip">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div class="radar-dot-pulse"></div>
+                <span style="font-size: 0.82rem; color: #1e293b; font-weight: 700;">Radar Quét Tự Động:</span>
+                <span id="dynamic-range-badge" class="badge-pill" style="background: #167946; color: #fff; font-size: 0.75rem;">Dải ELO: ±100</span>
+                <span id="dynamic-wait-timer" style="color: #64748b; font-size: 0.78rem;">(Chờ: 0s)</span>
+                <span style="font-size: 0.78rem; color: #64748b;">• Cơ chế tự động mở rộng dải: 30s (+50) ➔ 60s (+100) ➔ 120s (+150)</span>
               </div>
-              <div style="display: flex; gap: 8px;">
-                <button class="btn btn-primary btn-sm" id="btn-run-matchmaking" onclick="app.executeMatchmakingEngine()" style="font-weight: 700;">
-                  <i class="fa-solid fa-play"></i> Quét Tìm Đối Thủ (MatchScore)
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-xs btn-secondary" onclick="app.expandRadarRangeStep()" title="Mở rộng dải radar thêm 30s">
+                  <i class="fa-solid fa-satellite-dish"></i> Nới Rộng (+30s)
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="app.expandRadarRangeStep()">
-                  <i class="fa-solid fa-satellite-dish"></i> Mở Rộng Dải Radar (+30s)
+                <button class="btn btn-xs btn-secondary" onclick="app.showEloTiersGuideModal()">
+                  <i class="fa-solid fa-table-list"></i> Bảng Phân Khúc 6 Cấp
+                </button>
+                <button class="btn btn-xs btn-secondary" onclick="app.showEloHistoryModal()">
+                  <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- 3. AI RECOMMENDATION & NARRATIVE EXPLANATION BANNER (Component 11) -->
-          <div id="ai-recommendation-card" class="glass-card" style="padding: 1.25rem; margin-bottom: 1.5rem; background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%); border: 1.5px solid #38bdf8; border-radius: 14px;">
-            <div style="display: flex; align-items: flex-start; gap: 14px;">
-              <div style="width: 44px; height: 44px; border-radius: 10px; background: #0284c7; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(2,132,199,0.3);">
-                <i class="fa-solid fa-robot"></i>
-              </div>
-              <div style="flex: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap;">
-                  <strong style="color: #0369a1; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Recommendation & Phân Tích Phong Độ (Insight Layer)
-                  </strong>
-                  <span id="ai-recom-match-badge" style="background: #167946; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 2px 8px; border-radius: 9999px;">
-                    🎯 Khớp 95.8% (Cân bằng cao)
-                  </span>
+          <!-- Dual Smart Strip: AI Recommendation Insight & Anti-Cheat Confirmation -->
+          <div class="mm-smart-strips-grid">
+            <!-- Strip 1: AI Match Insight -->
+            <div class="mm-smart-strip-card ai-insight-strip">
+              <div class="smart-strip-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 2px;">
+                  <strong style="color: #0369a1; font-size: 0.82rem; text-transform: uppercase;">AI MatchScore Insight</strong>
+                  <span id="ai-recom-match-badge" style="background: #167946; color: #fff; font-size: 0.7rem; font-weight: 800; padding: 1px 7px; border-radius: 9999px;">🎯 Khớp 97.8%</span>
                 </div>
-                <div id="ai-recom-narrative" style="font-size: 0.88rem; color: #1e293b; line-height: 1.6; margin-bottom: 6px;">
-                  Đang khởi tạo thuật toán MatchScore Engine... Nhấn <strong>"Quét Tìm Đối Thủ"</strong> để nhận phân tích đề xuất từ AI!
-                </div>
-                <div id="ai-recom-tactical-tip" style="font-size: 0.82rem; color: #475569; background: rgba(255,255,255,0.7); padding: 6px 12px; border-radius: 8px; border-left: 3px solid #0284c7;">
-                  💡 <em>Mẹo: AI không thay thế công thức ELO toán học, mà đóng vai trò giải thích trực quan và đề xuất tối ưu hóa trận đấu.</em>
+                <div id="ai-recom-narrative" style="font-size: 0.8rem; color: #334155; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  Đã tính toán: 50% ELO + 20% Giờ + 15% Sân + 10% Trình + 5% Lịch sử đối đầu.
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- 4. TWO-WAY RESULT CONFIRMATION & ANTI-CHEAT SHIELD BAR (Components 8 & 9) -->
-          <div class="glass-card" style="padding: 1.25rem; margin-bottom: 1.5rem; background: #ffffff; border: 1.5px solid #fecdd3; border-radius: 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 40px; height: 40px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
-                  <i class="fa-solid fa-shield-halved"></i>
+            <!-- Strip 2: Anti-Cheat & Two-Way Result Confirmation Bar -->
+            <div class="mm-smart-strip-card anti-cheat-strip">
+              <div class="smart-strip-icon anti-cheat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 2px;">
+                  <strong style="color: #991b1b; font-size: 0.82rem; text-transform: uppercase;">Đối Soát 2 Chiều & Anti-Cheat</strong>
+                  <span style="font-size: 0.7rem; color: #166534; font-weight: 700; background: #dcfce7; padding: 1px 6px; border-radius: 9999px;">Bảo Mật ELO</span>
                 </div>
-                <div>
-                  <h4 style="margin: 0; color: #991b1b; font-size: 0.95rem;">
-                    Quy Trình Xác Nhận Kết Quả 2 Chiều & Chống Gian Lận ELO (Anti-Cheat)
-                  </h4>
-                  <p style="margin: 2px 0 0; font-size: 0.8rem; color: #64748b;">
-                    Đấu thủ A nhập kết quả ➔ Đấu thủ B xác nhận thống nhất mới cộng/trừ ELO. Tự động phát hiện Win-Trading, Smurf & Tăng ELO đột biến.
-                  </p>
+                <div id="anti-cheat-status-text" style="font-size: 0.8rem; color: #334155; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  Có 1 trận đấu đang chờ bạn xác nhận kết quả 2 chiều để cộng/trừ điểm ELO.
                 </div>
               </div>
-              <div style="display: flex; gap: 8px;">
-                <button class="btn btn-secondary btn-sm" onclick="app.openMatchResultModal()" style="border: 1.5px solid #dc2626; color: #dc2626; font-weight: 700;">
-                  <i class="fa-solid fa-circle-check"></i> Xem Trận Chờ Xác Nhận (1)
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <button class="btn btn-secondary btn-sm" id="btn-open-match-result" onclick="app.openMatchResultModal()" style="border: 1.5px solid #dc2626; color: #dc2626; font-weight: 700; padding: 4px 10px; font-size: 0.78rem;">
+                  <i class="fa-solid fa-clock-rotate-left"></i> Xem Trận Chờ Xác Nhận (<span class="pending-match-count-badge">1</span>)
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="app.runAntiCheatAudit()" style="border: 1.5px solid #475569; color: #334155; font-weight: 700;">
-                  <i class="fa-solid fa-shield-virus"></i> Quét Bất Thường
+                <button class="btn btn-secondary btn-sm" onclick="app.runAntiCheatAudit()" style="border: 1px solid #94a3b8; color: #475569; padding: 4px 8px; font-size: 0.78rem;" title="Quét bất thường / Smurf / Win-trading">
+                  <i class="fa-solid fa-shield-virus"></i>
                 </button>
               </div>
             </div>

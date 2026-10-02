@@ -52,6 +52,7 @@ class BadmintonAIApp {
     this.renderAdminOverviewFacilities();
     this.renderOwnerDashboardOrders();
     this.initLeafletMap();
+    this.updatePendingMatchesUI();
   }
 
   copyToClipboard(text, label = "Thông tin") {
@@ -644,6 +645,7 @@ class BadmintonAIApp {
 
     if (screenId === 'ui-02') this.renderHomeAuthBanner();
     if (screenId === 'ui-05') this.renderBookingOrdersList();
+    if (screenId === 'ui-06') this.updatePendingMatchesUI();
     if (screenId === 'ui-08') this.renderUserProfilePage();
     if (screenId === 'ui-map') this.initGoogleSportsMap();
     if (screenId === 'ui-09') this.renderOwnerDashboardOrders();
@@ -1886,92 +1888,86 @@ class BadmintonAIApp {
       if (cand.matchScore < 70) badgeBg = '#dc2626';
 
       html += `
-        <div class="mm-room-card" style="border: 1.5px solid ${cand.matchScore >= 90 ? '#86efac' : '#e2e8f0'}; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-          <div class="mm-card-header" style="background: ${cand.matchScore >= 90 ? '#f0fdf4' : '#f8fafc'}; padding: 10px 14px;">
-            <span class="mm-ai-badge" style="background: ${badgeBg}; color: #fff; font-weight: 800; font-size: 0.8rem; padding: 4px 10px; border-radius: 9999px;">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> MatchScore: ${cand.matchScore}%
+        <div class="mm-room-card">
+          <div class="mm-card-header" style="background: ${cand.matchScore >= 90 ? 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' : '#f8fafc'};">
+            <span style="background: ${badgeBg}; color: #fff; font-weight: 800; font-size: 0.78rem; padding: 4px 10px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 5px;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Khớp ${cand.matchScore}%
             </span>
             <div style="display: flex; gap: 6px; align-items: center;">
-              <span class="badge ${cand.matchType.includes('Đôi') ? 'badge-info' : 'badge-warning'}" style="font-size: 0.75rem;">
+              <span class="badge ${cand.matchType.includes('Đôi') ? 'badge-info' : 'badge-warning'}" style="font-size: 0.72rem; padding: 3px 8px;">
                 ${cand.matchType.includes('Đôi') ? '🏸 Đôi 2v2' : '⚡ Đơn 1v1'}
               </span>
-              <span class="elo-badge" style="font-size: 0.78rem; padding: 2px 8px;">
+              <span class="elo-badge" style="font-size: 0.76rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">
                 ELO ${cand.elo}
               </span>
             </div>
           </div>
 
-          <div class="mm-card-body" style="padding: 14px;">
+          <div class="mm-card-body">
             <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a;">${cand.name}</h3>
-                <span style="background: ${cand.tier.bg}; color: ${cand.tier.color}; font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a; line-height: 1.3;">${cand.name}</h3>
+                <span style="background: ${cand.tier.bg}; color: ${cand.tier.color}; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; white-space: nowrap;">
                   ${cand.tier.display}
                 </span>
               </div>
-              <p style="font-size: 0.82rem; color: #64748b; margin: 0 0 10px; line-height: 1.5;">
-                <span><i class="fa-solid fa-location-dot text-rose"></i> ${cand.facility}</span><br>
-                <span><i class="fa-solid fa-clock text-amber"></i> ${cand.time}</span>
-              </p>
+              <div style="font-size: 0.82rem; color: #64748b; line-height: 1.5;">
+                <div><i class="fa-solid fa-location-dot text-rose" style="width: 14px;"></i> ${cand.facility}</div>
+                <div><i class="fa-solid fa-clock text-amber" style="width: 14px;"></i> ${cand.time}</div>
+              </div>
             </div>
 
             <!-- Multi-Criteria MatchScore Breakdown -->
-            <div style="background: #f8fafc; border-radius: 10px; padding: 10px 12px; border: 1px solid #e2e8f0; margin-bottom: 12px; font-size: 0.78rem;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: 700; color: #334155;">
-                <span>Phân Rã 5 Tiêu Chí Điểm Match:</span>
-                <span style="color: #166534;">Δ ${cand.diff} ELO</span>
+            <div class="mm-match-breakdown-row">
+              <div class="mm-match-metric-box">
+                <div class="mm-match-metric-label">Độ Lệch</div>
+                <div class="mm-match-metric-value" style="color: #166534;">±${cand.diff}</div>
               </div>
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center;">
-                <div style="background: #fff; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                  <div style="color: #64748b; font-size: 0.7rem;">ELO (50%)</div>
-                  <strong style="color: #16a34a;">${cand.subScores.elo}đ</strong>
-                </div>
-                <div style="background: #fff; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                  <div style="color: #64748b; font-size: 0.7rem;">Giờ (20%)</div>
-                  <strong style="color: #0284c7;">${cand.subScores.time}đ</strong>
-                </div>
-                <div style="background: #fff; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                  <div style="color: #64748b; font-size: 0.7rem;">Sân (15%)</div>
-                  <strong style="color: #e11d48;">${cand.subScores.loc}đ</strong>
-                </div>
-                <div style="background: #fff; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                  <div style="color: #64748b; font-size: 0.7rem;">Trình (10%)</div>
-                  <strong style="color: #7c3aed;">${cand.subScores.skill}đ</strong>
-                </div>
+              <div class="mm-match-metric-box">
+                <div class="mm-match-metric-label">Khung Giờ</div>
+                <div class="mm-match-metric-value" style="color: #0284c7;">${cand.subScores.time}%</div>
+              </div>
+              <div class="mm-match-metric-box">
+                <div class="mm-match-metric-label">Cụm Sân</div>
+                <div class="mm-match-metric-value" style="color: #e11d48;">${cand.subScores.loc}%</div>
+              </div>
+              <div class="mm-match-metric-box">
+                <div class="mm-match-metric-label">Kỹ Năng</div>
+                <div class="mm-match-metric-value" style="color: #7c3aed;">${cand.subScores.skill}%</div>
               </div>
             </div>
 
-            <!-- Predicted Win Rate Bar -->
-            <div style="margin-bottom: 6px;">
-              <div style="display: flex; justify-content: space-between; font-size: 0.76rem; font-weight: 700; margin-bottom: 3px;">
-                <span style="color: #166534;">Bạn: ${cand.winRateA}%</span>
-                <span style="color: #1e40af;">Đối thủ: ${cand.winRateB}%</span>
+            <!-- Predicted Win Rate Duel Bar -->
+            <div class="mm-winrate-container">
+              <div class="mm-winrate-labels">
+                <span style="color: #166534;"><i class="fa-solid fa-shield-halved"></i> Bạn: ${cand.winRateA}%</span>
+                <span style="color: #1e40af;">Đối thủ: ${cand.winRateB}% <i class="fa-solid fa-bolt"></i></span>
               </div>
-              <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; display: flex;">
-                <div style="width: ${cand.winRateA}%; height: 100%; background: #16a34a;"></div>
-                <div style="width: ${cand.winRateB}%; height: 100%; background: #2563eb;"></div>
+              <div class="mm-winrate-bar-track">
+                <div style="width: ${cand.winRateA}%; height: 100%; background: linear-gradient(90deg, #10b981, #059669);"></div>
+                <div style="width: ${cand.winRateB}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #1d4ed8);"></div>
               </div>
             </div>
           </div>
 
-          <div class="mm-card-footer" style="padding: 10px 14px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.8rem; color: #64748b;">
-              ${cand.diff <= 50 ? '🟢 Cân kèo hoàn hảo' : '🟡 Kèo thách đấu nhẹ'}
+          <div class="mm-card-footer">
+            <span style="font-size: 0.8rem; font-weight: 700; color: ${cand.diff <= 50 ? '#166534' : '#b45309'}; display: flex; align-items: center; gap: 4px;">
+              ${cand.diff <= 50 ? '<i class="fa-solid fa-circle-check"></i> Cân kèo hoàn hảo' : '<i class="fa-solid fa-bolt"></i> Kèo thách đấu (+ ' + cand.diff + ' ELO)'}
             </span>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-secondary btn-sm" onclick="app.loadRoomIntoEloSimulator(${cand.id})" title="Xem phân tích đối kháng ELO">
+              <button class="btn btn-secondary btn-sm" onclick="app.loadRoomIntoEloSimulator(${cand.id})" style="font-size: 0.78rem; padding: 4px 10px; font-weight: 600;" title="Mô phỏng xác suất ELO">
                 <i class="fa-solid fa-brain"></i> Mô Phỏng
               </button>
               ${cand.isRoom ? `
-                <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${cand.roomId})" style="background: #167946;">
+                <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${cand.roomId})" style="background: #167946; font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
                   <i class="fa-solid fa-users"></i> Vào Phòng
                 </button>
               ` : (isGuest ? `
-                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', ${cand.elo})" style="background: #d97706;" title="Đăng nhập để gửi lời mời thách đấu">
+                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', ${cand.elo})" style="background: #d97706; font-size: 0.78rem; padding: 4px 12px; font-weight: 700;" title="Đăng nhập để ghép kèo">
                   <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Để Ghép
                 </button>
               ` : `
-                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', ${cand.elo})" style="background: linear-gradient(135deg, #167946, #059669);">
+                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', ${cand.elo})" style="background: linear-gradient(135deg, #167946, #059669); font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
                   <i class="fa-solid fa-bolt"></i> Ghép Kèo Ngay
                 </button>
               `)}
@@ -2000,6 +1996,50 @@ class BadmintonAIApp {
   // =========================================================================
   // 8. TWO-WAY RESULT CONFIRMATION & DISPUTE MODAL (Component 8 & 9)
   // =========================================================================
+  getPendingMatches() {
+    if (!MockData.matches || !Array.isArray(MockData.matches)) return [];
+    return MockData.matches.filter(m => m.status === 'PENDING_CONFIRMATION');
+  }
+
+  updatePendingMatchesUI() {
+    const pending = this.getPendingMatches();
+    const count = pending.length;
+
+    // Cập nhật số lượng trên các badge hiển thị
+    document.querySelectorAll('.pending-match-count-badge').forEach(el => {
+      el.textContent = count;
+    });
+
+    const statusTextEl = document.getElementById('anti-cheat-status-text');
+    const openBtn = document.getElementById('btn-open-match-result');
+
+    if (count > 0) {
+      if (statusTextEl) {
+        statusTextEl.innerHTML = `<span style="color: #b45309; font-weight: 700;">⚠️ Có ${count} trận đấu</span> đang chờ bạn đối soát & xác nhận kết quả 2 chiều để cộng/trừ ELO.`;
+      }
+      if (openBtn) {
+        openBtn.className = "btn btn-secondary btn-sm";
+        openBtn.style.border = "1.5px solid #dc2626";
+        openBtn.style.color = "#dc2626";
+        openBtn.style.background = "#fff1f2";
+        openBtn.style.fontWeight = "700";
+        openBtn.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> Xem Trận Chờ Xác Nhận (<span class="pending-match-count-badge">${count}</span>)`;
+      }
+    } else {
+      if (statusTextEl) {
+        statusTextEl.innerHTML = `<span style="color: #16a34a; font-weight: 700;">✅ Không còn trận chờ:</span> Tất cả trận đấu đã đối soát hoàn tất hoặc đã gửi khiếu nại. ELO an toàn.`;
+      }
+      if (openBtn) {
+        openBtn.className = "btn btn-secondary btn-sm";
+        openBtn.style.border = "1.5px solid #10b981";
+        openBtn.style.color = "#166534";
+        openBtn.style.background = "#f0fdf4";
+        openBtn.style.fontWeight = "700";
+        openBtn.innerHTML = `<i class="fa-solid fa-circle-check text-success"></i> Đã Đối Soát Xong (0)`;
+      }
+    }
+  }
+
   openMatchResultModal() {
     if (!this.currentUser) {
       this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập tài khoản để xem & xác nhận kết quả kèo đấu.", "error");
@@ -2009,13 +2049,50 @@ class BadmintonAIApp {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
 
+    const pending = this.getPendingMatches();
+    if (!pending || pending.length === 0) {
+      modalBody.innerHTML = `
+        <div style="text-align: center; padding: 2rem 1rem;">
+          <div style="width: 58px; height: 58px; border-radius: 50%; background: #dcfce7; color: #16a34a; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; border: 2px solid #86efac;">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 1.2rem; color: #0f172a; font-weight: 800;">Không Còn Trận Nào Chờ Xác Nhận</h3>
+          <p style="font-size: 0.88rem; color: #64748b; max-width: 380px; margin: 0 auto 1.25rem; line-height: 1.5;">
+            Tất cả các trận đấu của bạn đã được đối soát 2 chiều hoàn tất hoặc đã gửi khiếu nại tới ban trọng tài!
+          </p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 0.82rem; color: #334155; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-shield-check" style="color: #16a34a; font-size: 1.1rem;"></i>
+            <span>Hệ thống Anti-Cheat ELO đang hoạt động bình thường, điểm ELO của bạn đã được bảo vệ.</span>
+          </div>
+          <button class="btn btn-primary" onclick="app.closeModal()" style="min-width: 140px; font-weight: 700; background: #167946;">
+            <i class="fa-solid fa-check"></i> Đã Hiểu & Đóng
+          </button>
+        </div>
+      `;
+      this.openModal();
+      return;
+    }
+
+    const match = pending[0];
+    const matchId = match.id;
+    const playerA = match.player_a_name || "Nguyễn Văn Hùng";
+    const playerAElo = match.player_a_elo || 1450;
+    const playerAGain = match.player_a_gain || 16;
+    const playerB = match.player_b_name || "Đỗ Minh Đức";
+    const playerBElo = match.player_b_elo || 1520;
+    const playerBGain = match.player_b_gain || -16;
+    const finalScore = match.final_score || "21-18, 19-21, 21-19";
+    const matchDate = match.match_date || "29/09/2026 (18:30 - 19:30)";
+    const reporter = match.reporter_name || playerA;
+    const summary = match.summary || `${playerA} thắng chung cuộc 2 - 1`;
+
     modalBody.innerHTML = `
       <div style="padding: 0.5rem 0;">
         <div style="text-align: center; margin-bottom: 1.25rem;">
           <div style="width: 52px; height: 52px; border-radius: 50%; background: #f0fdf4; color: #16a34a; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; border: 2px solid #86efac;">
             <i class="fa-solid fa-trophy"></i>
           </div>
-          <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">Xác Nhận Kết Quả Trận Đấu & Cập Nhật ELO</h3>
+          <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a; font-weight: 800;">Xác Nhận Kết Quả Trận Đấu & Cập Nhật ELO</h3>
           <p style="font-size: 0.84rem; color: #64748b; margin: 4px 0 0;">Quy trình 2 bên đối soát: Không cho phép tự ý cộng ELO nếu đối thủ chưa thống nhất</p>
         </div>
 
@@ -2023,17 +2100,17 @@ class BadmintonAIApp {
         <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 12px; margin-bottom: 1.25rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <span style="background: #fef3c7; color: #b45309; font-weight: 800; font-size: 0.75rem; padding: 2px 8px; border-radius: 6px;">
-              Trận #103 • Chờ Xác Nhận
+              Trận #${matchId} • Chờ Xác Nhận
             </span>
-            <span style="font-size: 0.78rem; color: #78350f;">29/09/2026 (18:30 - 19:30)</span>
+            <span style="font-size: 0.78rem; color: #78350f;">${matchDate}</span>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.92rem; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
-            <span>Nguyễn Văn Hùng (ELO 1450)</span>
+            <span>${playerA} (ELO ${playerAElo})</span>
             <span style="color: #ea580c; font-size: 1.1rem;">VS</span>
-            <span>Đỗ Minh Đức (ELO 1520)</span>
+            <span>${playerB} (ELO ${playerBElo})</span>
           </div>
           <div style="background: #ffffff; border-radius: 8px; padding: 8px 12px; border: 1px solid #fcd34d; font-size: 0.84rem; color: #92400e;">
-            📝 <strong>Kết quả do Đấu thủ A khai báo:</strong> Tỷ số <strong>21-18, 19-21, 21-19</strong> (Hùng thắng chung cuộc 2 - 1).
+            📝 <strong>Kết quả do ${reporter} khai báo:</strong> Tỷ số <strong>${finalScore}</strong> (${summary}).
           </div>
         </div>
 
@@ -2041,8 +2118,8 @@ class BadmintonAIApp {
         <div style="background: #f8fafc; border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; margin-bottom: 1.25rem; font-size: 0.84rem;">
           <div style="font-weight: 700; color: #334155; margin-bottom: 6px;"><i class="fa-solid fa-chart-line text-primary"></i> Dự kiến biến động ELO (K=24):</div>
           <div style="display: flex; justify-content: space-between; line-height: 1.6;">
-            <div>• Nguyễn Văn Hùng: <strong style="color: #16a34a;">+16 ELO</strong> (1450 ➔ 1466)</div>
-            <div>• Đỗ Minh Đức: <strong style="color: #ef4444;">-16 ELO</strong> (1520 ➔ 1504)</div>
+            <div>• ${playerA}: <strong style="color: #16a34a;">+${playerAGain} ELO</strong> (${playerAElo} ➔ ${playerAElo + playerAGain})</div>
+            <div>• ${playerB}: <strong style="color: #ef4444;">${playerBGain} ELO</strong> (${playerBElo} ➔ ${playerBElo + playerBGain})</div>
           </div>
         </div>
 
@@ -2054,10 +2131,10 @@ class BadmintonAIApp {
 
         <!-- 2 Actions: Agree or Dispute -->
         <div style="display: flex; gap: 10px;">
-          <button class="btn btn-primary" style="flex: 1; background: #167946; font-weight: 700;" onclick="app.confirmMatchResultAction(103, true)">
+          <button class="btn btn-primary" style="flex: 1; background: #167946; font-weight: 700;" onclick="app.confirmMatchResultAction(${matchId}, true)">
             <i class="fa-solid fa-circle-check"></i> Xác Nhận & Cập Nhật ELO
           </button>
-          <button class="btn btn-secondary" style="border: 1.5px solid #ef4444; color: #dc2626; font-weight: 700;" onclick="app.confirmMatchResultAction(103, false)">
+          <button class="btn btn-secondary" style="border: 1.5px solid #ef4444; color: #dc2626; font-weight: 700;" onclick="app.confirmMatchResultAction(${matchId}, false)">
             <i class="fa-solid fa-triangle-exclamation"></i> Khiếu Nại Tranh Chấp
           </button>
         </div>
@@ -2076,9 +2153,23 @@ class BadmintonAIApp {
       return;
     }
 
+    if (!MockData.matches) MockData.matches = [];
+    const targetMatch = MockData.matches.find(m => m.id === matchId);
+
     if (isAgreed) {
+      if (targetMatch) {
+        targetMatch.status = 'CONFIRMED';
+        targetMatch.confirmed_at = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      }
+
+      if (MockData.match_players) {
+        MockData.match_players.filter(mp => mp.match_id === matchId).forEach(mp => {
+          mp.confirmation_status = 'CONFIRMED';
+        });
+      }
+
       const oldElo = this.currentUser.elo_rating || 1200;
-      const eloGain = 16;
+      const eloGain = (targetMatch && targetMatch.player_a_gain) ? targetMatch.player_a_gain : 16;
       const newElo = oldElo + eloGain;
       this.currentUser.elo_rating = newElo;
 
@@ -2105,17 +2196,32 @@ class BadmintonAIApp {
         old_elo: oldElo,
         new_elo: newElo,
         elo_change: eloGain,
-        reason: "Thắng trận Đơn vs Đỗ Minh Đức (21-18, 19-21, 21-19)",
-        opponent_info: "Đỗ Minh Đức (ELO 1520)",
+        reason: targetMatch ? `Thắng trận Đơn vs ${targetMatch.player_b_name} (${targetMatch.final_score})` : "Thắng trận Đơn vs Đỗ Minh Đức (21-18, 19-21, 21-19)",
+        opponent_info: targetMatch ? `${targetMatch.player_b_name} (ELO ${targetMatch.player_b_elo})` : "Đỗ Minh Đức (ELO 1520)",
         created_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
       });
 
       this.switchDemoPlayerElo(newElo);
-      saveMockDataToLocalStorage();
+      this.updatePendingMatchesUI();
+      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
 
-      this.showToast(`🎉 Hai bên đã thống nhất kết quả! Điểm ELO của bạn đã cập nhật lên ${newElo} (+${eloGain} ELO) và lưu vào cơ sở dữ liệu!`);
+      this.showToast(`🎉 Hai bên đã thống nhất kết quả trận #${matchId}! Điểm ELO của bạn đã cập nhật lên ${newElo} (+${eloGain} ELO) và trận đấu đã hoàn tất!`);
     } else {
-      this.showToast(`⚠️ Đã ghi nhận tranh chấp tỷ số! Điểm ELO bị đóng băng và chuyển ban trọng tài xem xét.`);
+      if (targetMatch) {
+        targetMatch.status = 'DISPUTED';
+        targetMatch.disputed_at = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      }
+
+      if (MockData.match_players) {
+        MockData.match_players.filter(mp => mp.match_id === matchId).forEach(mp => {
+          mp.confirmation_status = 'DISPUTED';
+        });
+      }
+
+      this.updatePendingMatchesUI();
+      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+
+      this.showToast(`⚠️ Đã ghi nhận khiếu nại tranh chấp trận #${matchId}! Trận đấu đã được gỡ khỏi danh sách chờ, điểm ELO bị đóng băng chuyển ban trọng tài xem xét.`);
     }
   }
 

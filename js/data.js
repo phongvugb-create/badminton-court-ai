@@ -1245,6 +1245,62 @@ const MockData = {
     { hour: "17:00 - 19:00", rate: 95, status: "high" },
     { hour: "19:00 - 21:00", rate: 98, status: "high" },
     { hour: "21:00 - 23:00", rate: 70, status: "mid" }
+  ],
+
+  // 10. BẢNG matches & match_players (Xác nhận kết quả 2 chiều & Anti-Cheat)
+  matches: [
+    {
+      id: 103,
+      court_id: 201,
+      facility_id: 101,
+      match_type: "SINGLES",
+      start_time: "18:30",
+      end_time: "19:30",
+      match_date: "29/09/2026 (18:30 - 19:30)",
+      status: "PENDING_CONFIRMATION",
+      final_score: "21-18, 19-21, 21-19",
+      winner_name: "Nguyễn Văn Hùng",
+      reporter_name: "Nguyễn Văn Hùng",
+      summary: "Hùng thắng chung cuộc 2 - 1",
+      player_a_name: "Nguyễn Văn Hùng",
+      player_a_elo: 1450,
+      player_a_gain: 16,
+      player_b_name: "Đỗ Minh Đức",
+      player_b_elo: 1520,
+      player_b_gain: -16,
+      created_at: "2026-09-29 19:35:00"
+    }
+  ],
+
+  match_players: [
+    {
+      id: 1,
+      match_id: 103,
+      player_id: 1,
+      team: "A",
+      player_name: "Nguyễn Văn Hùng",
+      elo_before: 1450,
+      elo_after: 1466,
+      elo_change: 16,
+      score_claimed: "21-18, 19-21, 21-19 (Thắng 2-1)",
+      result: "WIN",
+      confirmation_status: "CONFIRMED",
+      submitted_at: "2026-09-29 19:35:00"
+    },
+    {
+      id: 2,
+      match_id: 103,
+      player_id: 8,
+      team: "B",
+      player_name: "Đỗ Minh Đức",
+      elo_before: 1520,
+      elo_after: 1504,
+      elo_change: -16,
+      score_claimed: null,
+      result: "LOSS",
+      confirmation_status: "PENDING",
+      submitted_at: null
+    }
   ]
 };
 
@@ -1270,7 +1326,7 @@ function loadMockDataFromLocalStorage() {
 
 function applyDataToMockData(sourceData) {
   if (!sourceData) return;
-  const keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'occupancy_heatmap', 'bookings', 'orders'];
+  const keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'occupancy_heatmap', 'bookings', 'orders', 'player_profiles', 'elo_histories', 'matches', 'match_players'];
   keys.forEach(k => {
     if (sourceData[k] && Array.isArray(sourceData[k])) {
       MockData[k] = sourceData[k];
