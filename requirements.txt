@@ -1,0 +1,17 @@
+# BADMINTON.AI - Production Dependencies for Render.com Hosting
+# Python 3.10+ / 3.11+
+
+# PostgreSQL Driver for Render Free PostgreSQL Database
+psycopg2-binary>=2.9.9
+
+# HTTP & AI API integration
+requests>=2.31.0
+urllib3>=2.0.0
+google-generativeai>=0.4.1
+
+# Optional FastAPI backend (if running uvicorn backend.app.main:app)
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic>=2.6.0
+sqlalchemy>=2.0.28
+asyncpg>=0.29.0

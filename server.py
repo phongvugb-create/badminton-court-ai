@@ -16,6 +16,8 @@ try:
 except ImportError:
     from app.ai import elo_engine
 
+from db_engine import db_manager
+
 PORT = int(os.environ.get("PORT", 8085))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "database.json")
 
@@ -453,11 +455,15 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            if os.path.exists(DATA_FILE):
-                with open(DATA_FILE, "r", encoding="utf-8") as f:
-                    self.wfile.write(f.read().encode("utf-8"))
-            else:
-                self.wfile.write(b"{}")
+            data = db_manager.load_data()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            return
+
+        if self.path == "/api/db/status" or self.path == "/api/database/status":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(db_manager.get_status(), ensure_ascii=False, indent=2).encode("utf-8"))
             return
         
         if self.path == "/api/sqlite/download":
@@ -681,14 +687,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 incoming_data = json.loads(post_data.decode("utf-8"))
-                current_data = {}
-                if os.path.exists(DATA_FILE):
-                    try:
-                        with open(DATA_FILE, "r", encoding="utf-8") as f:
-                            current_data = json.load(f)
-                    except Exception:
-                        current_data = {}
-
+                current_data = db_manager.load_data() or {}
                 merged_database = {**current_data}
 
                 # 1. Authoritative sync for users (preserves deletions and sanitizes passwords)
@@ -714,26 +713,16 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     if k not in ["users", "facilities"] and isinstance(v, list):
                         merged_database[k] = v
 
-                # Save merged data to JSON
-                with open(DATA_FILE, "w", encoding="utf-8") as f:
-                    json.dump(merged_database, f, ensure_ascii=False, indent=2)
-
-                # Also sync directly to SQLite database
-                try:
-                    import sqlite_sync
-                    conn = sqlite_sync.get_connection()
-                    sqlite_sync.sync_json_to_sqlite(merged_database, conn)
-                    conn.close()
-                except Exception as sqle:
-                    print(f"Warning: could not sync to SQLite: {sqle}")
+                # Save merged data using db_manager (PostgreSQL on Render + SQLite + JSON fallback)
+                db_manager.save_data(merged_database)
 
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
                 self.wfile.write(json.dumps({
                     "success": True, 
-                    "database_type": "SQLite3 + JSON",
-                    "sqlite_file": "badminton.db",
+                    "database_type": db_manager.db_type,
+                    "active_driver": db_manager.active_driver,
                     "users_count": len(merged_database.get("users", [])),
                     "facilities_count": len(merged_database.get("facilities", []))
                 }).encode("utf-8"))
@@ -857,6 +846,11 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     os.chdir(os.path.dirname(__file__))
+    # Initialize unified database layer (PostgreSQL on Render or local SQLite)
+    db_manager.initialize()
+    status = db_manager.get_status()
+    print(f"📊 Database Engine active: {status['active_driver']} ({status['database_type']}) - {status['users_count']} users, {status['facilities_count']} facilities")
+
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     try:
         with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), BadmintonServerHandler) as httpd:

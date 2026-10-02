@@ -7,7 +7,9 @@ logger = logging.getLogger(__name__)
 
 # Determine if we should use async sqlite or async postgres
 db_url = settings.DATABASE_URL
-if db_url.startswith("postgresql://"):
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif db_url.startswith("postgresql://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 engine_kwargs = {"echo": False, "future": True}

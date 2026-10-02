@@ -1,0 +1,31 @@
+# Render Blueprint Specification for BADMINTON.AI
+# This file automatically provisions:
+# 1. A Free PostgreSQL Database on Render (badminton-ai-postgres)
+# 2. A Free Web Service running the Badminton AI system on port $PORT
+#
+# When connecting your GitHub repo to Render, choose "New Blueprint" and select this repo!
+
+services:
+  - type: web
+    name: badminton-ai-web
+    env: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: badminton-ai-postgres
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+
+databases:
+  - name: badminton-ai-postgres
+    plan: free
+    region: singapore
+    databaseName: badminton_db
+    user: badminton_user
