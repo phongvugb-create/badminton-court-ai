@@ -1,4 +1,4 @@
-import http.server
+﻿import http.server
 import json
 import os
 import sys
@@ -14,6 +14,7 @@ if backend_dir not in sys.path:
 try:
     from backend.app.ai import elo_engine
 except ImportError:
+    # pyrefly: ignore [missing-import]
     from app.ai import elo_engine
 
 from db_engine import db_manager
