@@ -724,19 +724,26 @@
               </div>
             </div>
             
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <!-- Quick ELO Switcher for Player Profile -->
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <!-- Quick ELO Switcher for Player Profile with 6 Tiers & Custom Choice -->
               <div style="display: flex; flex-direction: column; gap: 2px;">
-                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">Cấp Độ Đấu Thủ ELO:</span>
-                <select id="quick-demo-elo-select" class="form-control" style="font-size: 0.82rem; padding: 4px 8px; border-radius: 8px;" onchange="app.switchDemoPlayerElo(this.value)">
-                  <option value="980">🟢 Cấp 1: Tân thủ (ELO 980)</option>
-                  <option value="1150">🔵 Cấp 2: Trung Bình (ELO 1150)</option>
-                  <option value="1350">🟡 Cấp 3: TB Khá (ELO 1350)</option>
-                  <option value="1450" selected>🟠 Cấp 4: Khá (ELO 1450)</option>
-                  <option value="1680">🔴 Cấp 5: Giỏi (ELO 1680)</option>
-                  <option value="1850">🟣 Cấp 6: Chuyên Nghiệp (ELO 1850)</option>
+                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">Cấp Độ & Trình Độ ELO:</span>
+                <select id="quick-demo-elo-select" class="form-control" style="font-size: 0.82rem; padding: 4px 8px; border-radius: 8px; font-weight: 600;" onchange="app.switchDemoPlayerElo(this.value)">
+                  <option value="850">🟢 Cấp 1 | Yếu - Tân thủ (0 - 999 ELO)</option>
+                  <option value="1100">🔵 Cấp 2 | Trung Bình - Cơ bản (1000 - 1199 ELO)</option>
+                  <option value="1300">🟡 Cấp 3 | Trung Bình Khá (1200 - 1399 ELO)</option>
+                  <option value="1450" selected>🟠 Cấp 4 | Khá (1400 - 1599 ELO)</option>
+                  <option value="1680">🔴 Cấp 5 | Giỏi - Thành Thạo (1600 - 1799 ELO)</option>
+                  <option value="1850">🟣 Cấp 6 | Tốt - Chuyên Nghiệp (1800+ ELO)</option>
+                  <option value="custom">✏️ Tự chọn trình độ (Nhập ELO tùy ý)...</option>
                 </select>
               </div>
+              <button class="btn btn-secondary btn-sm" onclick="app.promptCustomPlayerElo()" style="border: 1.5px solid #167946; color: #167946; font-weight: 700;" title="Tự do nhập điểm ELO bất kỳ của bạn">
+                <i class="fa-solid fa-pen-to-square"></i> Tự Chọn Trình
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="app.showEloTiersGuideModal()" style="border: 1.5px solid #0284c7; color: #0284c7; font-weight: 700;" title="Xem bảng phân khúc 6 cấp độ ghép trình">
+                <i class="fa-solid fa-table-list"></i> Bảng Phân Khúc
+              </button>
               <button class="btn btn-secondary btn-sm" onclick="app.showEloHistoryModal()" style="border: 1.5px solid #475569; color: #334155; font-weight: 700;">
                 <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu
               </button>

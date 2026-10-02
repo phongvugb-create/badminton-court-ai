@@ -1123,14 +1123,32 @@ class BadmintonAIApp {
 
   // =========================================================================
   // RE-ARCHITECTED AI MATCHMAKING & ELO ENGINE (UC006)
+  // Standard 6-Tier Skill Hierarchy (Phân khúc ghép trình tiêu chuẩn):
+  // 1 | Yếu | Tân thủ | 0 | 999
+  // 2 | Trung Bình | Cơ bản | 1000 | 1199
+  // 3 | Trung Bình Khá | | 1200 | 1399
+  // 4 | Khá | | 1400 | 1599
+  // 5 | Giỏi | Thành Thạo | 1600 | 1799
+  // 6 | Tốt | Chuyên Nghiệp | 1800 | NULL (1800+)
   // =========================================================================
   getEloTierInfo(elo) {
-    if (elo < 1000) return { tier: 1, name: "Tân thủ", display: "🟢 Cấp 1: Tân thủ", color: "#16a34a", bg: "#dcfce7", desc: "Mới chơi, làm quen nhịp độ" };
-    if (elo < 1200) return { tier: 2, name: "Trung Bình", display: "🔵 Cấp 2: Trung Bình (Cơ bản)", color: "#2563eb", bg: "#dbeafe", desc: "Kỹ thuật cơ bản, phản tạt tốt" };
-    if (elo < 1400) return { tier: 3, name: "Trung Bình Khá", display: "🟡 Cấp 3: Trung Bình Khá", color: "#ca8a04", bg: "#fef9c3", desc: "Có nền tảng, đánh tương đối ổn" };
-    if (elo < 1600) return { tier: 4, name: "Khá", display: "🟠 Cấp 4: Khá", color: "#ea580c", bg: "#ffedd5", desc: "Kỹ thuật & chiến thuật khá, smash uy lực" };
-    if (elo < 1800) return { tier: 5, name: "Thành Thạo", display: "🔴 Cấp 5: Giỏi (Thành Thạo)", color: "#dc2626", bg: "#fee2e2", desc: "Kỹ năng toàn diện, thi đấu ổn định" };
-    return { tier: 6, name: "Chuyên Nghiệp", display: "🟣 Cấp 6: Tốt (Chuyên Nghiệp)", color: "#7c3aed", bg: "#f3e8ff", desc: "Trình độ rất cao, đẳng cấp vận động viên" };
+    const val = (typeof elo === 'number') ? elo : parseInt(elo, 10) || 1200;
+    if (val <= 999) {
+      return { tier: 1, level: "Yếu", sub: "Tân thủ", name: "Yếu - Tân thủ", display: "🟢 Cấp 1: Yếu (Tân thủ)", color: "#16a34a", bg: "#dcfce7", desc: "Mới tập chơi, nắm bắt kỹ thuật & phản tạt cơ bản", min: 0, max: 999, defaultElo: 850 };
+    }
+    if (val <= 1199) {
+      return { tier: 2, level: "Trung Bình", sub: "Cơ bản", name: "Trung Bình - Cơ bản", display: "🔵 Cấp 2: Trung Bình (Cơ bản)", color: "#2563eb", bg: "#dbeafe", desc: "Kỹ thuật cơ bản, di chuyển bộ chân và điều cầu ổn định", min: 1000, max: 1199, defaultElo: 1100 };
+    }
+    if (val <= 1399) {
+      return { tier: 3, level: "Trung Bình Khá", sub: "", name: "Trung Bình Khá", display: "🟡 Cấp 3: Trung Bình Khá", color: "#ca8a04", bg: "#fef9c3", desc: "Có nền tảng tốt, phông cầu sâu và phòng thủ linh hoạt", min: 1200, max: 1399, defaultElo: 1300 };
+    }
+    if (val <= 1599) {
+      return { tier: 4, level: "Khá", sub: "", name: "Khá", display: "🟠 Cấp 4: Khá", color: "#ea580c", bg: "#ffedd5", desc: "Kỹ thuật & chiến thuật sắc bén, smash uy lực, điều tiết nhịp độ", min: 1400, max: 1599, defaultElo: 1450 };
+    }
+    if (val <= 1799) {
+      return { tier: 5, level: "Giỏi", sub: "Thành Thạo", name: "Giỏi - Thành Thạo", display: "🔴 Cấp 5: Giỏi (Thành Thạo)", color: "#dc2626", bg: "#fee2e2", desc: "Kỹ năng toàn diện, smash uy lực, phản xạ nhanh, cọ xát giải phong trào", min: 1600, max: 1799, defaultElo: 1680 };
+    }
+    return { tier: 6, level: "Tốt", sub: "Chuyên Nghiệp", name: "Tốt - Chuyên Nghiệp", display: "🟣 Cấp 6: Tốt (Chuyên Nghiệp)", color: "#7c3aed", bg: "#f3e8ff", desc: "Đẳng cấp VĐV chuyên nghiệp, bán chuyên hoặc kiện tướng", min: 1800, max: null, defaultElo: 1850 };
   }
 
   getRatingConfidenceInfo(gamesPlayed) {
@@ -1144,9 +1162,47 @@ class BadmintonAIApp {
   }
 
   switchDemoPlayerElo(newElo) {
+    if (newElo === 'custom') {
+      this.promptCustomPlayerElo();
+      return;
+    }
+    this.applyCustomPlayerElo(newElo);
+  }
+
+  promptCustomPlayerElo() {
+    const currentElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1450;
+    const input = prompt(
+      "🎯 TỰ CHỌN TRÌNH ĐỘ ELO CỦA BẠN:\n\n" +
+      "Bảng phân khúc tiêu chuẩn:\n" +
+      "• Cấp 1 (Yếu - Tân thủ): 0 - 999 ELO\n" +
+      "• Cấp 2 (Trung Bình - Cơ bản): 1000 - 1199 ELO\n" +
+      "• Cấp 3 (Trung Bình Khá): 1200 - 1399 ELO\n" +
+      "• Cấp 4 (Khá): 1400 - 1599 ELO\n" +
+      "• Cấp 5 (Giỏi - Thành Thạo): 1600 - 1799 ELO\n" +
+      "• Cấp 6 (Tốt - Chuyên Nghiệp): 1800+ ELO\n\n" +
+      "Nhập số điểm ELO mong muốn của bạn (0 - 3500):",
+      currentElo
+    );
+    if (input !== null) {
+      const parsed = parseInt(input.trim(), 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 3500) {
+        this.applyCustomPlayerElo(parsed);
+      } else {
+        alert("⚠️ Vui lòng nhập số điểm ELO hợp lệ (từ 0 đến 3500)!");
+      }
+    }
+  }
+
+  applyCustomPlayerElo(newElo) {
     const elo = parseInt(newElo, 10);
     if (!this.currentUser) this.currentUser = { id: 1, name: "Nguyễn Văn Hùng", role: "CUSTOMER" };
     this.currentUser.elo_rating = elo;
+
+    // Cập nhật vào danh sách users và player_profiles
+    const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.name === this.currentUser.name);
+    if (u) u.elo_rating = elo;
+    const prof = (MockData.player_profiles || []).find(p => p.user_id === this.currentUser.id || p.player_id === this.currentUser.id);
+    if (prof) prof.current_elo = elo;
 
     const tier = this.getEloTierInfo(elo);
     const conf = this.getRatingConfidenceInfo(28);
@@ -1154,6 +1210,7 @@ class BadmintonAIApp {
     const eloBadge = document.getElementById('player-profile-elo');
     const tierBadge = document.getElementById('player-profile-tier');
     const confBadge = document.getElementById('player-profile-confidence-badge');
+    const select = document.getElementById('quick-demo-elo-select');
 
     if (eloBadge) eloBadge.innerHTML = `<i class="fa-solid fa-trophy"></i> ELO ${elo}`;
     if (tierBadge) {
@@ -1165,8 +1222,149 @@ class BadmintonAIApp {
       confBadge.textContent = `🎯 Rating Confidence: ${Math.round(conf.confidence * 100)}% (${conf.badge})`;
     }
 
-    this.showToast(`🎯 Đã chuyển sang ${tier.display}! Đang quét lại đối thủ...`);
+    if (select) {
+      let matched = false;
+      for (let i = 0; i < select.options.length; i++) {
+        if (parseInt(select.options[i].value, 10) === elo) {
+          select.selectedIndex = i;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        let customOpt = select.querySelector('option[value="custom"]');
+        if (!customOpt) {
+          customOpt = document.createElement('option');
+          customOpt.value = 'custom';
+          select.appendChild(customOpt);
+        }
+        customOpt.textContent = `✏️ Tự chọn: ELO ${elo} (${tier.name})`;
+        select.value = 'custom';
+      }
+    }
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.showToast(`🎯 Đã cập nhật trình độ của bạn thành ELO ${elo} (${tier.display})! Đang quét lại đối thủ...`);
     this.executeMatchmakingEngine();
+  }
+
+  showEloTiersGuideModal() {
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    const currentElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1450;
+    const currentTier = this.getEloTierInfo(currentElo);
+
+    modalBody.innerHTML = `
+      <div style="padding: 0.5rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <h3 style="margin: 0; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-layer-group text-primary"></i> Bảng Phân Khúc Ghép Trình ELO
+            </h3>
+            <p style="margin: 4px 0 0; font-size: 0.82rem; color: #64748b;">
+              Chuẩn 6 phân khúc trình độ thi đấu & quyền tự chọn ELO cá nhân
+            </p>
+          </div>
+          <span style="background: ${currentTier.bg}; color: ${currentTier.color}; font-size: 0.8rem; font-weight: 800; padding: 4px 10px; border-radius: 9999px;">
+            Trình của bạn: ELO ${currentElo} (${currentTier.name})
+          </span>
+        </div>
+
+        <div style="overflow-x: auto; margin-bottom: 1.25rem;">
+          <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+            <thead>
+              <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1; text-align: left;">
+                <th style="padding: 8px 10px;">Cấp</th>
+                <th style="padding: 8px 10px;">Phân Khúc</th>
+                <th style="padding: 8px 10px;">Trình Độ Phụ</th>
+                <th style="padding: 8px 10px; text-align: center;">ELO Min</th>
+                <th style="padding: 8px 10px; text-align: center;">ELO Max</th>
+                <th style="padding: 8px 10px; text-align: right;">Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 1 ? '#f0fdf4' : 'transparent'};">
+                <td style="padding: 10px;"><span style="background: #dcfce7; color: #16a34a; font-weight: 800; padding: 2px 8px; border-radius: 6px;">1</span></td>
+                <td style="padding: 10px; font-weight: 700; color: #16a34a;">Yếu</td>
+                <td style="padding: 10px; color: #475569;">Tân thủ</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">0</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">999</td>
+                <td style="padding: 10px; text-align: right;">
+                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(850); app.closeModal();">Chọn (~850)</button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 2 ? '#eff6ff' : 'transparent'};">
+                <td style="padding: 10px;"><span style="background: #dbeafe; color: #2563eb; font-weight: 800; padding: 2px 8px; border-radius: 6px;">2</span></td>
+                <td style="padding: 10px; font-weight: 700; color: #2563eb;">Trung Bình</td>
+                <td style="padding: 10px; color: #475569;">Cơ bản</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">1000</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">1199</td>
+                <td style="padding: 10px; text-align: right;">
+                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1100); app.closeModal();">Chọn (~1100)</button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 3 ? '#fefce8' : 'transparent'};">
+                <td style="padding: 10px;"><span style="background: #fef9c3; color: #ca8a04; font-weight: 800; padding: 2px 8px; border-radius: 6px;">3</span></td>
+                <td style="padding: 10px; font-weight: 700; color: #ca8a04;">Trung Bình Khá</td>
+                <td style="padding: 10px; color: #94a3b8;">—</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">1200</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">1399</td>
+                <td style="padding: 10px; text-align: right;">
+                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1300); app.closeModal();">Chọn (~1300)</button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 4 ? '#fff7ed' : 'transparent'};">
+                <td style="padding: 10px;"><span style="background: #ffedd5; color: #ea580c; font-weight: 800; padding: 2px 8px; border-radius: 6px;">4</span></td>
+                <td style="padding: 10px; font-weight: 700; color: #ea580c;">Khá</td>
+                <td style="padding: 10px; color: #94a3b8;">—</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">1400</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">1599</td>
+                <td style="padding: 10px; text-align: right;">
+                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1450); app.closeModal();">Chọn (~1450)</button>
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 5 ? '#fef2f2' : 'transparent'};">
+                <td style="padding: 10px;"><span style="background: #fee2e2; color: #dc2626; font-weight: 800; padding: 2px 8px; border-radius: 6px;">5</span></td>
+                <td style="padding: 10px; font-weight: 700; color: #dc2626;">Giỏi</td>
+                <td style="padding: 10px; color: #475569;">Thành Thạo</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">1600</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">1799</td>
+                <td style="padding: 10px; text-align: right;">
+                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1680); app.closeModal();">Chọn (~1680)</button>
+                </td>
+              </tr>
+              <tr style="background: ${currentTier.tier === 6 ? '#faf5ff' : 'transparent'};">
+                <td style="padding: 10px;"><span style="background: #f3e8ff; color: #7c3aed; font-weight: 800; padding: 2px 8px; border-radius: 6px;">6</span></td>
+                <td style="padding: 10px; font-weight: 700; color: #7c3aed;">Tốt</td>
+                <td style="padding: 10px; color: #475569;">Chuyên Nghiệp</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700;">1800</td>
+                <td style="padding: 10px; text-align: center; font-weight: 700; color: #7c3aed;">NULL (1800+)</td>
+                <td style="padding: 10px; text-align: right;">
+                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1850); app.closeModal();">Chọn (~1850)</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="background: #f1f5f9; border-radius: 10px; padding: 12px; margin-bottom: 1rem; font-size: 0.82rem; color: #334155;">
+          <i class="fa-solid fa-circle-info text-primary"></i> <strong>Quyền tự chọn trình độ:</strong> Bạn có thể chọn bất kỳ phân khúc nào ở trên hoặc bấm nút bên dưới để tự nhập số điểm ELO mong muốn của mình mà không bị giới hạn.
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button class="btn btn-secondary btn-sm" onclick="app.closeModal()">Đóng</button>
+          <button class="btn btn-primary btn-sm" onclick="app.closeModal(); app.promptCustomPlayerElo();" style="background: #167946;">
+            <i class="fa-solid fa-pen-to-square"></i> Tự Nhập Số ELO Của Tôi
+          </button>
+        </div>
+      </div>
+    `;
+
+    this.openModal();
   }
 
   handleMatchTypeChange(val) {
@@ -1911,6 +2109,9 @@ class BadmintonAIApp {
       facOptions += `<option value="${f.id}">${f.name} (${f.address || ''})</option>`;
     });
 
+    const currentUserElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1450;
+    const userTier = this.getEloTierInfo(currentUserElo);
+
     modalBody.innerHTML = `
       <div style="padding: 0.5rem 0;">
         <h3 style="margin: 0 0 6px; color: #0f172a; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
@@ -1948,17 +2149,76 @@ class BadmintonAIApp {
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Dải Điểm ELO Yêu Cầu (Min - Max)</label>
+          <!-- Phân Khúc Ghép Trình Tiêu Chuẩn & Tự Chọn Dải ELO Min - Max -->
+          <div class="form-group" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label class="form-label" style="margin: 0; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-layer-group text-primary"></i> Phân Khúc Ghép Trình Yêu Cầu
+              </label>
+              <span id="tier-selection-badge" style="font-size: 0.72rem; font-weight: 800; background: #ffedd5; color: #ea580c; padding: 3px 8px; border-radius: 6px;">
+                Cấp 4: Khá (1400 - 1599)
+              </span>
+            </div>
+
+            <!-- Dropdown chọn phân khúc 1-6 hoặc Tùy chọn tự do -->
+            <select id="modal-tier-select" class="form-control" style="font-weight: 700; margin-bottom: 8px; font-size: 0.88rem;" onchange="app.onModalTierChange(this.value)">
+              <option value="1">🟢 1 | Yếu - Tân thủ (0 - 999 ELO)</option>
+              <option value="2">🔵 2 | Trung Bình - Cơ bản (1000 - 1199 ELO)</option>
+              <option value="3">🟡 3 | Trung Bình Khá (1200 - 1399 ELO)</option>
+              <option value="4" selected>🟠 4 | Khá (1400 - 1599 ELO)</option>
+              <option value="5">🔴 5 | Giỏi - Thành Thạo (1600 - 1799 ELO)</option>
+              <option value="6">🟣 6 | Tốt - Chuyên Nghiệp (1800+ ELO)</option>
+              <option value="custom">🎯 Tự chọn trình độ tự do (Nhập Min - Max ELO tùy ý)</option>
+            </select>
+
+            <!-- 1-Click Fast Tier Buttons (Pills) -->
+            <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;">
+              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(1)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #dcfce7; color: #16a34a; border: 1px solid #86efac; font-weight: 700;">1: Yếu (0-999)</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(2)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #dbeafe; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 700;">2: TB (1000-1199)</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(3)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fef9c3; color: #ca8a04; border: 1px solid #fde047; font-weight: 700;">3: TB Khá (1200-1399)</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(4)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #ffedd5; color: #ea580c; border: 1px solid #fed7aa; font-weight: 700;">4: Khá (1400-1599)</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(5)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700;">5: Giỏi (1600-1799)</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(6)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #f3e8ff; color: #7c3aed; border: 1px solid #d8b4fe; font-weight: 700;">6: Tốt (1800+)</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalTier('custom')" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 700;">✍️ Tự Do</button>
+            </div>
+
+            <!-- Tự do nhập hoặc tinh chỉnh dải điểm ELO (Min - Max) -->
+            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 5px;">
+              Dải ELO yêu cầu (Người dùng được toàn quyền gõ số ELO tự do):
+            </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div>
-                <span style="font-size: 0.75rem; color: #64748b;">ELO Tối Thiểu:</span>
-                <input type="number" id="modal-elo-min" class="form-control" value="1400" required>
+                <span style="font-size: 0.75rem; color: #475569; font-weight: 700;">ELO Tối Thiểu:</span>
+                <input type="number" id="modal-elo-min" class="form-control" value="1400" min="0" max="3000" oninput="app.onManualEloInput()" required>
               </div>
               <div>
-                <span style="font-size: 0.75rem; color: #64748b;">ELO Tối Đa:</span>
-                <input type="number" id="modal-elo-max" class="form-control" value="1550" required>
+                <span style="font-size: 0.75rem; color: #475569; font-weight: 700;">ELO Tối Đa:</span>
+                <input type="number" id="modal-elo-max" class="form-control" value="1599" min="0" max="3000" oninput="app.onManualEloInput()" required>
               </div>
+            </div>
+          </div>
+
+          <!-- Tự chọn trình độ cá nhân của bạn khi làm chủ phòng -->
+          <div class="form-group" style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 10px 12px; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 0.8rem; font-weight: 700; color: #166534;">
+                <i class="fa-solid fa-user-check"></i> Trình Độ Cá Nhân Của Bạn (Tự chọn hoặc chỉnh ELO):
+              </span>
+              <span id="modal-host-tier-preview" style="font-size: 0.75rem; font-weight: 800; background: ${userTier.bg}; color: ${userTier.color}; padding: 2px 8px; border-radius: 6px;">
+                ${userTier.display}
+              </span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 8px; align-items: center;">
+              <select id="modal-host-tier-select" class="form-control" style="font-size: 0.82rem;" onchange="app.onModalHostTierChange(this.value)">
+                <option value="850" ${currentUserElo < 1000 ? 'selected' : ''}>🟢 Cấp 1: Yếu (Tân thủ - ~850)</option>
+                <option value="1100" ${currentUserElo >= 1000 && currentUserElo < 1200 ? 'selected' : ''}>🔵 Cấp 2: Trung Bình (Cơ bản - ~1100)</option>
+                <option value="1300" ${currentUserElo >= 1200 && currentUserElo < 1400 ? 'selected' : ''}>🟡 Cấp 3: TB Khá (~1300)</option>
+                <option value="1450" ${currentUserElo >= 1400 && currentUserElo < 1600 ? 'selected' : ''}>🟠 Cấp 4: Khá (~1450)</option>
+                <option value="1680" ${currentUserElo >= 1600 && currentUserElo < 1800 ? 'selected' : ''}>🔴 Cấp 5: Giỏi (Thành Thạo - ~1680)</option>
+                <option value="1850" ${currentUserElo >= 1800 ? 'selected' : ''}>🟣 Cấp 6: Tốt (Chuyên Nghiệp - 1800+)</option>
+                <option value="custom">✏️ Tự nhập số điểm ELO bất kỳ...</option>
+              </select>
+              <input type="number" id="modal-host-elo-input" class="form-control" value="${currentUserElo}" min="0" max="3500" style="font-size: 0.85rem; font-weight: 800; text-align: center; color: #166534;" oninput="app.onModalHostEloCustomInput(this.value)" placeholder="Điểm ELO của bạn" title="Tự do nhập điểm ELO của bản thân">
             </div>
           </div>
 
@@ -1987,6 +2247,90 @@ class BadmintonAIApp {
     this.openModal();
   }
 
+  onModalTierChange(tierVal) {
+    const minInput = document.getElementById('modal-elo-min');
+    const maxInput = document.getElementById('modal-elo-max');
+    const badge = document.getElementById('tier-selection-badge');
+    if (!minInput || !maxInput) return;
+
+    if (tierVal === '1') {
+      minInput.value = 0;
+      maxInput.value = 999;
+      if (badge) { badge.textContent = "Cấp 1: Yếu (0-999)"; badge.style.background = "#dcfce7"; badge.style.color = "#16a34a"; }
+    } else if (tierVal === '2') {
+      minInput.value = 1000;
+      maxInput.value = 1199;
+      if (badge) { badge.textContent = "Cấp 2: Trung Bình (1000-1199)"; badge.style.background = "#dbeafe"; badge.style.color = "#2563eb"; }
+    } else if (tierVal === '3') {
+      minInput.value = 1200;
+      maxInput.value = 1399;
+      if (badge) { badge.textContent = "Cấp 3: TB Khá (1200-1399)"; badge.style.background = "#fef9c3"; badge.style.color = "#ca8a04"; }
+    } else if (tierVal === '4') {
+      minInput.value = 1400;
+      maxInput.value = 1599;
+      if (badge) { badge.textContent = "Cấp 4: Khá (1400-1599)"; badge.style.background = "#ffedd5"; badge.style.color = "#ea580c"; }
+    } else if (tierVal === '5') {
+      minInput.value = 1600;
+      maxInput.value = 1799;
+      if (badge) { badge.textContent = "Cấp 5: Giỏi (1600-1799)"; badge.style.background = "#fee2e2"; badge.style.color = "#dc2626"; }
+    } else if (tierVal === '6') {
+      minInput.value = 1800;
+      maxInput.value = 2500;
+      if (badge) { badge.textContent = "Cấp 6: Tốt (1800+)"; badge.style.background = "#f3e8ff"; badge.style.color = "#7c3aed"; }
+    } else {
+      if (badge) { badge.textContent = "Tự do tùy chỉnh"; badge.style.background = "#e0f2fe"; badge.style.color = "#0284c7"; }
+    }
+  }
+
+  selectModalTier(tier) {
+    const select = document.getElementById('modal-tier-select');
+    if (select) {
+      select.value = String(tier);
+      this.onModalTierChange(String(tier));
+    }
+  }
+
+  onManualEloInput() {
+    const select = document.getElementById('modal-tier-select');
+    const badge = document.getElementById('tier-selection-badge');
+    if (select) select.value = 'custom';
+    if (badge) {
+      badge.textContent = "Tự do tùy chỉnh";
+      badge.style.background = "#e0f2fe";
+      badge.style.color = "#0284c7";
+    }
+  }
+
+  onModalHostTierChange(val) {
+    const hostEloInput = document.getElementById('modal-host-elo-input');
+    const preview = document.getElementById('modal-host-tier-preview');
+    if (val === 'custom') {
+      if (hostEloInput) hostEloInput.focus();
+    } else {
+      const elo = parseInt(val, 10);
+      if (hostEloInput) hostEloInput.value = elo;
+      if (preview) {
+        const tier = this.getEloTierInfo(elo);
+        preview.textContent = tier.display;
+        preview.style.color = tier.color;
+        preview.style.background = tier.bg;
+      }
+    }
+  }
+
+  onModalHostEloCustomInput(val) {
+    const elo = parseInt(val, 10);
+    const preview = document.getElementById('modal-host-tier-preview');
+    const select = document.getElementById('modal-host-tier-select');
+    if (!isNaN(elo) && preview) {
+      const tier = this.getEloTierInfo(elo);
+      preview.textContent = tier.display;
+      preview.style.color = tier.color;
+      preview.style.background = tier.bg;
+      if (select) select.value = 'custom';
+    }
+  }
+
   handleCreateRoom(e) {
     if (e && e.preventDefault) e.preventDefault();
     const name = document.getElementById('modal-room-name')?.value || 'Phòng Giao Lưu Mới';
@@ -2002,7 +2346,18 @@ class BadmintonAIApp {
     const isDoubles = matchType.includes('Đôi');
     const maxPlayers = isDoubles ? 4 : 2;
     const currentUserName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng';
-    const currentUserElo = (this.currentUser && this.currentUser.elo_rating) ? this.currentUser.elo_rating : 1450;
+    
+    // Tự chọn ELO của host từ modal nếu đã chỉnh sửa
+    const hostEloInput = document.getElementById('modal-host-elo-input');
+    const customHostElo = hostEloInput ? parseInt(hostEloInput.value, 10) : null;
+    const currentUserElo = (!isNaN(customHostElo) && customHostElo > 0) ? customHostElo : ((this.currentUser && this.currentUser.elo_rating) ? this.currentUser.elo_rating : 1450);
+
+    // Cập nhật lại ELO cho currentUser nếu người dùng tự chỉnh sửa
+    if (this.currentUser) {
+      this.currentUser.elo_rating = currentUserElo;
+      const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.name === this.currentUser.name);
+      if (u) u.elo_rating = currentUserElo;
+    }
 
     const newRoom = {
       id: Date.now(),
@@ -2043,7 +2398,7 @@ class BadmintonAIApp {
     if (typeof saveMockDataToLocalStorage === 'function') {
       saveMockDataToLocalStorage();
     }
-    this.showToast("🎉 Đã khởi tạo phòng ghép thành công và kích hoạt AI Matchmaker!");
+    this.showToast(`🎉 Đã khởi tạo phòng ghép thành công (Yêu cầu ELO ${minElo}-${maxElo}) và kích hoạt Radar AI!`);
   }
 
   /* ------------------------------------------------------------------------
