@@ -1,5 +1,5 @@
 /* ==========================================================================
-   BADMINTON AI MANAGEMENT SYSTEM - MOCK DATA (9 DATABASE TABLES)
+   BADMINTON AI MANAGEMENT SYSTEM - CENTRAL DATABASE STORE & CACHE (14 DATABASE TABLES)
    ========================================================================== */
 
 const MockData = {

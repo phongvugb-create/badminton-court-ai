@@ -1,4 +1,4 @@
-﻿import http.server
+import http.server
 import json
 import os
 import sys
@@ -381,9 +381,7 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
     # Models supported in Google AI Studio
     models_to_try = [
         ("gemini-1.5-flash", True),
-        ("gemini-2.0-flash", True),
-        ("gemini-1.5-pro", True),
-        ("gemini-2.5-flash", True)
+        ("gemini-2.0-flash", True)
     ]
 
     for model_name, use_sys_inst in models_to_try:
@@ -412,7 +410,7 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=3.5) as response:
                 if response.status == 200:
                     res_body = response.read()
                     res_json = json.loads(res_body)
@@ -423,14 +421,22 @@ def ask_gemini(user_message: str, context: str = "", messages: list = None) -> s
                             reply_text = parts[0].get("text", "")
                             if reply_text:
                                 return reply_text
-        except urllib.error.HTTPError as he:
-            continue
-        except Exception as e:
+        except urllib.error.URLError:
+            break
+        except Exception:
             continue
 
     return get_smart_fallback(user_message, context)
 
 class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        try:
+            msg = "%s - - [%s] %s\n" % (self.address_string(), self.log_date_time_string(), format % args)
+            sys.stdout.write(msg)
+            sys.stdout.flush()
+        except Exception:
+            pass
+
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")

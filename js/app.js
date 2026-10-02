@@ -54,6 +54,99 @@ class BadmintonAIApp {
     this.initLeafletMap();
   }
 
+  copyToClipboard(text, label = "Thông tin") {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.showToast(`📋 Đã sao chép ${label}: ${text}`);
+      }).catch(() => {
+        this.fallbackCopy(text, label);
+      });
+    } else {
+      this.fallbackCopy(text, label);
+    }
+  }
+
+  fallbackCopy(text, label) {
+    try {
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.setAttribute('readonly', '');
+      el.style.position = 'absolute';
+      el.style.left = '-9999px';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      this.showToast(`📋 Đã sao chép ${label}: ${text}`);
+    } catch (e) {
+      this.showToast(`Mã chuyển khoản: ${text}`);
+    }
+  }
+
+  openVNPaySandboxModal() {
+    const totalAmount = this.currentPendingTotalAmount || 120000;
+    const depositAmount = this.currentPendingDepositAmount || 60000;
+    const code = this.currentPendingBookingCode || 'BK-20261002-001';
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    modalBody.innerHTML = `
+      <div style="padding: 0.5rem 0;">
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 8px;">
+            <span style="background: #0066cc; color: #fff; font-size: 0.78rem; font-weight: 800; padding: 3px 10px; border-radius: 6px;">VNPAY GATEWAY</span>
+            <span style="background: #16a34a; color: #fff; font-size: 0.78rem; font-weight: 800; padding: 3px 10px; border-radius: 6px;">BẢO MẬT SSL 256-BIT</span>
+          </div>
+          <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">Cổng Thanh Toán VNPay Sandbox</h3>
+          <p style="font-size: 0.82rem; color: #64748b; margin: 4px 0 0;">Mã giao dịch: <strong>${code}</strong> | Tiền cọc giữ chỗ: <strong style="color: #16a34a;">${depositAmount.toLocaleString('vi-VN')} VNĐ</strong></p>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #1e293b;">
+          <div style="font-weight: 700; margin-bottom: 8px; color: #0f172a;">Chọn kênh thanh toán trực tuyến:</div>
+          <div style="display: grid; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #fff; border: 1.5px solid #0066cc; border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="vnpay_method" checked value="VNPAYQR">
+              <div>
+                <strong>Ứng dụng Ngân hàng hỗ trợ VNPAY-QR</strong>
+                <div style="font-size: 0.75rem; color: #64748b;">Hơn 40 ứng dụng ngân hàng: VCB, BIDV, MB, Agribank, VietinBank...</div>
+              </div>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="vnpay_method" value="VNBANK">
+              <div>
+                <strong>Thẻ ATM / Tài khoản Nội địa (NAPAS)</strong>
+                <div style="font-size: 0.75rem; color: #64748b;">Thanh toán bằng thẻ ATM có đăng ký Internet Banking</div>
+              </div>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="vnpay_method" value="INTCARD">
+              <div>
+                <strong>Thẻ Quốc Tế (Visa, MasterCard, JCB, UnionPay)</strong>
+                <div style="font-size: 0.75rem; color: #64748b;">Hỗ trợ thẻ tín dụng và ghi nợ quốc tế phát hành toàn cầu</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" style="flex: 1; padding: 10px; font-weight: 700; background: #0066cc;" onclick="app.confirmVNPayGatewayPayment()">
+            <i class="fa-solid fa-lock"></i> Hoàn Tất Thanh Toán ${depositAmount.toLocaleString('vi-VN')}đ
+          </button>
+          <button class="btn btn-secondary" onclick="app.closeModal()">Đóng</button>
+        </div>
+      </div>
+    `;
+    this.openModal();
+  }
+
+  confirmVNPayGatewayPayment() {
+    this.closeModal();
+    this.showToast("⚡ Đang xác thực chứng chỉ bảo mật và nhận phản hồi IPN từ cổng VNPay...");
+    setTimeout(() => {
+      this.processPaymentConfirmation();
+    }, 800);
+  }
+
   updateTopDateDisplay() {
     const dateEl = document.getElementById('top-header-date');
     if (!dateEl) return;
@@ -795,29 +888,73 @@ class BadmintonAIApp {
     });
 
     const totalAmount = slotPriceTotal + equipPriceTotal;
+    const depositAmount = Math.round((totalAmount * 0.5) / 1000) * 1000;
+    this.currentPendingTotalAmount = totalAmount;
+    this.currentPendingDepositAmount = depositAmount;
+
     const timeSlotsStr = (this.selectedSlots && this.selectedSlots.length > 0)
       ? this.selectedSlots.map(s => `${s.start_time} - ${s.end_time}`).join(', ')
       : '17:30 - 18:30';
 
     const datePicker = document.getElementById('booking-date-picker');
-    const bookingDate = datePicker ? datePicker.value : '2026-09-11';
+    const bookingDate = datePicker ? datePicker.value : new Date().toISOString().slice(0, 10);
 
-    const orderInfoEl = document.querySelector('.qr-payment-card div[style*="background: #f8fafc"]');
-    if (orderInfoEl) {
-      const code = `BK-${bookingDate.replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
-      this.currentPendingBookingCode = code;
-      orderInfoEl.innerHTML = `
-        <div style="margin-bottom: 4px;"><strong>Mã đơn:</strong> <span style="color: var(--primary); font-weight: 700;">${code}</span></div>
-        <div style="margin-bottom: 4px;"><strong>Khung giờ thuê (${totalHours}h):</strong> <span style="color: #0369a1; font-weight: 600;">${timeSlotsStr}</span></div>
-        <div style="margin-bottom: 4px;"><strong>Tổng tiền dịch vụ:</strong> <strong>${totalAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
-        <div style="margin-bottom: 4px;"><strong>Số tiền cọc cần trả:</strong> <span style="color: #059669; font-weight: 800; font-size: 1.05rem;">50,000 VNĐ</span></div>
-        <div><strong>Nội dung CK:</strong> <code>COC ${code}</code></div>
+    const bookingCode = `BK-${bookingDate.replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
+    this.currentPendingBookingCode = bookingCode;
+
+    // Chuẩn hóa VietQR tiêu chuẩn liên ngân hàng 24/7
+    const vietQrUrl = `https://img.vietqr.io/image/MB-0983582321-compact2.png?amount=${depositAmount}&addInfo=${encodeURIComponent(bookingCode)}&accountName=BADMINTON%20AI%20VIETNAM`;
+    const qrImg = document.getElementById('payment-qr-img');
+    if (qrImg) qrImg.src = vietQrUrl;
+
+    const payDepositEl = document.getElementById('pay-deposit-text');
+    if (payDepositEl) payDepositEl.textContent = `${depositAmount.toLocaleString('vi-VN')} VNĐ`;
+
+    const payMemoEl = document.getElementById('pay-memo-text');
+    if (payMemoEl) payMemoEl.textContent = bookingCode;
+
+    const courtName = (this.selectedCourt && this.selectedCourt.name)
+      ? this.selectedCourt.name
+      : ((MockData.courts && MockData.courts[0]) ? MockData.courts[0].name : "Sân 01 - Thảm Yonex Pro");
+    const facName = this.selectedFacility ? this.selectedFacility.name : "CLB Cầu Lông Catchy Badminton Arena";
+
+    const summaryBox = document.getElementById('checkout-order-summary-box');
+    if (summaryBox) {
+      summaryBox.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <span style="color: var(--text-muted);">Mã đơn đặt sân:</span>
+          <strong style="color: #38bdf8; font-family: monospace;">${bookingCode}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <span style="color: var(--text-muted);">Cơ sở thể thao:</span>
+          <strong style="text-align: right; max-width: 260px;">${facName}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <span style="color: var(--text-muted);">Sân thi đấu & Giờ chơi:</span>
+          <strong style="color: #22c55e;">${courtName} (${timeSlotsStr})</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <span style="color: var(--text-muted);">Ngày thi đấu:</span>
+          <span>${bookingDate}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <span style="color: var(--text-muted);">Tổng giá trị đơn:</span>
+          <strong>${totalAmount.toLocaleString('vi-VN')} VNĐ</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <span style="color: var(--text-muted);">Tiền cọc giữ chỗ (50%):</span>
+          <strong style="color: #22c55e; font-size: 1.05rem;">${depositAmount.toLocaleString('vi-VN')} VNĐ</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.12); padding-top: 5px; margin-top: 4px;">
+          <span style="color: var(--text-muted);">Còn lại trả tại quầy POS:</span>
+          <span style="color: #f59e0b; font-weight: 700;">${(totalAmount - depositAmount).toLocaleString('vi-VN')} VNĐ</span>
+        </div>
       `;
     }
   }
 
   /* ------------------------------------------------------------------------
-     4. UI 04: COUNTDOWN TIMER & VNPAY QR PAYMENT
+     4. UI 04: COUNTDOWN TIMER & VIETQR PAYMENT
      ------------------------------------------------------------------------ */
   startHoldTimer() {
     clearInterval(this.holdTimer);
@@ -838,14 +975,13 @@ class BadmintonAIApp {
     }, 1000);
   }
 
-  simulatePaymentSuccess() {
+  processPaymentConfirmation() {
     clearInterval(this.holdTimer);
-    
-    // Tạo đơn hàng mới dựa trên các slot đã chọn
+
     const datePicker = document.getElementById('booking-date-picker');
-    const bookingDate = datePicker ? datePicker.value : '2026-09-11';
+    const bookingDate = datePicker ? datePicker.value : new Date().toISOString().slice(0, 10);
     const totalHours = this.selectedSlots ? this.selectedSlots.length : 1;
-    
+
     let slotPriceTotal = 0;
     (this.selectedSlots || []).forEach(s => slotPriceTotal += s.price);
 
@@ -856,12 +992,17 @@ class BadmintonAIApp {
     });
 
     const totalAmount = slotPriceTotal + equipPriceTotal;
+    const depositAmount = Math.round((totalAmount * 0.5) / 1000) * 1000;
     const timeSlotsStr = (this.selectedSlots && this.selectedSlots.length > 0)
       ? this.selectedSlots.map(s => `${s.start_time} - ${s.end_time}`).join(', ')
       : '18:00 - 20:00';
 
     const bookingCode = this.currentPendingBookingCode || `BK-${bookingDate.replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
-    const ticketCode = `TICKET-BADMINTON-${Math.floor(1000 + Math.random() * 9000)}`;
+    const ticketCode = `TICKET-ALB-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const courtName = (this.selectedCourt && this.selectedCourt.name)
+      ? this.selectedCourt.name
+      : ((MockData.courts && MockData.courts[0]) ? MockData.courts[0].name : "Sân 01 - Thảm Yonex Pro");
 
     const newOrder = {
       id: Date.now(),
@@ -869,13 +1010,13 @@ class BadmintonAIApp {
       user_name: (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng',
       user_phone: (this.currentUser && this.currentUser.phone) ? this.currentUser.phone : '0901234567',
       facility_name: this.selectedFacility ? this.selectedFacility.name : "CLB Cầu Lông Catchy Badminton Arena",
-      court_name: "Sân 01 - Thảm Yonex Pro",
+      court_name: courtName,
       slot_time: `${timeSlotsStr} (${totalHours} giờ)`,
       booking_date: bookingDate,
       total_amount: totalAmount,
-      deposit_amount: 50000,
-      deposit_status: "Đã Cọc 50K",
-      order_status: "Đã Xác Nhận",
+      deposit_amount: depositAmount,
+      deposit_status: `Đã Cọc 50% (${depositAmount.toLocaleString('vi-VN')}đ)`,
+      order_status: "ĐÃ XÁC NHẬN (CHỜ CHECK-IN)",
       created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       qr_ticket_code: ticketCode
     };
@@ -894,11 +1035,31 @@ class BadmintonAIApp {
       saveMockDataToLocalStorage();
     }
 
+    // Âm thanh xác nhận giao dịch thành công (Web Audio API)
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.12); // A5
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.45);
+    } catch (e) {}
+
     this.renderBookingOrdersList();
     this.renderSlotMatrix();
 
-    this.showToast(`🎉 Cổng thanh toán VNPay đã gửi Webhook IPN! Đặt sân thành công ${totalHours} giờ (Mã vé: ${ticketCode})`);
+    this.showToast(`🎉 Xác thực thanh toán VietQR thành công! Vé QR điện tử ${ticketCode} đã sẵn sàng.`);
     this.navigateTo('ui-05');
+  }
+
+  simulatePaymentSuccess() {
+    this.processPaymentConfirmation();
   }
 
   /* ------------------------------------------------------------------------
@@ -1014,6 +1175,10 @@ class BadmintonAIApp {
   }
 
   simulateDynamicRangeStep() {
+    this.expandRadarRangeStep();
+  }
+
+  expandRadarRangeStep() {
     this.currentWaitTimer = (this.currentWaitTimer || 0) + 30;
     if (this.currentWaitTimer > 150) this.currentWaitTimer = 0;
     
@@ -1027,7 +1192,7 @@ class BadmintonAIApp {
     if (rangeBadge) rangeBadge.textContent = `Dải ELO: ±${range}`;
     if (waitTimerEl) waitTimerEl.textContent = `(Thời gian chờ: ${this.currentWaitTimer}s)`;
 
-    this.showToast(`⚡ Dynamic Range tự động mở rộng lên ±${range} ELO (chờ ${this.currentWaitTimer}s)!`);
+    this.showToast(`⚡ Radar tự động mở rộng dải tìm kiếm lên ±${range} ELO (chờ ${this.currentWaitTimer}s)!`);
     this.executeMatchmakingEngine();
   }
 
@@ -1176,7 +1341,7 @@ class BadmintonAIApp {
         tipEl.innerHTML = `💡 <em>Chiến thuật AI: Đối thủ có lối đánh phản tạt và smash tốc độ. Bạn nên chủ động ép sâu 2 góc cuối sân và duy trì thế trận bền cầu ở set đầu tiên!</em>`;
       }
     } else {
-      if (narrativeEl) narrativeEl.innerHTML = `Chưa tìm thấy đối thủ trong dải ELO ±${effectiveDelta}. Hãy nhấn <strong>"Giả Lập Nới Dải (+30s)"</strong> để hệ thống tự động mở rộng khoảng tìm kiếm!`;
+      if (narrativeEl) narrativeEl.innerHTML = `Chưa tìm thấy đối thủ trong dải ELO ±${effectiveDelta}. Hãy nhấn <strong>"Mở Rộng Dải Radar (+30s)"</strong> hoặc đợi hệ thống tự động quét mở rộng dải tìm kiếm!`;
     }
 
     // Render Cards in Grid
@@ -1358,28 +1523,44 @@ class BadmintonAIApp {
     this.closeModal();
 
     if (isAgreed) {
-      // Simulate real ELO update
       if (!this.currentUser) this.currentUser = { id: 1, name: "Nguyễn Văn Hùng", elo_rating: 1450 };
-      this.currentUser.elo_rating = (this.currentUser.elo_rating || 1450) + 16;
+      const oldElo = this.currentUser.elo_rating || 1450;
+      const eloGain = 16;
+      const newElo = oldElo + eloGain;
+      this.currentUser.elo_rating = newElo;
 
-      // Add to ELO History
+      // Cập nhật bảng users
+      const u = (MockData.users || []).find(user => user.id === this.currentUser.id || user.phone === this.currentUser.phone);
+      if (u) u.elo_rating = newElo;
+
+      // Cập nhật bảng player_profiles
+      if (!MockData.player_profiles) MockData.player_profiles = [];
+      let prof = MockData.player_profiles.find(p => p.user_id === this.currentUser.id);
+      if (prof) {
+        prof.current_elo = newElo;
+        prof.games_played = (prof.games_played || 0) + 1;
+        prof.wins = (prof.wins || 0) + 1;
+        prof.streak = "+1W";
+      }
+
+      // Thêm vào bảng elo_histories
       if (!MockData.elo_histories) MockData.elo_histories = [];
       MockData.elo_histories.unshift({
         id: Date.now(),
-        player_id: 1,
-        match_id: matchId,
-        old_elo: this.currentUser.elo_rating - 16,
-        new_elo: this.currentUser.elo_rating,
-        elo_change: 16,
+        player_id: this.currentUser.id || 1,
+        match_id: matchId || 103,
+        old_elo: oldElo,
+        new_elo: newElo,
+        elo_change: eloGain,
         reason: "Thắng trận Đơn vs Đỗ Minh Đức (21-18, 19-21, 21-19)",
         opponent_info: "Đỗ Minh Đức (ELO 1520)",
         created_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
       });
 
-      this.switchDemoPlayerElo(this.currentUser.elo_rating);
+      this.switchDemoPlayerElo(newElo);
       saveMockDataToLocalStorage();
 
-      this.showToast(`🎉 Hai bên đã thống nhất kết quả! Bạn được cộng +16 ELO (Lên ${this.currentUser.elo_rating})!`);
+      this.showToast(`🎉 Hai bên đã thống nhất kết quả! Điểm ELO của bạn đã cập nhật lên ${newElo} (+${eloGain} ELO) và lưu vào cơ sở dữ liệu!`);
     } else {
       this.showToast(`⚠️ Đã ghi nhận tranh chấp tỷ số! Điểm ELO bị đóng băng và chuyển ban trọng tài xem xét.`);
     }
@@ -3699,6 +3880,9 @@ class BadmintonAIApp {
   }
 
   simulateCameraQRScan() {
+    const pendingOrder = MockData.booking_orders.find(o => !o.order_status.includes('Check-in') && o.order_status !== 'ĐÃ CHECK-IN (ĐANG CHƠI SÂN)') || MockData.booking_orders[0];
+    const targetTicketCode = pendingOrder ? pendingOrder.qr_ticket_code : "TICKET-ALB-108291";
+
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
 
@@ -3720,6 +3904,7 @@ class BadmintonAIApp {
         </div>
 
         <div id="qr-scan-status-text" style="font-weight: bold; color: var(--accent-cyan);">🔍 Đang dò quét mã QR từ Camera quầy...</div>
+        <div style="margin-top: 8px; font-size: 0.78rem; color: #64748b;">Mã vé đang quét: <code>${targetTicketCode}</code></div>
         <button class="btn btn-secondary btn-sm" style="margin-top: 1rem;" onclick="app.closeModal()">Đóng Camera</button>
       </div>
     `;
@@ -3729,13 +3914,13 @@ class BadmintonAIApp {
     setTimeout(() => {
       const statusEl = document.getElementById('qr-scan-status-text');
       if (statusEl) {
-        statusEl.innerHTML = `<span style="color: var(--primary);">✅ Đã quét thành công mã QR: TICKET-BADMINTON-8899!</span>`;
+        statusEl.innerHTML = `<span style="color: var(--primary);">✅ Đã quét thành công mã QR: ${targetTicketCode}!</span>`;
       }
       setTimeout(() => {
         this.closeModal();
-        this.searchPOSBooking("TICKET-BADMINTON-8899");
+        this.searchPOSBooking(targetTicketCode);
       }, 700);
-    }, 1500);
+    }, 1300);
   }
 
   renderPOSTodayBookingsTable() {
@@ -3778,31 +3963,179 @@ class BadmintonAIApp {
   }
 
   preparePOSCheckout(bookingCode) {
-    const order = MockData.booking_orders.find(o => o.booking_code === bookingCode);
+    const order = MockData.booking_orders.find(o => o.booking_code === bookingCode) || MockData.booking_orders[0];
+    this.activePOSOrder = order;
     this.navigateTo('ui-16');
 
     if (order) {
+      const baseEl = document.getElementById('pos-calc-base');
+      const depositEl = document.getElementById('pos-calc-deposit');
+      const extraInput = document.getElementById('pos-extra-fee');
+      const overtimeInput = document.getElementById('pos-overtime-mins');
+
+      if (baseEl) baseEl.textContent = `${order.total_amount.toLocaleString('vi-VN')}đ`;
+      if (depositEl) depositEl.textContent = `-${order.deposit_amount.toLocaleString('vi-VN')}đ`;
+      if (extraInput) extraInput.value = 0;
+      if (overtimeInput) overtimeInput.value = 0;
+
       this.calculatePOSFinalAmount();
-      this.showToast(`🧾 Đã chuyển thông tin đơn ${order.booking_code} sang màn hình Lập Hóa Đơn Check-out!`);
+      this.showToast(`🧾 Đã nạp thông tin đơn ${order.booking_code} của khách ${order.user_name} sang Lập Hóa Đơn Check-out!`);
     }
   }
 
   calculatePOSFinalAmount() {
-    const extraFee = parseInt(document.getElementById('pos-extra-fee').value) || 0;
-    const overtimeMins = parseInt(document.getElementById('pos-overtime-mins').value) || 0;
+    const order = this.activePOSOrder || MockData.booking_orders[0] || {
+      booking_code: "BK-20261002-001",
+      user_name: "Nguyễn Văn Hùng",
+      slot_time: "17:30 - 18:30",
+      total_amount: 120000,
+      deposit_amount: 60000
+    };
+
+    const extraFeeInput = document.getElementById('pos-extra-fee');
+    const overtimeMinsInput = document.getElementById('pos-overtime-mins');
+
+    const extraFee = extraFeeInput ? (parseInt(extraFeeInput.value, 10) || 0) : 0;
+    const overtimeMins = overtimeMinsInput ? (parseInt(overtimeMinsInput.value, 10) || 0) : 0;
 
     const overtimeBlocks = Math.ceil(overtimeMins / 15);
-    const overtimeFee = overtimeBlocks * 23000;
+    const overtimeFee = overtimeBlocks * 25000;
 
-    document.getElementById('pos-calc-extra').textContent = `${extraFee.toLocaleString('vi-VN')}đ`;
-    document.getElementById('pos-calc-overtime').textContent = `${overtimeFee.toLocaleString('vi-VN')}đ`;
+    const extraEl = document.getElementById('pos-calc-extra');
+    const overtimeEl = document.getElementById('pos-calc-overtime');
+    const finalEl = document.getElementById('pos-calc-final');
 
-    const finalAmount = (122000 + extraFee + overtimeFee) - 50000;
-    document.getElementById('pos-calc-final').textContent = `${finalAmount.toLocaleString('vi-VN')}đ`;
+    if (extraEl) extraEl.textContent = `${extraFee.toLocaleString('vi-VN')}đ`;
+    if (overtimeEl) overtimeEl.textContent = `${overtimeFee.toLocaleString('vi-VN')}đ`;
+
+    const finalAmount = Math.max(0, (order.total_amount + extraFee + overtimeFee) - order.deposit_amount);
+    if (finalEl) finalEl.textContent = `${finalAmount.toLocaleString('vi-VN')}đ`;
+
+    // Cập nhật real-time hóa đơn in xem trước
+    const previewEl = document.getElementById('invoice-print-preview');
+    if (previewEl) {
+      const invCode = this.currentActiveInvoiceCode || `INV-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${order.id ? String(order.id).slice(-3) : '001'}`;
+      this.currentActiveInvoiceCode = invCode;
+
+      previewEl.innerHTML = `
+        <div class="invoice-header" style="text-align: center; margin-bottom: 12px; border-bottom: 1px dashed #000; padding-bottom: 8px;">
+          <h3 style="margin: 0 0 2px; font-size: 1.1rem; text-transform: uppercase;">${order.facility_name || "BADMINTON.AI ARENA"}</h3>
+          <div style="font-weight: 700; font-size: 0.9rem;">HÓA ĐƠN THANH TOÁN DỊCH VỤ POS</div>
+          <div style="font-size: 0.75rem; color: #475569;">Mã HĐ: <strong>${invCode}</strong> | Mã Đơn: <strong>${order.booking_code}</strong></div>
+        </div>
+        <div class="invoice-line" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 3px;"><span>Khách hàng:</span> <strong>${order.user_name} (${order.user_phone || "0901234567"})</strong></div>
+        <div class="invoice-line" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 3px;"><span>Sân & Khung giờ:</span> <span>${order.court_name || "Sân thi đấu"} (${order.slot_time})</span></div>
+        <div class="invoice-line" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 3px;"><span>Giờ vào sân:</span> <span>${order.created_at || "18:00:00"}</span></div>
+        <div class="invoice-line" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 3px;"><span>Giờ ra sân:</span> <span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></div>
+        <hr style="border: none; border-top: 1px dashed #000; margin: 0.5rem 0;">
+        <div class="invoice-line" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 3px;"><span>Tiền thuê sân:</span> <span>${order.total_amount.toLocaleString('vi-VN')}đ</span></div>
+        <div class="invoice-line" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 3px;"><span>Phụ phí dịch vụ:</span> <span>${extraFee.toLocaleString('vi-VN')}đ</span></div>
+        <div class="invoice-line" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 3px;"><span>Quá giờ (${overtimeMins}p):</span> <span>${overtimeFee.toLocaleString('vi-VN')}đ</span></div>
+        <div class="invoice-line" style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 3px; color: #16a34a;"><span>Đã cọc trước (50%):</span> <span>-${order.deposit_amount.toLocaleString('vi-VN')}đ</span></div>
+        <hr style="border: none; border-top: 1px dashed #000; margin: 0.5rem 0;">
+        <div class="invoice-line" style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.05rem; margin-top: 4px;"><span>CẦN THANH TOÁN:</span> <span style="color: #dc2626;">${finalAmount.toLocaleString('vi-VN')}đ</span></div>
+        <div style="text-align: center; margin-top: 1rem; font-size: 0.75rem; color: #475569;">
+          <div>Thu ngân: <strong>${(this.currentUser && this.currentUser.name) ? this.currentUser.name : "Nhân viên trực quầy"}</strong></div>
+          <div style="margin-top: 4px;">Cảm ơn quý khách & Hẹn gặp lại trên sân đấu! 🏸</div>
+        </div>
+      `;
+    }
   }
 
   completePOSInvoice() {
-    this.showToast("Đã lập hóa đơn POS & xuất file in hóa đơn thành công!");
+    const order = this.activePOSOrder || MockData.booking_orders[0];
+    if (!order) {
+      this.showToast("Không tìm thấy đơn hàng cần thanh toán!", "error");
+      return;
+    }
+
+    const extraFee = parseInt(document.getElementById('pos-extra-fee')?.value, 10) || 0;
+    const overtimeMins = parseInt(document.getElementById('pos-overtime-mins')?.value, 10) || 0;
+    const overtimeFee = Math.ceil(overtimeMins / 15) * 25000;
+    const finalAmount = Math.max(0, (order.total_amount + extraFee + overtimeFee) - order.deposit_amount);
+
+    const invCode = this.currentActiveInvoiceCode || `INV-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
+
+    const newInvoice = {
+      id: Date.now(),
+      invoice_code: invCode,
+      booking_code: order.booking_code,
+      customer_name: order.user_name,
+      facility_name: order.facility_name,
+      checkin_time: order.created_at || "18:00",
+      checkout_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      booking_fee: order.total_amount,
+      deposit_deducted: order.deposit_amount,
+      extra_fee: extraFee,
+      overtime_fee: overtimeFee,
+      final_amount: finalAmount,
+      payment_method: "Tiền mặt / Chuyển khoản QR",
+      staff_name: (this.currentUser && this.currentUser.name) ? this.currentUser.name : "Nhân viên trực quầy",
+      created_at: new Date().toLocaleDateString('vi-VN') + " " + new Date().toLocaleTimeString('vi-VN')
+    };
+
+    if (!MockData.invoices) MockData.invoices = [];
+    MockData.invoices.unshift(newInvoice);
+
+    // Cập nhật trạng thái đơn hàng thành hoàn tất check-out
+    order.order_status = "HOÀN TẤT & ĐÃ CHECK-OUT";
+    order.deposit_status = "Đã Thanh Toán Xong";
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.renderPOSTodayBookingsTable();
+
+    // Hiển thị modal in hóa đơn POS chuyên nghiệp
+    const modalBody = document.getElementById('modal-body');
+    if (modalBody) {
+      modalBody.innerHTML = `
+        <div style="padding: 0.5rem 0;">
+          <div style="text-align: center; margin-bottom: 1rem;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: #dcfce7; color: #16a34a; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">Thanh Toán & Xuất Hóa Đơn Thành Công</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 4px 0 0;">Mã hóa đơn: <strong>${invCode}</strong> | Số tiền đã thu: <strong style="color: #16a34a;">${finalAmount.toLocaleString('vi-VN')}đ</strong></p>
+          </div>
+
+          <div style="background: #fff; color: #000; border: 1.5px dashed #64748b; border-radius: 10px; padding: 1.25rem; font-family: 'Courier New', monospace; font-size: 0.85rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 1.25rem;">
+            <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px;">
+              <strong style="font-size: 1rem; text-transform: uppercase;">${order.facility_name}</strong>
+              <div style="font-size: 0.75rem;">HÓA ĐƠN TÀI CHÍNH BÁN LẺ POS</div>
+              <div style="font-size: 0.75rem;">Số HĐ: ${invCode} - Ngày: ${newInvoice.created_at}</div>
+            </div>
+            <div style="margin-bottom: 3px;">Khách hàng: <strong>${order.user_name}</strong></div>
+            <div style="margin-bottom: 3px;">Số ĐT: ${order.user_phone || "0901234567"}</div>
+            <div style="margin-bottom: 3px;">Sân thi đấu: ${order.court_name} (${order.slot_time})</div>
+            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;"><span>Tiền sân:</span> <span>${order.total_amount.toLocaleString('vi-VN')}đ</span></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;"><span>Dịch vụ phát sinh:</span> <span>${extraFee.toLocaleString('vi-VN')}đ</span></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px;"><span>Phụ thu quá giờ:</span> <span>${overtimeFee.toLocaleString('vi-VN')}đ</span></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 3px; color: #16a34a;"><span>Đã trừ tiền cọc:</span> <span>-${order.deposit_amount.toLocaleString('vi-VN')}đ</span></div>
+            <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem; margin-top: 4px;"><span>TỔNG ĐÃ THU:</span> <span>${finalAmount.toLocaleString('vi-VN')}đ</span></div>
+            <div style="text-align: center; margin-top: 12px; font-size: 0.72rem; color: #475569;">
+              <div>Thu ngân: ${newInvoice.staff_name}</div>
+              <div style="margin-top: 2px;">Cảm ơn quý khách & Hẹn gặp lại trên sân đấu! 🏸</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary" style="flex: 1; padding: 10px; font-weight: 700;" onclick="window.print()">
+              <i class="fa-solid fa-print"></i> In Hóa Đơn Quầy (Print)
+            </button>
+            <button class="btn btn-secondary" onclick="app.closeModal(); app.navigateTo('ui-15');">
+              <i class="fa-solid fa-check"></i> Quay Về Danh Sách POS
+            </button>
+          </div>
+        </div>
+      `;
+      this.openModal();
+    }
+
+    this.showToast(`🧾 Hoàn tất check-out đơn ${order.booking_code}! Đã lập hóa đơn #${invCode}`);
   }
 
   /* ------------------------------------------------------------------------
