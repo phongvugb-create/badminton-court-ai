@@ -162,20 +162,223 @@ class BadmintonAIApp {
   updateHeaderUserUI() {
     const avatarEl = document.getElementById('header-avatar');
     const nameEl = document.getElementById('header-user-name');
+    const roleTagEl = document.getElementById('header-user-role-tag');
+    const profileBadge = document.getElementById('header-user-profile-badge');
     const logoutBtn = document.getElementById('header-logout-btn');
     const authPills = document.getElementById('header-auth-pills-group');
+    const starBadge = document.getElementById('header-star-badge');
+
+    const roleNames = {
+      'CUSTOMER': 'Khách Hàng',
+      'OWNER': 'Chủ Sân',
+      'STAFF': 'Thu Ngân',
+      'ADMIN': 'Quản Trị'
+    };
 
     if (this.currentUser) {
       if (avatarEl) avatarEl.textContent = this.currentUser.avatar || '👤';
       if (nameEl) nameEl.textContent = this.currentUser.name;
+      if (roleTagEl) roleTagEl.textContent = roleNames[this.currentUser.role] || this.currentUser.role;
+      if (profileBadge) profileBadge.style.display = 'inline-flex';
       if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+      if (starBadge) starBadge.style.display = 'flex';
       if (authPills) authPills.style.display = 'none';
     } else {
-      if (avatarEl) avatarEl.textContent = '👤';
-      if (nameEl) nameEl.textContent = 'Khách';
+      if (profileBadge) profileBadge.style.display = 'none';
       if (logoutBtn) logoutBtn.style.display = 'none';
-      if (authPills) authPills.style.display = 'flex';
+      if (starBadge) starBadge.style.display = 'none';
+      if (authPills) authPills.style.display = 'inline-flex';
     }
+
+    this.renderHomeAuthBanner();
+    if (this.currentView === 'ui-08') {
+      this.renderUserProfilePage();
+    }
+  }
+
+  renderHomeAuthBanner() {
+    const container = document.getElementById('home-auth-status-banner');
+    if (!container) return;
+
+    if (!this.currentUser) {
+      container.innerHTML = `
+        <div class="home-auth-banner guest-banner">
+          <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 280px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+              🏸
+            </div>
+            <div>
+              <div style="font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span>Chào mừng bạn đến với Badminton.AI!</span>
+                <span style="font-size: 0.72rem; background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 9999px; text-transform: uppercase; font-weight: 800;">Chưa Đăng Nhập</span>
+              </div>
+              <div style="font-size: 0.84rem; opacity: 0.95; margin-top: 3px; line-height: 1.4;">
+                Đăng nhập để tự động lưu lịch sử đặt sân, giữ chỗ 10 phút, tra cứu vé QR điện tử và ghép kèo thi đấu ELO!
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-sm" onclick="app.navigateTo('ui-01')" style="background: #ffffff; color: #0d562e; font-weight: 800; border: none; padding: 8px 18px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer;">
+              <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
+            </button>
+            <button class="btn btn-sm" onclick="app.navigateTo('ui-01'); app.switchAuthTab('register')" style="background: rgba(255,255,255,0.15); color: #ffffff; border: 1.5px solid #ffffff; font-weight: 800; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+              <i class="fa-solid fa-user-plus"></i> Đăng Ký Tài Khoản
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      const currentElo = typeof this.currentUser.elo_rating === 'number' ? this.currentUser.elo_rating : 1200;
+      const tier = typeof this.getEloTierInfo === 'function' ? this.getEloTierInfo(currentElo) : { name: 'Cơ bản', display: 'Cơ bản', bg: '#dbeafe', color: '#2563eb' };
+      const roleNames = {
+        'CUSTOMER': 'Khách Hàng',
+        'OWNER': 'Chủ Sân',
+        'STAFF': 'Thu Ngân',
+        'ADMIN': 'Quản Trị Viên'
+      };
+
+      container.innerHTML = `
+        <div class="home-auth-banner member-banner">
+          <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 280px;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: #167946; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; flex-shrink: 0; box-shadow: 0 3px 8px rgba(22, 121, 70, 0.3);">
+              ${this.currentUser.avatar || '👤'}
+            </div>
+            <div>
+              <div style="font-weight: 800; font-size: 1rem; color: #0f172a; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span>Xin chào, ${this.currentUser.name}!</span>
+                <span style="font-size: 0.72rem; background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 9999px; font-weight: 800;">
+                  ${roleNames[this.currentUser.role] || this.currentUser.role}
+                </span>
+                <span style="font-size: 0.72rem; background: ${tier.bg}; color: ${tier.color}; padding: 2px 8px; border-radius: 9999px; font-weight: 800;">
+                  ${tier.display}
+                </span>
+              </div>
+              <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
+                Tài khoản: <strong>${this.currentUser.phone}</strong> • Đã kích hoạt đầy đủ quyền lợi thành viên chính thức.
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-outline-primary btn-sm" onclick="app.navigateTo('ui-08')">
+              <i class="fa-solid fa-id-card"></i> Hồ Sơ ELO
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="app.navigateTo('ui-05')">
+              <i class="fa-solid fa-ticket"></i> Vé QR Của Tôi
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  renderUserProfilePage() {
+    const container = document.getElementById('user-profile-view-container');
+    if (!container) return;
+
+    if (!this.currentUser) {
+      container.innerHTML = `
+        <div class="page-header" style="margin-bottom: 1.5rem; text-align: center;">
+          <h1 class="page-title" style="justify-content: center;"><i class="fa-solid fa-id-card text-primary"></i> Hồ Sơ Cá Nhân & Chỉ Số ELO</h1>
+          <p class="page-subtitle">Quản lý tài khoản cá nhân, điểm trình độ ELO và lịch sử đấu giao lưu</p>
+        </div>
+
+        <div class="guest-locked-card">
+          <div style="width: 72px; height: 72px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2rem; color: #64748b; border: 2px dashed #cbd5e1;">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h2 style="font-size: 1.4rem; color: #0f172a; margin-bottom: 0.5rem; font-weight: 800;">Chế Độ Khách Vãng Lai</h2>
+          <p style="font-size: 0.92rem; color: #64748b; max-width: 440px; margin: 0 auto 1.5rem; line-height: 1.6;">
+            Bạn hiện đang xem ở chế độ chưa đăng nhập. Vui lòng <strong>Đăng Nhập</strong> hoặc <strong>Đăng Ký</strong> để tra cứu điểm ELO cá nhân, xem tỉ lệ thắng thua và lịch sử thi đấu giao lưu!
+          </p>
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="app.navigateTo('ui-01')" style="padding: 10px 24px; font-weight: 800;">
+              <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Ngay
+            </button>
+            <button class="btn btn-outline-primary" onclick="app.navigateTo('ui-01'); app.switchAuthTab('register')" style="padding: 10px 24px; font-weight: 800;">
+              <i class="fa-solid fa-user-plus"></i> Đăng Ký Tài Khoản
+            </button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const currentElo = typeof this.currentUser.elo_rating === 'number' ? this.currentUser.elo_rating : 1200;
+    const tier = typeof this.getEloTierInfo === 'function' ? this.getEloTierInfo(currentElo) : { name: 'Cơ bản', display: 'Cơ bản', bg: '#dbeafe', color: '#2563eb' };
+    const roleNames = {
+      'CUSTOMER': 'Khách Hàng',
+      'OWNER': 'Chủ Sân',
+      'STAFF': 'Thu Ngân',
+      'ADMIN': 'Quản Trị Viên'
+    };
+
+    container.innerHTML = `
+      <div class="page-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h1 class="page-title"><i class="fa-solid fa-id-card text-primary"></i> Hồ Sơ Cá Nhân & Chỉ Số ELO</h1>
+          <p class="page-subtitle">Quản lý tài khoản cá nhân, điểm trình độ ELO và lịch sử đấu giao lưu</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" onclick="app.showEloTiersGuideModal()">
+            <i class="fa-solid fa-layer-group"></i> Bảng Phân Khúc ELO
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="app.logout()" style="background: #ef4444; border: none; color: #fff;">
+            <i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất
+          </button>
+        </div>
+      </div>
+
+      <!-- User Info Identity Card -->
+      <div class="glass-card" style="margin-bottom: 1.5rem; padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; background: #ffffff; border: 1.5px solid #e2e8f0;">
+        <div style="display: flex; align-items: center; gap: 1.25rem;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #167946 0%, #059669 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; box-shadow: 0 4px 14px rgba(22, 121, 70, 0.35);">
+            ${this.currentUser.avatar || '👤'}
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #0f172a;">${this.currentUser.name}</h2>
+              <span style="background: ${tier.bg}; color: ${tier.color}; font-size: 0.75rem; font-weight: 800; padding: 2px 8px; border-radius: 9999px;">
+                ${tier.display}
+              </span>
+            </div>
+            <div style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">
+              <i class="fa-solid fa-phone"></i> SĐT: <strong>${this.currentUser.phone}</strong> • Vai trò: <strong style="color: #167946;">${roleNames[this.currentUser.role] || this.currentUser.role}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline-primary btn-sm" onclick="app.promptCustomPlayerElo()">
+            <i class="fa-solid fa-pen-to-square"></i> Tự Chọn Trình Độ ELO
+          </button>
+        </div>
+      </div>
+
+      <!-- Real Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon purple"><i class="fa-solid fa-trophy"></i></div>
+          <div>
+            <div class="stat-value">${currentElo}</div>
+            <div class="stat-label">Chỉ số ELO Rating (${tier.name})</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+          <div>
+            <div class="stat-value">18 Trận</div>
+            <div class="stat-label">Đã Giao Lưu</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon cyan"><i class="fa-solid fa-percent"></i></div>
+          <div>
+            <div class="stat-value">72%</div>
+            <div class="stat-label">Tỉ lệ Thắng Matchmaking</div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   handleHeaderProfileClick() {
@@ -223,15 +426,21 @@ class BadmintonAIApp {
         return false;
       }
 
-      // If no user is logged in:
-      // If switching to non-CUSTOMER role, auto load demo user for that role so testing is smooth
+      // If no user is logged in and tries to switch to non-CUSTOMER role:
+      // Require real login instead of silently assigning a demo account!
       if (!this.currentUser && role !== 'CUSTOMER') {
-        const userRoleMap = {
-          'OWNER': MockData.users.find(u => u.role === 'OWNER') || MockData.users[2],
-          'STAFF': MockData.users.find(u => u.role === 'STAFF') || MockData.users[3],
-          'ADMIN': MockData.users.find(u => u.role === 'ADMIN') || MockData.users[4]
+        const roleNames = {
+          'OWNER': 'Chủ Sân',
+          'STAFF': 'Thu Ngân',
+          'ADMIN': 'Quản Trị Viên'
         };
-        this.currentUser = userRoleMap[role];
+        const targetRoleName = roleNames[role] || role;
+        this.showToast(`🔒 Phân hệ [${targetRoleName}] yêu cầu đăng nhập tài khoản có thẩm quyền!`, 'info');
+        if (typeof this.selectLoginRole === 'function') {
+          this.selectLoginRole(role, false);
+        }
+        this.navigateTo('ui-01');
+        return false;
       }
       this.currentRole = role;
     }
@@ -252,10 +461,10 @@ class BadmintonAIApp {
     const activeBtn = document.getElementById(`role-btn-${role.toLowerCase()}`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    // Update Header Avatar & Name
+    // Update Header Avatar, Name & Auth Buttons
     this.updateHeaderUserUI();
 
-    // Update Sidebar Navigation according to Role
+    // Update Sidebar Navigation according to Role & Auth state
     this.renderSidebarNav();
 
     // Default view routing per role
@@ -280,7 +489,7 @@ class BadmintonAIApp {
 
     this.renderSidebarNav();
     this.navigateTo('ui-02');
-    this.showToast('👋 Đã đăng xuất khỏi hệ thống!');
+    this.showToast('👋 Đã đăng xuất khỏi hệ thống! Giao diện đã chuyển về chế độ Khách vãng lai.');
   }
 
   renderSidebarNav() {
@@ -296,10 +505,10 @@ class BadmintonAIApp {
           { id: 'ui-trending', icon: 'fa-fire', text: 'Sự Kiện & Nổi Bật' },
           { id: 'ui-03', icon: 'fa-calendar-days', text: 'Đặt Sân & Thuê Đồ' },
           { id: 'ui-04', icon: 'fa-qrcode', text: 'Thanh Toán Cọc QR' },
-          { id: 'ui-05', icon: 'fa-ticket', text: 'Vé QR Điện Tử' },
+          { id: 'ui-05', icon: 'fa-ticket', text: 'Vé QR Điện Tử', requiresAuth: true },
           { id: 'ui-06', icon: 'fa-users-viewfinder', text: 'AI Matchmaking ELO' },
           { id: 'ui-07', icon: 'fa-comments', text: 'Chat Nhóm Giao Lưu' },
-          { id: 'ui-08', icon: 'fa-id-card', text: 'Hồ Sơ & Điểm ELO' }
+          { id: 'ui-08', icon: 'fa-id-card', text: 'Hồ Sơ & Điểm ELO', requiresAuth: true }
         ]
       },
       'OWNER': {
@@ -342,25 +551,67 @@ class BadmintonAIApp {
 
     let html = '';
 
-    // Only show "Đăng Nhập / Xác Thực" in sidebar when NOT logged in
+    // Render Distinct Top Card in Sidebar: Guest vs Logged-in Member
     if (!this.currentUser) {
       html += `
-        <a class="nav-item ${this.currentView === 'ui-01' ? 'active' : ''}" onclick="app.navigateTo('ui-01')">
-          <i class="fa-solid fa-right-to-bracket icon"></i>
-          <span>Đăng Nhập / Xác Thực</span>
-        </a>
-        <hr style="border-color: var(--border-color); margin: 0.5rem 0;">
+        <div class="sidebar-auth-card guest">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <div class="sidebar-auth-avatar guest-avatar"><i class="fa-solid fa-user"></i></div>
+            <div style="overflow: hidden;">
+              <div style="font-weight: 800; font-size: 0.88rem; color: #0f172a;">Khách Vãng Lai</div>
+              <div style="font-size: 0.72rem; color: #64748b;">Chưa đăng nhập</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-xs btn-primary" style="flex: 1; font-weight: 700; padding: 5px;" onclick="app.navigateTo('ui-01')">
+              <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
+            </button>
+            <button class="btn btn-xs btn-outline-primary" style="flex: 1; font-weight: 700; padding: 5px;" onclick="app.navigateTo('ui-01'); app.switchAuthTab('register')">
+              <i class="fa-solid fa-user-plus"></i> Đăng Ký
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      const roleNames = {
+        'CUSTOMER': 'Khách Hàng',
+        'OWNER': 'Chủ Sân',
+        'STAFF': 'Thu Ngân',
+        'ADMIN': 'Quản Trị'
+      };
+      html += `
+        <div class="sidebar-auth-card member">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="sidebar-auth-avatar member-avatar">${this.currentUser.avatar || '👤'}</div>
+            <div style="overflow: hidden; flex: 1;">
+              <div style="font-weight: 800; font-size: 0.88rem; color: #0f172a; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${this.currentUser.name}</div>
+              <div style="font-size: 0.72rem; color: #167946; font-weight: 700;">${roleNames[this.currentUser.role] || this.currentUser.role} • ELO ${this.currentUser.elo_rating || 1200}</div>
+            </div>
+          </div>
+        </div>
       `;
     }
 
     currentConfig.items.forEach(item => {
+      const isLocked = !this.currentUser && item.requiresAuth;
       html += `
         <a class="nav-item ${this.currentView === item.id ? 'active' : ''}" onclick="app.navigateTo('${item.id}')">
           <i class="fa-solid ${item.icon} icon"></i>
           <span>${item.text}</span>
+          ${isLocked ? `<span style="margin-left: auto; font-size: 0.72rem; color: #94a3b8;" title="Yêu cầu đăng nhập"><i class="fa-solid fa-lock"></i></span>` : ''}
         </a>
       `;
     });
+
+    if (this.currentUser) {
+      html += `
+        <hr style="border-color: var(--border-color); margin: 0.5rem 0;">
+        <a class="nav-item" onclick="app.logout()" style="color: #ef4444;">
+          <i class="fa-solid fa-right-from-bracket icon" style="color: #ef4444;"></i>
+          <span>Đăng Xuất (${this.currentUser.name.split(' ').pop() || 'Tài khoản'})</span>
+        </a>
+      `;
+    }
 
     navList.innerHTML = html;
   }
@@ -391,6 +642,9 @@ class BadmintonAIApp {
     else if (screenId === 'ui-01' || screenId === 'ui-08') this.updateBottomNavActive('account');
     else this.updateBottomNavActive('');
 
+    if (screenId === 'ui-02') this.renderHomeAuthBanner();
+    if (screenId === 'ui-05') this.renderBookingOrdersList();
+    if (screenId === 'ui-08') this.renderUserProfilePage();
     if (screenId === 'ui-map') this.initGoogleSportsMap();
     if (screenId === 'ui-09') this.renderOwnerDashboardOrders();
     if (screenId === 'ui-10') this.initLeafletMap();
@@ -1068,9 +1322,45 @@ class BadmintonAIApp {
   renderBookingOrdersList() {
     const container = document.getElementById('booking-orders-list-container');
     if (!container) return;
-    let html = '';
 
-    MockData.booking_orders.forEach(order => {
+    if (!this.currentUser) {
+      container.innerHTML = `
+        <div class="guest-locked-card" style="margin-top: 1rem;">
+          <div style="width: 72px; height: 72px; border-radius: 50%; background: #f0fdf4; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2rem; color: #16a34a; border: 2px dashed #86efac;">
+            <i class="fa-solid fa-ticket"></i>
+          </div>
+          <h2 style="font-size: 1.35rem; color: #0f172a; margin-bottom: 0.5rem; font-weight: 800;">Tra Cứu Vé QR & Đơn Đặt Sân</h2>
+          <p style="font-size: 0.9rem; color: #64748b; max-width: 440px; margin: 0 auto 1.5rem; line-height: 1.6;">
+            Bạn đang truy cập ở chế độ <strong>Khách Vãng Lai</strong>. Vui lòng đăng nhập vào tài khoản để xem danh sách vé QR điện tử dùng check-in tại quầy sân và quản lý các lượt đặt sân của bạn!
+          </p>
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="app.navigateTo('ui-01')" style="padding: 10px 24px; font-weight: 800;">
+              <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Để Xem Vé
+            </button>
+            <button class="btn btn-outline-primary" onclick="app.navigateTo('ui-01'); app.switchAuthTab('register')" style="padding: 10px 24px; font-weight: 800;">
+              <i class="fa-solid fa-user-plus"></i> Đăng Ký Tài Khoản
+            </button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const orders = MockData.booking_orders || [];
+    if (orders.length === 0) {
+      container.innerHTML = `
+        <div class="glass-card" style="text-align: center; padding: 2.5rem; background: #fff;">
+          <p style="color: #64748b; margin-bottom: 1rem;">Tài khoản của bạn hiện chưa có đơn đặt sân nào.</p>
+          <button class="btn btn-primary btn-sm" onclick="app.navigateTo('ui-02')">
+            <i class="fa-solid fa-calendar-plus"></i> Đặt Sân Giữ Chỗ Ngay
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '';
+    orders.forEach(order => {
       html += `
         <div class="glass-card" style="margin-bottom: 1rem;">
           <div class="ticket-card">

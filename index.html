@@ -82,7 +82,7 @@
       </div>
 
       <!-- Center: Role Switcher Toolbar -->
-      <div class="role-switcher-container">
+      <div class="role-switcher-container" id="header-role-switcher">
         <button class="role-btn active" id="role-btn-customer" onclick="app.switchRole('CUSTOMER')">
           <i class="fa-solid fa-user-check"></i> Khách Hàng
         </button>
@@ -99,18 +99,32 @@
 
       <!-- Right Side: User Actions & Red Star Badge -->
       <div class="top-header-right">
+        <!-- Guest Auth Action Buttons (Shown when NOT logged in) -->
+        <div class="header-auth-pills" id="header-auth-pills-group" style="display: flex;">
+          <button type="button" class="btn-pill-auth btn-pill-login" onclick="app.navigateTo('ui-01')">
+            <i class="fa-solid fa-right-to-bracket" style="margin-right: 5px;"></i> Đăng Nhập
+          </button>
+          <button type="button" class="btn-pill-auth btn-pill-register" onclick="app.navigateTo('ui-01'); app.switchAuthTab('register')">
+            <i class="fa-solid fa-user-plus" style="margin-right: 5px;"></i> Đăng Ký
+          </button>
+        </div>
+
         <button class="icon-btn" id="header-csdl-btn" onclick="app.navigateTo('ui-20')" title="Xem CSDL Web 9 Bảng (Admin)" style="display: none; border-color: #ffffff; color: #ffffff; background: rgba(255,255,255,0.2);">
           <i class="fa-solid fa-database"></i>
         </button>
-        <div class="user-profile-badge" onclick="app.handleHeaderProfileClick()" title="Hồ Sơ Cá Nhân">
+        
+        <!-- Logged-in User Profile Badge (Hidden when NOT logged in) -->
+        <div class="user-profile-badge" id="header-user-profile-badge" onclick="app.handleHeaderProfileClick()" title="Hồ Sơ Cá Nhân" style="display: none;">
           <div class="avatar" id="header-avatar">👤</div>
           <span class="user-info-text" id="header-user-name">Khách</span>
+          <span id="header-user-role-tag" style="font-size: 0.72rem; background: rgba(255,255,255,0.25); padding: 2px 7px; border-radius: 9999px; font-weight: 800; margin-left: 2px;">Khách</span>
         </div>
-        <button class="icon-btn text-danger" id="header-logout-btn" onclick="app.logout()" title="Đăng Xuất" style="display: none; background: rgba(239, 68, 68, 0.3); border-color: #ef4444;">
+
+        <button class="icon-btn text-danger" id="header-logout-btn" onclick="app.logout()" title="Đăng Xuất Khỏi Hệ Thống" style="display: none; background: rgba(239, 68, 68, 0.3); border-color: #ef4444;">
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>
         <!-- Red Star Badge from Screenshot -->
-        <div class="header-star-badge" onclick="app.showToast('⭐️ Bạn đang là Hội Viên Thân Thiết BADMINTON.AI!')" title="Hội Viên Ngôi Sao">
+        <div class="header-star-badge" id="header-star-badge" onclick="app.showToast('⭐️ Bạn đang là Hội Viên Thân Thiết BADMINTON.AI!')" title="Hội Viên Ngôi Sao" style="display: none;">
           <i class="fa-solid fa-star"></i>
         </div>
       </div>
@@ -250,6 +264,9 @@
 
         <!-- Customer Search & AI Recommendation (Alobo Sports View) -->
         <section id="view-ui-02" class="screen-view">
+          <!-- Dynamic Auth Greeting Banner (Differentiated for Guest vs Logged-in Member) -->
+          <div id="home-auth-status-banner"></div>
+
           <!-- 1. White Floating Search & Quick Nav Bar (Screenshot style) -->
           <div class="floating-sports-bar">
             <div class="sports-mini-logo">
@@ -1069,35 +1086,8 @@
 
         <!-- User Profile & ELO Stats -->
         <section id="view-ui-08" class="screen-view">
-          <div class="page-header">
-            <div>
-              <h1 class="page-title"><i class="fa-solid fa-id-card text-primary"></i> Hồ Sơ Cá Nhân & Chỉ Số ELO</h1>
-              <p class="page-subtitle">Quản lý tài khoản cá nhân, điểm trình độ ELO và lịch sử đấu giao lưu</p>
-            </div>
-          </div>
-
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon purple"><i class="fa-solid fa-trophy"></i></div>
-              <div>
-                <div class="stat-value">1,450</div>
-                <div class="stat-label">Chỉ số ELO Rating</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
-              <div>
-                <div class="stat-value">18 Trận</div>
-                <div class="stat-label">Đã Giao Lưu</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon cyan"><i class="fa-solid fa-percent"></i></div>
-              <div>
-                <div class="stat-value">72%</div>
-                <div class="stat-label">Tỉ lệ Thắng Matchmaking</div>
-              </div>
-            </div>
+          <div id="user-profile-view-container">
+            <!-- Dynamically populated by app.renderUserProfilePage() -->
           </div>
         </section>
 

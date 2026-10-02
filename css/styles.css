@@ -3254,4 +3254,99 @@ body {
   }
 }
 
+/* ==========================================================================
+   AUTHENTICATION UI DIFFERENTIATION (GUEST VS LOGGED IN)
+   ========================================================================== */
+.sidebar-auth-card {
+  margin: 0 0.5rem 0.85rem 0.5rem;
+  padding: 0.85rem;
+  border-radius: 12px;
+  transition: all 0.25s ease;
+}
+
+.sidebar-auth-card.guest {
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+}
+
+.sidebar-auth-card.member {
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+  border: 1.5px solid #86efac;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.08);
+}
+
+.sidebar-auth-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.sidebar-auth-avatar.guest-avatar {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.sidebar-auth-avatar.member-avatar {
+  background: #167946;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(22, 121, 70, 0.3);
+}
+
+.home-auth-banner {
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  animation: fadeIn 0.3s ease;
+}
+
+.home-auth-banner.guest-banner {
+  background: linear-gradient(135deg, #0d562e 0%, #167946 60%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(22, 121, 70, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.home-auth-banner.member-banner {
+  background: #ffffff;
+  border: 1.5px solid #bbf7d0;
+  color: #0f172a;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.guest-locked-card {
+  max-width: 580px;
+  margin: 2rem auto;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 2px dashed #cbd5e1;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.header-guest-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1.5px dashed rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+
 
