@@ -1162,6 +1162,11 @@ class BadmintonAIApp {
   }
 
   switchDemoPlayerElo(newElo) {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để chọn và lưu cấp độ ELO của bạn.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
     if (newElo === 'custom') {
       this.promptCustomPlayerElo();
       return;
@@ -1170,7 +1175,12 @@ class BadmintonAIApp {
   }
 
   promptCustomPlayerElo() {
-    const currentElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1450;
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để tự chọn trình độ ELO của bạn.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+    const currentElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1200;
     const input = prompt(
       "🎯 TỰ CHỌN TRÌNH ĐỘ ELO CỦA BẠN:\n\n" +
       "Bảng phân khúc tiêu chuẩn:\n" +
@@ -1194,8 +1204,12 @@ class BadmintonAIApp {
   }
 
   applyCustomPlayerElo(newElo) {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để thiết lập điểm ELO.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
     const elo = parseInt(newElo, 10);
-    if (!this.currentUser) this.currentUser = { id: 1, name: "Nguyễn Văn Hùng", role: "CUSTOMER" };
     this.currentUser.elo_rating = elo;
 
     // Cập nhật vào danh sách users và player_profiles
@@ -1395,6 +1409,12 @@ class BadmintonAIApp {
   }
 
   startDynamicMatchmakingSearch() {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập để AI tìm đối thủ ngang trình theo điểm ELO của bạn.", "info");
+      this.navigateTo('ui-01');
+      return;
+    }
+
     this.currentWaitTimer = 0;
     const rangeBadge = document.getElementById('dynamic-range-badge');
     const waitTimerEl = document.getElementById('dynamic-wait-timer');
@@ -1409,9 +1429,35 @@ class BadmintonAIApp {
     const container = document.getElementById('matchmaking-rooms-grid');
     if (!container) return;
 
-    const userElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1450;
-    const userName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : "Nguyễn Văn Hùng";
+    const isGuest = !this.currentUser;
+    const userElo = (!isGuest && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1200;
+    const userName = !isGuest ? this.currentUser.name : "Khách (Chưa đăng nhập)";
     const userTier = this.getEloTierInfo(userElo);
+
+    // Sync UI-06 profile card with actual logged-in user or guest state
+    const profileNameEl = document.getElementById('player-profile-name');
+    const profileAvatarEl = document.getElementById('player-profile-avatar');
+    const profileEloEl = document.getElementById('player-profile-elo');
+    const profileTierEl = document.getElementById('player-profile-tier');
+
+    if (profileNameEl) {
+      if (isGuest) {
+        profileNameEl.innerHTML = `<span style="color: #64748b;">Khách (Chưa đăng nhập)</span> <button class="btn btn-xs btn-primary" onclick="app.navigateTo('ui-01')" style="margin-left: 8px; font-size: 0.75rem; padding: 2px 8px; background: #167946;"><i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập</button>`;
+      } else {
+        profileNameEl.textContent = this.currentUser.name;
+      }
+    }
+    if (profileAvatarEl) {
+      profileAvatarEl.textContent = !isGuest ? (this.currentUser.avatar || this.currentUser.name.charAt(0)) : '👤';
+    }
+    if (profileEloEl) {
+      profileEloEl.innerHTML = `<i class="fa-solid fa-trophy"></i> ELO ${userElo}`;
+    }
+    if (profileTierEl) {
+      profileTierEl.textContent = userTier.display;
+      profileTierEl.style.color = userTier.color;
+      profileTierEl.style.background = userTier.bg;
+    }
 
     const waitSeconds = this.currentWaitTimer || 0;
     let dynamicRange = 50;
@@ -1630,11 +1676,15 @@ class BadmintonAIApp {
                 <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${cand.roomId})" style="background: #167946;">
                   <i class="fa-solid fa-users"></i> Vào Phòng
                 </button>
+              ` : (isGuest ? `
+                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', ${cand.elo})" style="background: #d97706;" title="Đăng nhập để gửi lời mời thách đấu">
+                  <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Để Ghép
+                </button>
               ` : `
                 <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', ${cand.elo})" style="background: linear-gradient(135deg, #167946, #059669);">
                   <i class="fa-solid fa-bolt"></i> Ghép Kèo Ngay
                 </button>
-              `}
+              `)}
             </div>
           </div>
         </div>
@@ -1645,7 +1695,12 @@ class BadmintonAIApp {
   }
 
   challengeOpponentPrompt(opponentName, opponentElo) {
-    this.showToast(`🏸 Đã gửi lời mời giao lưu tới ${opponentName} (ELO ${opponentElo})!`);
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để gửi yêu cầu ghép kèo đấu.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+    this.showToast(`🏸 Đã gửi lời mời ghép kèo giao lưu tới ${opponentName} (ELO ${opponentElo})!`);
   }
 
   renderMatchmakingRooms() {
@@ -1656,6 +1711,11 @@ class BadmintonAIApp {
   // 8. TWO-WAY RESULT CONFIRMATION & DISPUTE MODAL (Component 8 & 9)
   // =========================================================================
   openMatchResultModal() {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập tài khoản để xem & xác nhận kết quả kèo đấu.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
 
@@ -1720,9 +1780,14 @@ class BadmintonAIApp {
   confirmMatchResultAction(matchId, isAgreed) {
     this.closeModal();
 
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập để xác nhận kết quả kèo đấu.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+
     if (isAgreed) {
-      if (!this.currentUser) this.currentUser = { id: 1, name: "Nguyễn Văn Hùng", elo_rating: 1450 };
-      const oldElo = this.currentUser.elo_rating || 1450;
+      const oldElo = this.currentUser.elo_rating || 1200;
       const eloGain = 16;
       const newElo = oldElo + eloGain;
       this.currentUser.elo_rating = newElo;
@@ -1889,6 +1954,27 @@ class BadmintonAIApp {
       }
     }
 
+    const joinBtn = document.getElementById('btn-join-room-action');
+    if (joinBtn) {
+      if (!this.currentUser) {
+        joinBtn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Để Chấp Nhận Kèo`;
+        joinBtn.style.background = "#d97706";
+      } else {
+        const isMember = this.activeRoom.players && this.activeRoom.players.some(p => p.name === this.currentUser.name || p.id === this.currentUser.id);
+        const isFull = (this.activeRoom.current_players || 0) >= (this.activeRoom.max_players || 4);
+        if (isMember) {
+          joinBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Bạn Đã Trong Kèo Này`;
+          joinBtn.style.background = "#059669";
+        } else if (isFull) {
+          joinBtn.innerHTML = `<i class="fa-solid fa-ban"></i> Phòng Đã Đủ Thành Viên`;
+          joinBtn.style.background = "#64748b";
+        } else {
+          joinBtn.innerHTML = `<i class="fa-solid fa-user-plus"></i> Chấp Nhận & Tham Gia Kèo Này`;
+          joinBtn.style.background = "#167946";
+        }
+      }
+    }
+
     this.renderChatMessages();
     this.renderAIRoomTactics();
     this.navigateTo('ui-07');
@@ -1955,6 +2041,11 @@ class BadmintonAIApp {
   }
 
   sendQuickChatMessage(text) {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập để gửi tin nhắn trong phòng kèo đấu.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
     if (!this.activeRoom) return;
     const input = document.getElementById('chat-input-text');
     if (input) input.value = text;
@@ -1970,8 +2061,8 @@ class BadmintonAIApp {
     const p2Name = document.getElementById('matchup-p2-name');
     const p2Elo = document.getElementById('matchup-p2-elo');
 
-    if (p1Name) p1Name.value = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng';
-    if (p1Elo) p1Elo.value = (this.currentUser && this.currentUser.elo_rating) ? this.currentUser.elo_rating : 1450;
+    if (p1Name) p1Name.value = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Bạn (Chưa đăng nhập)';
+    if (p1Elo) p1Elo.value = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1200;
     if (p2Name) p2Name.value = room.host_name || 'Đối thủ Host';
     if (p2Elo) p2Elo.value = room.host_elo || 1480;
 
@@ -1992,10 +2083,16 @@ class BadmintonAIApp {
   }
 
   joinActiveRoomChat() {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để chấp nhận & tham gia kèo đấu này.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+
     if (!this.activeRoom) return;
 
-    const user = this.currentUser || { name: 'Nguyễn Văn Hùng', elo_rating: 1450, avatar: 'H' };
-    const alreadyIn = this.activeRoom.players && this.activeRoom.players.some(p => p.name === user.name);
+    const user = this.currentUser;
+    const alreadyIn = this.activeRoom.players && this.activeRoom.players.some(p => p.name === user.name || p.id === user.id);
 
     if (alreadyIn) {
       this.showToast("ℹ️ Bạn đã là thành viên trong phòng ghép này!");
@@ -2009,8 +2106,9 @@ class BadmintonAIApp {
 
     if (!this.activeRoom.players) this.activeRoom.players = [];
     this.activeRoom.players.push({
+      id: user.id,
       name: user.name,
-      elo: user.elo_rating || 1450,
+      elo: user.elo_rating || 1200,
       avatar: user.avatar || user.name.charAt(0),
       role: 'Member',
       style: 'Công thủ linh hoạt',
@@ -2021,7 +2119,7 @@ class BadmintonAIApp {
 
     this.activeRoom.chat_messages.push({
       sender: "🤖 AI Match Referee",
-      text: `🎉 Chào mừng ${user.name} (ELO ${user.elo_rating || 1450}) đã tham gia phòng ghép! Kèo đấu hiện có ${this.activeRoom.current_players}/${this.activeRoom.max_players} thành viên.`,
+      text: `🎉 Chào mừng ${user.name} (ELO ${user.elo_rating || 1200}) đã chấp nhận kèo và tham gia phòng! Kèo đấu hiện có ${this.activeRoom.current_players}/${this.activeRoom.max_players} thành viên.`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
 
@@ -2031,7 +2129,7 @@ class BadmintonAIApp {
     if (typeof saveMockDataToLocalStorage === 'function') {
       saveMockDataToLocalStorage();
     }
-    this.showToast(`🎉 Tham gia phòng ghép "${this.activeRoom.room_name}" thành công!`);
+    this.showToast(`🎉 Bạn đã chấp nhận và tham gia kèo đấu "${this.activeRoom.room_name}" thành công!`);
   }
 
   renderChatMessages() {
@@ -2039,10 +2137,10 @@ class BadmintonAIApp {
     if (!container || !this.activeRoom) return;
     let html = '';
 
-    const currentUserName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng';
+    const currentUserName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : '';
 
     (this.activeRoom.chat_messages || []).forEach(msg => {
-      const isSent = msg.sender === currentUserName;
+      const isSent = currentUserName && msg.sender === currentUserName;
       const isReferee = msg.sender.includes('AI') || msg.sender.includes('Referee') || msg.isAI;
 
       let msgClass = 'chat-msg received';
@@ -2065,12 +2163,18 @@ class BadmintonAIApp {
 
   sendChatMessage(e) {
     if (e && e.preventDefault) e.preventDefault();
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập để gửi tin nhắn trong phòng kèo đấu.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+
     const input = document.getElementById('chat-input-text');
     if (!input) return;
     const text = input.value.trim();
     if (!text || !this.activeRoom) return;
 
-    const currentUserName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng';
+    const currentUserName = this.currentUser.name;
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     this.activeRoom.chat_messages.push({
@@ -2101,6 +2205,12 @@ class BadmintonAIApp {
   }
 
   openCreateRoomModal() {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để khởi tạo phòng ghép kèo.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
 
@@ -2333,6 +2443,12 @@ class BadmintonAIApp {
 
   handleCreateRoom(e) {
     if (e && e.preventDefault) e.preventDefault();
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập tài khoản để tạo phòng ghép kèo.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+
     const name = document.getElementById('modal-room-name')?.value || 'Phòng Giao Lưu Mới';
     const facId = parseInt(document.getElementById('modal-room-facility')?.value || '101', 10);
     const matchType = document.getElementById('modal-room-type')?.value || 'Đôi Nam/Nữ';
@@ -2345,19 +2461,17 @@ class BadmintonAIApp {
     const fac = MockData.facilities.find(f => f.id === facId) || MockData.facilities[0];
     const isDoubles = matchType.includes('Đôi');
     const maxPlayers = isDoubles ? 4 : 2;
-    const currentUserName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Nguyễn Văn Hùng';
+    const currentUserName = this.currentUser.name;
     
     // Tự chọn ELO của host từ modal nếu đã chỉnh sửa
     const hostEloInput = document.getElementById('modal-host-elo-input');
     const customHostElo = hostEloInput ? parseInt(hostEloInput.value, 10) : null;
-    const currentUserElo = (!isNaN(customHostElo) && customHostElo > 0) ? customHostElo : ((this.currentUser && this.currentUser.elo_rating) ? this.currentUser.elo_rating : 1450);
+    const currentUserElo = (!isNaN(customHostElo) && customHostElo > 0) ? customHostElo : (this.currentUser.elo_rating || 1450);
 
     // Cập nhật lại ELO cho currentUser nếu người dùng tự chỉnh sửa
-    if (this.currentUser) {
-      this.currentUser.elo_rating = currentUserElo;
-      const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.name === this.currentUser.name);
-      if (u) u.elo_rating = currentUserElo;
-    }
+    this.currentUser.elo_rating = currentUserElo;
+    const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.name === this.currentUser.name);
+    if (u) u.elo_rating = currentUserElo;
 
     const newRoom = {
       id: Date.now(),
