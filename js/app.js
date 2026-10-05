@@ -276,27 +276,36 @@ class BadmintonAIApp {
     const container = document.getElementById('user-profile-view-container');
     if (!container) return;
 
+    const lang = localStorage.getItem('badminton_app_language') || this.currentLanguage || 'vi';
+    const isEn = lang === 'en';
+
     if (!this.currentUser) {
       container.innerHTML = `
         <div class="page-header" style="margin-bottom: 1.5rem; text-align: center;">
-          <h1 class="page-title" style="justify-content: center;"><i class="fa-solid fa-id-card text-primary"></i> Hồ Sơ Cá Nhân & Chỉ Số ELO</h1>
-          <p class="page-subtitle">Quản lý tài khoản cá nhân, điểm trình độ ELO và lịch sử đấu giao lưu</p>
+          <h1 class="page-title" style="justify-content: center;">
+            <i class="fa-solid fa-user-gear text-primary"></i> ${isEn ? 'Account & Profile Management' : 'Hồ Sơ Cá Nhân & Quản Lý Tài Khoản'}
+          </h1>
+          <p class="page-subtitle">
+            ${isEn ? 'Manage your bookings, promotional vouchers, notification preferences and security settings' : 'Quản lý lịch đặt sân, kho ưu đãi, thông báo và bảo mật tài khoản cá nhân'}
+          </p>
         </div>
 
         <div class="guest-locked-card">
-          <div style="width: 72px; height: 72px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2rem; color: #64748b; border: 2px dashed #cbd5e1;">
-            <i class="fa-solid fa-lock"></i>
+          <div style="width: 72px; height: 72px; border-radius: 50%; background: #f0fdf4; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2rem; color: #167946; border: 2px dashed #86efac;">
+            <i class="fa-solid fa-id-card"></i>
           </div>
-          <h2 style="font-size: 1.4rem; color: #0f172a; margin-bottom: 0.5rem; font-weight: 800;">Chế Độ Khách Vãng Lai</h2>
-          <p style="font-size: 0.92rem; color: #64748b; max-width: 440px; margin: 0 auto 1.5rem; line-height: 1.6;">
-            Bạn hiện đang xem ở chế độ chưa đăng nhập. Vui lòng <strong>Đăng Nhập</strong> hoặc <strong>Đăng Ký</strong> để tra cứu điểm ELO cá nhân, xem tỉ lệ thắng thua và lịch sử thi đấu giao lưu!
+          <h2 style="font-size: 1.4rem; color: #0f172a; margin-bottom: 0.5rem; font-weight: 800;">
+            ${isEn ? 'Guest Mode (Not Logged In)' : 'Chế Độ Khách Vãng Lai'}
+          </h2>
+          <p style="font-size: 0.92rem; color: #64748b; max-width: 460px; margin: 0 auto 1.5rem; line-height: 1.6;">
+            ${isEn ? 'Please log in to your account to view your bookings, active discount vouchers, notification preferences and security settings.' : 'Bạn hiện đang truy cập ở chế độ chưa đăng nhập. Vui lòng <strong>Đăng Nhập</strong> hoặc <strong>Đăng Ký</strong> để xem lịch đặt sân, kho voucher ưu đãi, cài đặt thông báo và quản lý tài khoản của bạn!'}
           </p>
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn btn-primary" onclick="app.navigateTo('ui-01')" style="padding: 10px 24px; font-weight: 800;">
-              <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Ngay
+              <i class="fa-solid fa-right-to-bracket"></i> ${isEn ? 'Log In Now' : 'Đăng Nhập Ngay'}
             </button>
             <button class="btn btn-outline-primary" onclick="app.navigateTo('ui-01'); app.switchAuthTab('register')" style="padding: 10px 24px; font-weight: 800;">
-              <i class="fa-solid fa-user-plus"></i> Đăng Ký Tài Khoản
+              <i class="fa-solid fa-user-plus"></i> ${isEn ? 'Create Account' : 'Đăng Ký Tài Khoản'}
             </button>
           </div>
         </div>
@@ -304,82 +313,738 @@ class BadmintonAIApp {
       return;
     }
 
-    const currentElo = typeof this.currentUser.elo_rating === 'number' ? this.currentUser.elo_rating : 1200;
-    const tier = typeof this.getEloTierInfo === 'function' ? this.getEloTierInfo(currentElo) : { name: 'Cơ bản', display: 'Cơ bản', bg: '#dbeafe', color: '#2563eb' };
+    const user = this.currentUser;
     const roleNames = {
-      'CUSTOMER': 'Khách Hàng',
-      'OWNER': 'Chủ Sân',
-      'STAFF': 'Thu Ngân',
-      'ADMIN': 'Quản Trị Viên'
+      'CUSTOMER': isEn ? 'Member Player' : 'Khách Hàng Hội Viên',
+      'OWNER': isEn ? 'Facility Partner / Owner' : 'Chủ Cụm Sân',
+      'STAFF': isEn ? 'Staff / Cashier' : 'Thu Ngân Vận Hành',
+      'ADMIN': isEn ? 'System Administrator' : 'Quản Trị Viên'
     };
 
+    // Joined date & duration calculation
+    const joinedDateStr = user.joined_date || "15/03/2025";
+    const durationText = this.getMembershipDurationText(joinedDateStr, isEn);
+    const membershipTier = user.membership_tier || (isEn ? "Gold Member ⭐" : "Hội viên Vàng ⭐");
+    const skillTier = this.getSkillTierInfo(user.skill_tier_id || user.skill_tier || 5);
+    const userPhoto = user.photo || user.avatar;
+    const isPhotoUrl = userPhoto && (userPhoto.startsWith('data:image') || userPhoto.startsWith('http') || userPhoto.includes('/'));
+
+    // Filter user booking orders
+    const allOrders = MockData.booking_orders || [];
+    const userOrders = allOrders.filter(o => 
+      o.user_name === user.name || o.user_phone === user.phone || (user.id === 6 && o.user_name === "Vũ Nhất Phong") || (user.id === 1 && o.user_name === "Nguyễn Văn Hùng")
+    );
+
+    // Active tab
+    const activeTab = this.currentProfileTab || 'bookings';
+
     container.innerHTML = `
-      <div class="page-header" style="margin-bottom: 1.5rem;">
+      <div class="page-header" style="margin-bottom: 1.25rem;">
         <div>
-          <h1 class="page-title"><i class="fa-solid fa-id-card text-primary"></i> Hồ Sơ Cá Nhân & Chỉ Số ELO</h1>
-          <p class="page-subtitle">Quản lý tài khoản cá nhân, điểm trình độ ELO và lịch sử đấu giao lưu</p>
+          <h1 class="page-title"><i class="fa-solid fa-user-gear text-primary"></i> ${isEn ? 'My Profile & Account Settings' : 'Hồ Sơ Cá Nhân & Quản Lý Tài Khoản'}</h1>
+          <p class="page-subtitle">${isEn ? 'Manage your bookings, promotional vouchers, notification preferences and security settings' : 'Quản lý lịch đặt sân, kho ưu đãi, thông báo và bảo mật tài khoản cá nhân'}</p>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-secondary btn-sm" onclick="app.showEloTiersGuideModal()">
-            <i class="fa-solid fa-layer-group"></i> Bảng Phân Khúc ELO
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="app.switchProfileTab('security')" title="${isEn ? 'Change Password' : 'Đổi Mật Khẩu'}">
+            <i class="fa-solid fa-key"></i> ${isEn ? 'Change Password' : 'Đổi Mật Khẩu'}
           </button>
           <button class="btn btn-danger btn-sm" onclick="app.logout()" style="background: #ef4444; border: none; color: #fff;">
-            <i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất
+            <i class="fa-solid fa-right-from-bracket"></i> ${isEn ? 'Log Out' : 'Đăng Xuất'}
           </button>
         </div>
       </div>
 
-      <!-- User Info Identity Card -->
-      <div class="glass-card" style="margin-bottom: 1.5rem; padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; background: #ffffff; border: 1.5px solid #e2e8f0;">
-        <div style="display: flex; align-items: center; gap: 1.25rem;">
-          <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #167946 0%, #059669 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; box-shadow: 0 4px 14px rgba(22, 121, 70, 0.35);">
-            ${this.currentUser.avatar || '👤'}
+      <!-- User Identity Hero Card -->
+      <div class="glass-card" style="margin-bottom: 1.5rem; padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem; background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1.5px solid #86efac; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+          <!-- Avatar with Camera Button -->
+          <div style="position: relative; cursor: pointer;" onclick="app.triggerPlayerPhotoUpload()" title="${isEn ? 'Click to change avatar photo from device' : 'Bấm để tải ảnh khuôn mặt từ thiết bị'}">
+            ${isPhotoUrl ? `
+              <img src="${userPhoto}" alt="${user.name}" style="width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 3px solid #167946; box-shadow: 0 4px 14px rgba(22, 121, 70, 0.25);">
+            ` : `
+              <div style="width: 76px; height: 76px; border-radius: 50%; background: linear-gradient(135deg, #167946 0%, #059669 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; box-shadow: 0 4px 14px rgba(22, 121, 70, 0.25);">
+                ${user.avatar || user.name.charAt(0)}
+              </div>
+            `}
+            <span style="position: absolute; bottom: 0; right: 0; background: #0284c7; color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+              <i class="fa-solid fa-camera"></i>
+            </span>
           </div>
+
+          <!-- User Details -->
           <div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <h2 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #0f172a;">${this.currentUser.name}</h2>
-              <span style="background: ${tier.bg}; color: ${tier.color}; font-size: 0.75rem; font-weight: 800; padding: 2px 8px; border-radius: 9999px;">
-                ${tier.display}
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <h2 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: #0f172a;">${user.name}</h2>
+              <span style="background: #fef3c7; color: #b45309; font-size: 0.75rem; font-weight: 800; padding: 3px 9px; border-radius: 9999px; border: 1px solid #fde68a;">
+                ${membershipTier}
+              </span>
+              <span class="tier-badge-pill" style="background: ${skillTier.bg}; color: ${skillTier.color}; border: 1px solid ${skillTier.borderColor || '#cbd5e1'};">
+                ${skillTier.display}
               </span>
             </div>
-            <div style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">
-              <i class="fa-solid fa-phone"></i> SĐT: <strong>${this.currentUser.phone}</strong> • Vai trò: <strong style="color: #167946;">${roleNames[this.currentUser.role] || this.currentUser.role}</strong>
+
+            <div style="font-size: 0.85rem; color: #475569; margin-top: 6px; line-height: 1.5;">
+              <div>
+                <i class="fa-solid fa-phone text-primary" style="width: 16px;"></i> <strong>${user.phone}</strong> • 
+                <i class="fa-solid fa-envelope text-primary" style="width: 16px;"></i> <strong>${user.email || (user.phone + '@badminton.ai')}</strong> • 
+                <span style="color: #167946; font-weight: 700;">${roleNames[user.role] || user.role}</span>
+              </div>
+              <div style="margin-top: 4px; color: #166534; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-calendar-days text-primary"></i> 
+                <span>${isEn ? 'Member since:' : 'Tham gia từ:'} <strong>${joinedDateStr}</strong> (${durationText})</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-outline-primary btn-sm" onclick="app.promptCustomPlayerElo()">
-            <i class="fa-solid fa-pen-to-square"></i> Tự Chọn Trình Độ ELO
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn btn-outline-primary btn-sm" onclick="app.triggerPlayerPhotoUpload()" style="font-weight: 700;">
+            <i class="fa-solid fa-camera"></i> ${isEn ? 'Upload Photo' : 'Đổi Ảnh Diện Mạo'}
           </button>
         </div>
       </div>
 
-      <!-- Real Stats Grid -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon purple"><i class="fa-solid fa-trophy"></i></div>
-          <div>
-            <div class="stat-value">${currentElo}</div>
-            <div class="stat-label">Chỉ số ELO Rating (${tier.name})</div>
+      <!-- Profile Sub-Navigation Tabs Bar -->
+      <div class="profile-tabs-nav">
+        <button class="profile-tab-btn ${activeTab === 'bookings' ? 'active' : ''}" onclick="app.switchProfileTab('bookings')">
+          <i class="fa-solid fa-calendar-check"></i> ${isEn ? 'My Bookings' : 'Lịch Đã Đặt'}
+          <span class="badge-pill">${userOrders.length}</span>
+        </button>
+        <button class="profile-tab-btn ${activeTab === 'vouchers' ? 'active' : ''}" onclick="app.switchProfileTab('vouchers')">
+          <i class="fa-solid fa-ticket-simple"></i> ${isEn ? 'Offers & Vouchers' : 'Kho Ưu Đãi'}
+          <span class="badge-pill" style="background: #ea580c; color: #fff;">4</span>
+        </button>
+        <button class="profile-tab-btn ${activeTab === 'notifications' ? 'active' : ''}" onclick="app.switchProfileTab('notifications')">
+          <i class="fa-solid fa-bell"></i> ${isEn ? 'Notifications' : 'Thông Báo'}
+        </button>
+        <button class="profile-tab-btn ${activeTab === 'language' ? 'active' : ''}" onclick="app.switchProfileTab('language')">
+          <i class="fa-solid fa-globe"></i> ${isEn ? 'Language: English' : 'Ngôn Ngữ: Tiếng Việt'}
+        </button>
+        <button class="profile-tab-btn ${activeTab === 'security' ? 'active' : ''}" onclick="app.switchProfileTab('security')">
+          <i class="fa-solid fa-shield-halved"></i> ${isEn ? 'Security & Account' : 'Bảo Mật & Mật Khẩu'}
+        </button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div id="profile-tab-content-container">
+        ${activeTab === 'bookings' ? this.renderProfileBookingsTab(userOrders, isEn) : ''}
+        ${activeTab === 'vouchers' ? this.renderProfileVouchersTab(isEn) : ''}
+        ${activeTab === 'notifications' ? this.renderProfileNotificationsTab(isEn) : ''}
+        ${activeTab === 'language' ? this.renderProfileLanguageTab(isEn) : ''}
+        ${activeTab === 'security' ? this.renderProfileSecurityTab(isEn) : ''}
+      </div>
+    `;
+  }
+
+  switchProfileTab(tabName) {
+    this.currentProfileTab = tabName;
+    this.renderUserProfilePage();
+  }
+
+  getMembershipDurationText(joinedDateStr, isEn) {
+    // Expected format: DD/MM/YYYY
+    const parts = joinedDateStr.split('/');
+    if (parts.length === 3) {
+      const joinYear = parseInt(parts[2], 10);
+      const joinMonth = parseInt(parts[1], 10);
+      const nowYear = 2026;
+      const nowMonth = 10;
+      const totalMonths = (nowYear - joinYear) * 12 + (nowMonth - joinMonth);
+      if (totalMonths <= 0) {
+        return isEn ? "Newly joined member" : "Thành viên mới gia nhập";
+      }
+      const years = Math.floor(totalMonths / 12);
+      const months = totalMonths % 12;
+      if (years > 0 && months > 0) {
+        return isEn ? `${years} yr ${months} mos with us` : `${years} năm ${months} tháng gắn bó`;
+      } else if (years > 0) {
+        return isEn ? `${years} years with us` : `${years} năm gắn bó`;
+      }
+      return isEn ? `${months} months with us` : `${months} tháng gắn bó`;
+    }
+    return isEn ? "Active member" : "Hội viên tích cực";
+  }
+
+  renderProfileBookingsTab(userOrders, isEn) {
+    if (!userOrders || userOrders.length === 0) {
+      return `
+        <div class="glass-card" style="text-align: center; padding: 3rem 1.5rem; background: #ffffff;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: #f0fdf4; color: #167946; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1rem;">
+            <i class="fa-solid fa-calendar-xmark"></i>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 1.15rem; color: #0f172a;">${isEn ? 'No bookings found' : 'Bạn chưa có lịch đặt sân nào'}</h3>
+          <p style="color: #64748b; font-size: 0.88rem; max-width: 420px; margin: 0 auto 1.5rem;">
+            ${isEn ? 'Book badminton courts quickly with real-time slot booking and AI matchmaking!' : 'Đặt sân cầu lông thông minh, giữ chỗ ngay lập tức và tham gia ghép kèo cùng đối thủ!'}
+          </p>
+          <button class="btn btn-primary" onclick="app.navigateTo('ui-02')" style="padding: 10px 24px; font-weight: 700;">
+            <i class="fa-solid fa-calendar-plus"></i> ${isEn ? 'Book a Court Now' : 'Đặt Sân Giữ Chỗ Ngay'}
+          </button>
+        </div>
+      `;
+    }
+
+    let itemsHtml = '';
+    userOrders.forEach(o => {
+      const isConfirmed = o.order_status === "Đã Xác Nhận";
+      itemsHtml += `
+        <div class="profile-booking-item">
+          <div style="display: flex; gap: 14px; align-items: center;">
+            <div style="width: 50px; height: 50px; border-radius: 12px; background: #f0fdf4; color: #167946; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; border: 1.5px solid #86efac; flex-shrink: 0;">
+              🏸
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <strong style="color: #0f172a; font-size: 1rem;">${o.booking_code}</strong>
+                <span class="badge ${isConfirmed ? 'badge-success' : 'badge-warning'}" style="font-size: 0.72rem; padding: 2px 8px;">
+                  ${o.order_status}
+                </span>
+                <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                  ${o.deposit_status || 'Đã Cọc 50K'}
+                </span>
+              </div>
+              <div style="font-size: 0.85rem; color: #475569; margin-top: 4px;">
+                <strong>${o.facility_name}</strong> • ${o.court_name}
+              </div>
+              <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+                <i class="fa-solid fa-clock text-amber"></i> ${o.slot_time} | 
+                <i class="fa-solid fa-calendar text-primary"></i> ${o.booking_date} | 
+                <i class="fa-solid fa-money-bill-wave text-emerald"></i> <strong>${o.total_amount.toLocaleString('vi-VN')}đ</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="app.openBookingTicketModal('${o.booking_code}')" style="font-size: 0.8rem; padding: 6px 12px; background: #167946; font-weight: 700;">
+              <i class="fa-solid fa-qrcode"></i> ${isEn ? 'View QR Ticket' : 'Xem Vé QR'}
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('ui-02'); app.showToast('${isEn ? 'Selected facility: ' : 'Đã chọn cụm sân: '} ${o.facility_name}')" style="font-size: 0.8rem; padding: 6px 12px;">
+              <i class="fa-solid fa-rotate-right"></i> ${isEn ? 'Book Again' : 'Đặt Lại'}
+            </button>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+      `;
+    });
+
+    return `
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a;">
+            <i class="fa-solid fa-list-check text-primary"></i> ${isEn ? 'Your Court Booking History' : 'Danh Sách Lịch Đã Đặt Sân Của Bạn'}
+          </h3>
+          <button class="btn btn-primary btn-sm" onclick="app.navigateTo('ui-02')">
+            <i class="fa-solid fa-plus"></i> ${isEn ? 'New Booking' : 'Đặt Sân Mới'}
+          </button>
+        </div>
+        ${itemsHtml}
+      </div>
+    `;
+  }
+
+  renderProfileVouchersTab(isEn) {
+    const vouchers = [
+      {
+        code: "BADMINTONAI20",
+        discount: isEn ? "20% OFF Prime Hours" : "Giảm 20% Đặt Sân Giờ Vàng",
+        desc: isEn ? "Applicable for slots from 18:00 to 20:00 every weekday" : "Áp dụng cho khung giờ vàng 18:00 - 20:00 các ngày trong tuần",
+        expiry: "30/11/2026",
+        badge: isEn ? "HOT DISCOUNT" : "GIỜ VÀNG",
+        color: "#16a34a",
+        bg: "#f0fdf4"
+      },
+      {
+        code: "WELCOME30K",
+        discount: isEn ? "30,000 VND OFF First Booking" : "Giảm 30.000đ Đơn Đầu Tiên",
+        desc: isEn ? "Applicable for orders with minimum value of 100,000 VND" : "Áp dụng cho mọi đơn đặt sân có giá trị từ 100.000đ",
+        expiry: "31/12/2026",
+        badge: isEn ? "NEW MEMBER" : "CHÀO BẠN MỚI",
+        color: "#0284c7",
+        bg: "#f0f9ff"
+      },
+      {
+        code: "FREEWATER",
+        discount: isEn ? "Free 02 Revive Drinks" : "Tặng 02 Chai Nước Revive",
+        desc: isEn ? "Receive 2 bottles of cold Revive drink upon successful Matchmaking check-in" : "Nhận ngay 2 chai nước khoáng thể thao Revive khi ghép kèo thành công",
+        expiry: isEn ? "Permanent" : "Vĩnh viễn",
+        badge: isEn ? "MATCHMAKING" : "GHÉP KÈO",
+        color: "#9333ea",
+        bg: "#faf5ff"
+      },
+      {
+        code: "VIPYONEX15",
+        discount: isEn ? "15% OFF Racket & Shuttlecocks" : "Giảm 15% Thuê Vợt & Mua Cầu",
+        desc: isEn ? "Discount on court-side pro gear rental and Yonex shuttles" : "Ưu đãi trực tiếp khi thuê vợt thi đấu Yonex hoặc mua ống cầu tại quầy lễ tân",
+        expiry: "30/10/2026",
+        badge: isEn ? "PRO GEAR" : "PHỤ KIỆN",
+        color: "#ea580c",
+        bg: "#fff7ed"
+      }
+    ];
+
+    let vHtml = '';
+    vouchers.forEach(v => {
+      vHtml += `
+        <div class="profile-voucher-card" style="background: ${v.bg};">
+          <span class="profile-voucher-badge">${v.badge}</span>
           <div>
-            <div class="stat-value">18 Trận</div>
-            <div class="stat-label">Đã Giao Lưu</div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: ${v.color}; text-transform: uppercase;">
+              ${isEn ? 'VOUCHER BADMINTON.AI' : 'ƯU ĐÃI ĐỘC QUYỀN'}
+            </div>
+            <h4 style="margin: 4px 0 6px; font-size: 1.15rem; color: #0f172a; font-weight: 800;">${v.discount}</h4>
+            <p style="margin: 0; font-size: 0.82rem; color: #475569; line-height: 1.5;">${v.desc}</p>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #cbd5e1; padding-top: 10px; margin-top: 6px;">
+            <div>
+              <div style="font-size: 0.72rem; color: #64748b;">${isEn ? 'Expiry date:' : 'Hạn sử dụng:'} <strong>${v.expiry}</strong></div>
+              <code style="font-size: 0.95rem; font-weight: 900; color: ${v.color}; letter-spacing: 0.8px;">${v.code}</code>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-sm btn-outline-primary" onclick="app.copyVoucherCode('${v.code}')" style="font-size: 0.78rem; padding: 4px 10px; font-weight: 700;">
+                <i class="fa-solid fa-copy"></i> ${isEn ? 'Copy' : 'Sao Chép'}
+              </button>
+              <button class="btn btn-sm btn-primary" onclick="app.navigateTo('ui-02'); app.showToast('${isEn ? 'Applied code: ' : 'Đã áp dụng mã: '} ${v.code}')" style="font-size: 0.78rem; padding: 4px 10px; background: ${v.color}; border: none; font-weight: 700;">
+                ${isEn ? 'Use Now' : 'Dùng Ngay'}
+              </button>
+            </div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon cyan"><i class="fa-solid fa-percent"></i></div>
+      `;
+    });
+
+    return `
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <div>
-            <div class="stat-value">72%</div>
-            <div class="stat-label">Tỉ lệ Thắng Matchmaking</div>
+            <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a;">
+              <i class="fa-solid fa-gift text-primary"></i> ${isEn ? 'Your Active Discounts & Vouchers' : 'Kho Mã Khuyến Mãi & Voucher Ưu Đãi Của Bạn'}
+            </h3>
+            <p style="margin: 2px 0 0; font-size: 0.82rem; color: #64748b;">
+              ${isEn ? 'Copy voucher code and apply during court checkout to save money' : 'Sao chép mã ưu đãi và áp dụng khi thanh toán đặt sân để tiết kiệm chi phí'}
+            </p>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
+          ${vHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  renderProfileNotificationsTab(isEn) {
+    const user = this.currentUser;
+    const notis = user.notifications || { reminder: true, matchmaking: true, promos: true, system: true };
+
+    return `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+        <!-- Notification Preferences -->
+        <div class="glass-card" style="padding: 1.25rem; background: #ffffff;">
+          <h3 style="margin: 0 0 1rem; font-size: 1.1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-sliders text-primary"></i> ${isEn ? 'Notification Settings' : 'Cài Đặt Nhận Thông Báo'}
+          </h3>
+
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <!-- Switch 1: Booking reminder -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 0.9rem; color: #0f172a;">${isEn ? '⏰ Court Booking Reminder' : '⏰ Nhắc Lịch Ra Sân Trước 60 Phút'}</strong>
+                <div style="font-size: 0.78rem; color: #64748b;">${isEn ? 'Receive automated alerts 1 hour before scheduled match time' : 'Hệ thống tự động nhắc nhở giờ thi đấu trước khi bóng lăn'}</div>
+              </div>
+              <label class="profile-toggle-switch">
+                <input type="checkbox" ${notis.reminder ? 'checked' : ''} onchange="app.toggleNotificationPref('reminder')">
+                <span class="profile-toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Switch 2: Matchmaking alerts -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+              <div>
+                <strong style="font-size: 0.9rem; color: #0f172a;">${isEn ? '🏸 AI Matchmaking Invitations' : '🏸 Lời Mời Ghép Kèo & Đối Thủ Mới'}</strong>
+                <div style="font-size: 0.78rem; color: #64748b;">${isEn ? 'Alerts when players with balanced skill challenge or join your room' : 'Thông báo khi có bạn chơi cùng cấp bậc mời giao lưu hoặc vào phòng'}</div>
+              </div>
+              <label class="profile-toggle-switch">
+                <input type="checkbox" ${notis.matchmaking ? 'checked' : ''} onchange="app.toggleNotificationPref('matchmaking')">
+                <span class="profile-toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Switch 3: Promotions -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+              <div>
+                <strong style="font-size: 0.9rem; color: #0f172a;">${isEn ? '🎁 Exclusive Discounts & Golden Hours' : '🎁 Khuyến Mãi & Giờ Vàng Giảm Giá'}</strong>
+                <div style="font-size: 0.78rem; color: #64748b;">${isEn ? 'Get notified when new promo vouchers or discounted slots drop' : 'Nhận thông báo mã voucher mới và các khung giờ giảm giá đặc biệt'}</div>
+              </div>
+              <label class="profile-toggle-switch">
+                <input type="checkbox" ${notis.promos ? 'checked' : ''} onchange="app.toggleNotificationPref('promos')">
+                <span class="profile-toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Switch 4: System updates -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+              <div>
+                <strong style="font-size: 0.9rem; color: #0f172a;">${isEn ? '📋 Order & Refund Confirmations' : '📋 Xác Nhận Đặt Sân & Hoàn Cọc'}</strong>
+                <div style="font-size: 0.78rem; color: #64748b;">${isEn ? 'Real-time billing, VietQR payment confirmation and refund updates' : 'Thông báo trạng thái thanh toán VietQR và cập nhật biên lai điện tử'}</div>
+              </div>
+              <label class="profile-toggle-switch">
+                <input type="checkbox" ${notis.system ? 'checked' : ''} onchange="app.toggleNotificationPref('system')">
+                <span class="profile-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Notification Feed -->
+        <div class="glass-card" style="padding: 1.25rem; background: #ffffff;">
+          <h3 style="margin: 0 0 1rem; font-size: 1.1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-inbox text-primary"></i> ${isEn ? 'Recent Messages' : 'Hộp Thư Thông Báo Gần Nhất'}
+          </h3>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #166534; font-weight: 700;">
+                <span><i class="fa-solid fa-circle-check"></i> ${isEn ? 'Booking Confirmed' : 'Đặt Sân Thành Công'}</span>
+                <span>${isEn ? '10 mins ago' : '10 phút trước'}</span>
+              </div>
+              <div style="font-size: 0.82rem; color: #0f172a; margin-top: 2px;">
+                ${isEn ? 'Your slot at Catchy Badminton Arena (Court 02, 18:00 - 19:30) is confirmed! QR check-in ready.' : 'Đơn đặt sân BK-20261005-088 tại Catchy Badminton Arena đã được xác nhận. Mã QR check-in đã sẵn sàng.'}
+              </div>
+            </div>
+
+            <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #1d4ed8; font-weight: 700;">
+                <span><i class="fa-solid fa-users"></i> ${isEn ? 'AI Matchmaking Alert' : 'Ghép Kèo Cân Bậc'}</span>
+                <span>${isEn ? '1 hour ago' : '1 giờ trước'}</span>
+              </div>
+              <div style="font-size: 0.82rem; color: #0f172a; margin-top: 2px;">
+                ${isEn ? 'Found 3 players of your exact skill rank looking for doubles partners nearby!' : 'AI đã quét thấy 3 tay vợt cùng cấp bậc [Khá] đang mở phòng giao lưu tại khu vực Hoàng Mai!'}
+              </div>
+            </div>
+
+            <div style="background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 10px; padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #a21caf; font-weight: 700;">
+                <span><i class="fa-solid fa-gift"></i> ${isEn ? 'New Voucher Received' : 'Quà Tặng Hội Viên'}</span>
+                <span>${isEn ? 'Yesterday' : 'Hôm qua'}</span>
+              </div>
+              <div style="font-size: 0.82rem; color: #0f172a; margin-top: 2px;">
+                ${isEn ? 'You received code BADMINTONAI20 offering 20% discount on prime-hour bookings!' : 'Bạn nhận được mã ưu đãi BADMINTONAI20 giảm 20% cho các lượt đặt sân giờ vàng!'}
+              </div>
+            </div>
           </div>
         </div>
       </div>
     `;
+  }
+
+  renderProfileLanguageTab(isEn) {
+    return `
+      <div class="glass-card" style="padding: 1.5rem; background: #ffffff; max-width: 600px; margin: 0 auto;">
+        <h3 style="margin: 0 0 6px; font-size: 1.15rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-language text-primary"></i> ${isEn ? 'Display Language Settings' : 'Cài Đặt Ngôn Ngữ Hiển Thị'}
+        </h3>
+        <p style="color: #64748b; font-size: 0.84rem; margin-bottom: 1.5rem;">
+          ${isEn ? 'Choose your preferred language for the badminton booking platform' : 'Chọn ngôn ngữ giao diện ưa thích của bạn cho ứng dụng đặt sân cầu lông'}
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 1.5rem;">
+          <!-- Option 1: Vietnamese -->
+          <div class="profile-lang-card ${!isEn ? 'active' : ''}" onclick="app.setAppLanguage('vi')">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.8rem;">🇻🇳</span>
+              <div>
+                <strong style="color: #0f172a; font-size: 0.95rem;">Tiếng Việt (Vietnamese)</strong>
+                <div style="font-size: 0.78rem; color: #64748b;">Ngôn ngữ mặc định cho toàn bộ cụm sân tại Việt Nam</div>
+              </div>
+            </div>
+            ${!isEn ? `<span style="color: #167946; font-size: 1.2rem;"><i class="fa-solid fa-circle-check"></i></span>` : `<span style="color: #cbd5e1; font-size: 1.2rem;"><i class="fa-regular fa-circle"></i></span>`}
+          </div>
+
+          <!-- Option 2: English -->
+          <div class="profile-lang-card ${isEn ? 'active' : ''}" onclick="app.setAppLanguage('en')">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.8rem;">🇬🇧</span>
+              <div>
+                <strong style="color: #0f172a; font-size: 0.95rem;">English (Tiếng Anh)</strong>
+                <div style="font-size: 0.78rem; color: #64748b;">International language support for foreign players</div>
+              </div>
+            </div>
+            ${isEn ? `<span style="color: #167946; font-size: 1.2rem;"><i class="fa-solid fa-circle-check"></i></span>` : `<span style="color: #cbd5e1; font-size: 1.2rem;"><i class="fa-regular fa-circle"></i></span>`}
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; font-size: 0.8rem; color: #475569;">
+          💡 <strong>${isEn ? 'Note:' : 'Ghi chú:'}</strong> ${isEn ? 'Language preference is automatically synced and stored in your device storage.' : 'Lựa chọn ngôn ngữ được lưu tự động trên thiết bị của bạn và giữ nguyên cho các lần truy cập tiếp theo.'}
+        </div>
+      </div>
+    `;
+  }
+
+  renderProfileSecurityTab(isEn) {
+    return `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+        <!-- Change Password Form -->
+        <div class="glass-card" style="padding: 1.5rem; background: #ffffff;">
+          <h3 style="margin: 0 0 6px; font-size: 1.15rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-key text-primary"></i> ${isEn ? 'Change Password' : 'Đổi Mật Khẩu Tài Khoản'}
+          </h3>
+          <p style="color: #64748b; font-size: 0.82rem; margin-bottom: 1.25rem;">
+            ${isEn ? 'Ensure your account stays secure by using a strong password' : 'Bảo vệ tài khoản và lịch đặt sân bằng mật khẩu bảo mật'}
+          </p>
+
+          <form onsubmit="app.handleChangePassword(event)">
+            <div class="form-group">
+              <label class="form-label">${isEn ? 'Current Password' : 'Mật Khẩu Hiện Tại'}</label>
+              <input type="password" id="profile-current-password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">${isEn ? 'New Password (min 6 characters)' : 'Mật Khẩu Mới (Tối thiểu 6 ký tự)'}</label>
+              <input type="password" id="profile-new-password" class="form-control" placeholder="••••••••" minlength="6" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">${isEn ? 'Confirm New Password' : 'Xác Nhận Mật Khẩu Mới'}</label>
+              <input type="password" id="profile-confirm-password" class="form-control" placeholder="••••••••" minlength="6" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; font-weight: 700;">
+              <i class="fa-solid fa-circle-check"></i> ${isEn ? 'Save New Password' : 'Cập Nhật Mật Khẩu Mới'}
+            </button>
+          </form>
+        </div>
+
+        <!-- Account Actions & Danger Zone -->
+        <div class="glass-card" style="padding: 1.5rem; background: #ffffff;">
+          <h3 style="margin: 0 0 6px; font-size: 1.15rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-user-shield text-primary"></i> ${isEn ? 'Account Actions' : 'Thao Tác Tài Khoản'}
+          </h3>
+          <p style="color: #64748b; font-size: 0.82rem; margin-bottom: 1.25rem;">
+            ${isEn ? 'Quick log out or account management options' : 'Các tùy chọn đăng xuất hoặc xóa dữ liệu tài khoản cá nhân'}
+          </p>
+
+          <!-- Log Out Card -->
+          <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="color: #0f172a; font-size: 0.95rem;">${isEn ? 'Log Out of Account' : 'Đăng Xuất Khỏi Tài Khoản'}</strong>
+              <div style="font-size: 0.78rem; color: #64748b;">${isEn ? 'Sign out from this device safely' : 'Đăng xuất an toàn trên thiết bị này'}</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="app.logout()" style="background: #ef4444; border: none; font-weight: 700;">
+              <i class="fa-solid fa-right-from-bracket"></i> ${isEn ? 'Log Out' : 'Đăng Xuất'}
+            </button>
+          </div>
+
+          <!-- Danger Zone: Delete Account -->
+          <div class="profile-danger-zone">
+            <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px;">
+              <div style="color: #dc2626; font-size: 1.3rem; line-height: 1;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div>
+                <strong style="color: #991b1b; font-size: 0.95rem;">${isEn ? 'Danger Zone: Delete Account' : 'Vùng Nguy Hiểm: Xóa Tài Khoản'}</strong>
+                <p style="margin: 4px 0 0; font-size: 0.8rem; color: #b91c1c; line-height: 1.5;">
+                  ${isEn ? 'Permanently delete your account, booking records, and vouchers. This action cannot be reversed!' : 'Xóa vĩnh viễn tài khoản của bạn cùng lịch sử đặt sân và ưu đãi tích lũy. Hành động này không thể hoàn tác!'}
+                </p>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <button class="btn btn-danger btn-sm" onclick="app.confirmDeleteAccount()" style="background: #dc2626; font-weight: 800; border: none;">
+                <i class="fa-solid fa-trash-can"></i> ${isEn ? 'Delete My Account' : 'Xóa Tài Khoản Của Tôi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  copyVoucherCode(code) {
+    if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).catch(() => {});
+    }
+    const isEn = (localStorage.getItem('badminton_app_language') || this.currentLanguage) === 'en';
+    this.showToast(isEn ? `📋 Copied voucher code [${code}] to clipboard!` : `📋 Đã sao chép mã ưu đãi [${code}] vào bộ nhớ tạm! Dán mã khi đặt sân để được giảm giá.`);
+  }
+
+  toggleNotificationPref(type) {
+    if (!this.currentUser) return;
+    if (!this.currentUser.notifications) {
+      this.currentUser.notifications = { reminder: true, matchmaking: true, promos: true, system: true };
+    }
+    this.currentUser.notifications[type] = !this.currentUser.notifications[type];
+
+    const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.phone === this.currentUser.phone);
+    if (u) {
+      if (!u.notifications) u.notifications = { reminder: true, matchmaking: true, promos: true, system: true };
+      u.notifications[type] = this.currentUser.notifications[type];
+    }
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    const isEn = (localStorage.getItem('badminton_app_language') || this.currentLanguage) === 'en';
+    const statusText = this.currentUser.notifications[type] ? (isEn ? "Enabled" : "Đã bật") : (isEn ? "Disabled" : "Đã tắt");
+    this.showToast(`🔔 ${statusText} ${isEn ? 'notification successfully!' : 'thông báo thành công!'}`);
+  }
+
+  setAppLanguage(lang) {
+    this.currentLanguage = lang;
+    localStorage.setItem('badminton_app_language', lang);
+    if (this.currentUser) {
+      this.currentUser.language = lang;
+      const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.phone === this.currentUser.phone);
+      if (u) u.language = lang;
+    }
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+    this.renderUserProfilePage();
+    if (lang === 'en') {
+      this.showToast("🇬🇧 Language changed to English successfully!");
+    } else {
+      this.showToast("🇻🇳 Đã chuyển ngôn ngữ sang Tiếng Việt thành công!");
+    }
+  }
+
+  handleChangePassword(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!this.currentUser) return;
+
+    const isEn = (localStorage.getItem('badminton_app_language') || this.currentLanguage) === 'en';
+    const currentPass = document.getElementById('profile-current-password')?.value.trim();
+    const newPass = document.getElementById('profile-new-password')?.value.trim();
+    const confirmPass = document.getElementById('profile-confirm-password')?.value.trim();
+
+    if (!currentPass || !newPass || !confirmPass) {
+      this.showToast(isEn ? "⚠️ Please fill in all password fields!" : "⚠️ Vui lòng nhập đầy đủ thông tin mật khẩu!", "error");
+      return;
+    }
+
+    if (currentPass !== this.currentUser.password) {
+      this.showToast(isEn ? "❌ Current password is incorrect!" : "❌ Mật khẩu hiện tại không chính xác! Vui lòng thử lại.", "error");
+      return;
+    }
+
+    if (newPass.length < 6) {
+      this.showToast(isEn ? "⚠️ New password must be at least 6 characters!" : "⚠️ Mật khẩu mới phải có tối thiểu 6 ký tự!", "error");
+      return;
+    }
+
+    if (newPass !== confirmPass) {
+      this.showToast(isEn ? "❌ New password and confirmation do not match!" : "❌ Mật khẩu mới và xác nhận mật khẩu không trùng khớp!", "error");
+      return;
+    }
+
+    this.currentUser.password = newPass;
+    const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.phone === this.currentUser.phone);
+    if (u) u.password = newPass;
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.showToast(isEn ? "🎉 Password updated successfully! Please remember your new password." : "🎉 Đổi mật khẩu tài khoản thành công! Hãy ghi nhớ mật khẩu mới của bạn.");
+    this.renderUserProfilePage();
+  }
+
+  confirmDeleteAccount() {
+    if (!this.currentUser) return;
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    const isEn = (localStorage.getItem('badminton_app_language') || this.currentLanguage) === 'en';
+
+    modalBody.innerHTML = `
+      <div style="padding: 1rem 0; text-align: center;">
+        <div style="width: 68px; height: 68px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1rem; border: 2px dashed #fca5a5;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 style="margin: 0 0 8px; color: #991b1b; font-size: 1.25rem; font-weight: 800;">
+          ${isEn ? 'Permanently Delete Account?' : 'Xác Nhận Xóa Vĩnh Viễn Tài Khoản?'}
+        </h3>
+        <p style="color: #64748b; font-size: 0.88rem; line-height: 1.6; max-width: 420px; margin: 0 auto 1.25rem;">
+          ${isEn ? `Warning: This action <strong>CANNOT BE UNDONE</strong>. All account details for <strong>${this.currentUser.name}</strong> (${this.currentUser.phone}), booking history, and active vouchers will be permanently removed!` : `Cảnh báo: Hành động này <strong>KHÔNG THỂ HOÀN TÁC</strong>. Toàn bộ thông tin tài khoản của <strong>${this.currentUser.name}</strong> (${this.currentUser.phone}), lịch sử đặt sân và voucher ưu đãi sẽ bị xóa vĩnh viễn khỏi hệ thống!`}
+        </p>
+
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; margin-bottom: 1.25rem; text-align: left; font-size: 0.82rem; color: #991b1b;">
+          <div>• ${isEn ? 'All active bookings will be cancelled.' : 'Các lượt đặt sân hiện tại sẽ bị hủy bỏ.'}</div>
+          <div>• ${isEn ? 'All membership rewards and vouchers will be forfeited.' : 'Toàn bộ điểm tích lũy và voucher ưu đãi sẽ mất hiệu lực.'}</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button class="btn btn-secondary" onclick="app.closeModal()">${isEn ? 'Cancel (Keep Account)' : 'Hủy Bỏ (Giữ Tài Khoản)'}</button>
+          <button class="btn btn-danger" onclick="app.executeDeleteAccount()" style="background: #dc2626; font-weight: 800;">
+            <i class="fa-solid fa-trash-can"></i> ${isEn ? 'Confirm Delete' : 'Xác Nhận Xóa Vĩnh Viễn'}
+          </button>
+        </div>
+      </div>
+    `;
+    this.openModal();
+  }
+
+  executeDeleteAccount() {
+    if (!this.currentUser) return;
+    const deletedName = this.currentUser.name;
+    const deletedId = this.currentUser.id;
+
+    // Remove from MockData.users
+    MockData.users = (MockData.users || []).filter(u => u.id !== deletedId && u.phone !== this.currentUser.phone);
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.closeModal();
+    this.logout();
+    this.showToast(`🗑️ Đã xóa vĩnh viễn tài khoản của "${deletedName}" khỏi hệ thống thành công!`, 'info');
+  }
+
+  openBookingTicketModal(bookingCode) {
+    const order = (MockData.booking_orders || []).find(o => o.booking_code === bookingCode);
+    if (!order) {
+      this.navigateTo('ui-05');
+      return;
+    }
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    modalBody.innerHTML = `
+      <div style="padding: 0.5rem 0; text-align: center;">
+        <h3 style="margin: 0 0 6px; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <i class="fa-solid fa-ticket text-primary"></i> Vé Điện Tử Check-in Quầy Sân
+        </h3>
+        <p style="color: #64748b; font-size: 0.84rem; margin-bottom: 1.25rem;">Xuất trình mã QR này cho nhân viên lễ tân khi đến sân để vào sân đúng giờ</p>
+
+        <div style="background: #ffffff; border: 2px dashed #167946; border-radius: 16px; padding: 1.5rem; max-width: 360px; margin: 0 auto; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+          <div style="width: 170px; height: 170px; margin: 0 auto 1rem; border-radius: 12px; overflow: hidden; border: 2px solid #86efac; padding: 6px; background: #fff;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${order.qr_ticket_code}" alt="QR Ticket" style="width: 100%; height: 100%; object-fit: contain;">
+          </div>
+          
+          <div style="font-size: 1.1rem; font-weight: 900; color: #167946; margin-bottom: 6px;">
+            ${order.booking_code}
+          </div>
+          <div style="font-size: 0.85rem; color: #0f172a; font-weight: 700; margin-bottom: 4px;">
+            ${order.facility_name}
+          </div>
+          <div style="font-size: 0.82rem; color: #475569;">
+            ${order.court_name} • <strong style="color: #0284c7;">${order.slot_time}</strong>
+          </div>
+          <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
+            Ngày chơi: <strong>${order.booking_date}</strong>
+          </div>
+          <div style="margin-top: 10px; padding: 6px 12px; background: #f0fdf4; border-radius: 8px; font-size: 0.8rem; color: #166534; font-weight: 700;">
+            Trạng thái: ${order.order_status} (${order.deposit_status || 'Đã Cọc 50K'})
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem; display: flex; gap: 8px; justify-content: center;">
+          <button class="btn btn-secondary btn-sm" onclick="app.closeModal()">Đóng Cửa Sổ</button>
+          <button class="btn btn-primary btn-sm" onclick="window.print()" style="background: #167946;">
+            <i class="fa-solid fa-print"></i> In / Lưu Vé
+          </button>
+        </div>
+      </div>
+    `;
+    this.openModal();
   }
 
   handleHeaderProfileClick() {

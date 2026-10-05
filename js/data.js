@@ -5,13 +5,13 @@
 const MockData = {
   // 1. BẢNG users
   users: [
-    { id: 1, name: "Nguyễn Văn Hùng", phone: "0901234567", password: "123456", role: "CUSTOMER", skill_tier: "Khá", skill_tier_id: 5, elo_rating: 1650, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", is_approved: true },
-    { id: 2, name: "Trần Thị Mai", phone: "0912345678", password: "123456", role: "CUSTOMER", skill_tier: "Khá", skill_tier_id: 5, elo_rating: 1680, avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", is_approved: true },
-    { id: 3, name: "Lê Hoàng Nam (Chủ Sân)", phone: "0988888888", password: "owner123", role: "OWNER", facility_id: 101, avatar: "N", is_approved: true, elo_rating: "N/A" },
-    { id: 4, name: "Phạm Quốc Tuấn (Thu Ngân)", phone: "0922334455", password: "staff123", role: "STAFF", facility_id: 101, avatar: "T", is_approved: true, elo_rating: "N/A" },
-    { id: 5, name: "Admin Quản Trị", phone: "0999888777", password: "admin123", role: "ADMIN", avatar: "A", is_approved: true, elo_rating: "N/A" },
-    { id: 6, name: "Vũ Nhất Phong", phone: "0983582321", password: "password123", role: "CUSTOMER", skill_tier: "Trung bình khá", skill_tier_id: 4, elo_rating: 1450, avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", is_approved: true },
-    { id: 7, name: "Trương Quốc Khánh (Chủ Sân)", phone: "0123456789", password: "02092006", role: "OWNER", facility_id: 101, elo_rating: "N/A", avatar: "K", is_approved: true }
+    { id: 1, name: "Nguyễn Văn Hùng", phone: "0901234567", password: "123456", role: "CUSTOMER", skill_tier: "Khá", skill_tier_id: 5, elo_rating: 1650, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", joined_date: "15/03/2025", membership_tier: "Hội viên Vàng ⭐", language: "vi", notifications: { reminder: true, matchmaking: true, promos: true, system: true }, is_approved: true },
+    { id: 2, name: "Trần Thị Mai", phone: "0912345678", password: "123456", role: "CUSTOMER", skill_tier: "Khá", skill_tier_id: 5, elo_rating: 1680, avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", joined_date: "20/06/2025", membership_tier: "Hội viên Bạc ✨", language: "vi", notifications: { reminder: true, matchmaking: true, promos: true, system: true }, is_approved: true },
+    { id: 3, name: "Lê Hoàng Nam (Chủ Sân)", phone: "0988888888", password: "owner123", role: "OWNER", facility_id: 101, avatar: "N", joined_date: "10/01/2025", membership_tier: "Đối tác Sân ⭐", language: "vi", is_approved: true, elo_rating: "N/A" },
+    { id: 4, name: "Phạm Quốc Tuấn (Thu Ngân)", phone: "0922334455", password: "staff123", role: "STAFF", facility_id: 101, avatar: "T", joined_date: "01/02/2025", membership_tier: "Nhân viên Vận hành", language: "vi", is_approved: true, elo_rating: "N/A" },
+    { id: 5, name: "Admin Quản Trị", phone: "0999888777", password: "admin123", role: "ADMIN", avatar: "A", joined_date: "01/01/2024", membership_tier: "Quản trị viên Hệ thống", language: "vi", is_approved: true, elo_rating: "N/A" },
+    { id: 6, name: "Vũ Nhất Phong", phone: "0983582321", password: "password123", role: "CUSTOMER", skill_tier: "Trung bình khá", skill_tier_id: 4, elo_rating: 1450, avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", joined_date: "10/01/2025", membership_tier: "Hội viên Kim Cương 👑", language: "vi", notifications: { reminder: true, matchmaking: true, promos: true, system: true }, is_approved: true },
+    { id: 7, name: "Trương Quốc Khánh (Chủ Sân)", phone: "0123456789", password: "02092006", role: "OWNER", facility_id: 101, elo_rating: "N/A", avatar: "K", joined_date: "15/02/2025", membership_tier: "Đối tác Sân ⭐", language: "vi", is_approved: true }
   ],
 
   // 2. BẢNG facilities (Danh mục cụm cơ sở Sân Cầu Lông chuyên nghiệp toàn khu vực)
@@ -876,6 +876,38 @@ const MockData = {
 
   // 6. BẢNG booking_orders
   booking_orders: [
+    {
+      id: 500,
+      booking_code: "BK-20261005-088",
+      user_name: "Vũ Nhất Phong",
+      user_phone: "0983582321",
+      facility_name: "CLB Cầu Lông Catchy Badminton Arena",
+      court_name: "Sân 02 - Thảm Yonex Pro",
+      slot_time: "18:00 - 19:30",
+      booking_date: "Hôm nay, 05/10/2026",
+      total_amount: 145000,
+      deposit_amount: 50000,
+      deposit_status: "Đã Cọc 50K",
+      order_status: "Đã Xác Nhận",
+      created_at: "16:00:00",
+      qr_ticket_code: "TICKET-BADMINTON-7788"
+    },
+    {
+      id: 5001,
+      booking_code: "BK-20261002-045",
+      user_name: "Vũ Nhất Phong",
+      user_phone: "0983582321",
+      facility_name: "CLB Cầu Lông Đống Đa Sport Hub",
+      court_name: "Sân 01 - Thảm VIP Enlio",
+      slot_time: "19:00 - 21:00",
+      booking_date: "02/10/2026",
+      total_amount: 220000,
+      deposit_amount: 50000,
+      deposit_status: "Đã Thanh Toán Đủ",
+      order_status: "Đã Hoàn Thành",
+      created_at: "14:20:00",
+      qr_ticket_code: "TICKET-BADMINTON-6655"
+    },
     {
       id: 501,
       booking_code: "BK-20260911-001",

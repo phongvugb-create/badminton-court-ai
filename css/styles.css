@@ -3729,3 +3729,196 @@ body {
   border: 1px solid #e2e8f0;
 }
 
+/* ==========================================================================
+   USER PROFILE & ACCOUNT MANAGEMENT STYLES (UI 08)
+   ========================================================================== */
+.profile-tabs-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.profile-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  border-radius: 8px 8px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.profile-tab-btn:hover {
+  color: #167946;
+  background: rgba(22, 121, 70, 0.05);
+}
+
+.profile-tab-btn.active {
+  color: #167946;
+  border-bottom-color: #167946;
+  background: #ffffff;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.profile-tab-btn .badge-pill {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.profile-tab-btn.active .badge-pill {
+  background: #167946;
+  color: #ffffff;
+}
+
+/* Voucher Cards */
+.profile-voucher-card {
+  background: #ffffff;
+  border: 2px dashed #86efac;
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-voucher-card:hover {
+  transform: translateY(-2px);
+  border-color: #167946;
+  box-shadow: 0 8px 24px rgba(22, 121, 70, 0.12);
+}
+
+.profile-voucher-badge {
+  position: absolute;
+  top: 10px;
+  right: -28px;
+  transform: rotate(45deg);
+  background: #ea580c;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 30px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Booking Item */
+.profile-booking-item {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.profile-booking-item:hover {
+  border-color: #167946;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+/* iOS Style Switch */
+.profile-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.profile-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.profile-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.25s ease;
+  border-radius: 34px;
+}
+
+.profile-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.25s ease;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.profile-toggle-switch input:checked + .profile-toggle-slider {
+  background-color: #167946;
+}
+
+.profile-toggle-switch input:checked + .profile-toggle-slider:before {
+  transform: translateX(22px);
+}
+
+/* Language Selection Card */
+.profile-lang-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.profile-lang-card:hover {
+  border-color: #167946;
+  background: #f0fdf4;
+}
+
+.profile-lang-card.active {
+  border-color: #167946;
+  background: #f0fdf4;
+  box-shadow: 0 4px 12px rgba(22, 121, 70, 0.12);
+}
+
+/* Danger Zone Card */
+.profile-danger-zone {
+  border: 1.5px solid #fecaca;
+  background: #fef2f2;
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+

@@ -11,6 +11,10 @@
       "elo_rating": 1650,
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
       "photo": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+      "joined_date": "15/03/2025",
+      "membership_tier": "Hội viên Vàng ⭐",
+      "language": "vi",
+      "notifications": { "reminder": true, "matchmaking": true, "promos": true, "system": true },
       "is_approved": true
     },
     {
@@ -24,6 +28,10 @@
       "elo_rating": 1680,
       "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80",
       "photo": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80",
+      "joined_date": "20/06/2025",
+      "membership_tier": "Hội viên Bạc ✨",
+      "language": "vi",
+      "notifications": { "reminder": true, "matchmaking": true, "promos": true, "system": true },
       "is_approved": true
     },
     {
@@ -34,6 +42,9 @@
       "role": "OWNER",
       "facility_id": 101,
       "avatar": "N",
+      "joined_date": "10/01/2025",
+      "membership_tier": "Đối tác Sân ⭐",
+      "language": "vi",
       "is_approved": true,
       "elo_rating": "N/A"
     },
@@ -45,6 +56,9 @@
       "role": "STAFF",
       "facility_id": 101,
       "avatar": "T",
+      "joined_date": "01/02/2025",
+      "membership_tier": "Nhân viên Vận hành",
+      "language": "vi",
       "is_approved": true,
       "elo_rating": "N/A"
     },
@@ -55,6 +69,9 @@
       "password": "admin123",
       "role": "ADMIN",
       "avatar": "A",
+      "joined_date": "01/01/2024",
+      "membership_tier": "Quản trị viên Hệ thống",
+      "language": "vi",
       "is_approved": true,
       "elo_rating": "N/A"
     },
@@ -69,6 +86,10 @@
       "elo_rating": 1450,
       "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
       "photo": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
+      "joined_date": "10/01/2025",
+      "membership_tier": "Hội viên Kim Cương 👑",
+      "language": "vi",
+      "notifications": { "reminder": true, "matchmaking": true, "promos": true, "system": true },
       "is_approved": true
     },
     {
@@ -80,6 +101,9 @@
       "facility_id": 101,
       "elo_rating": "N/A",
       "avatar": "K",
+      "joined_date": "15/02/2025",
+      "membership_tier": "Đối tác Sân ⭐",
+      "language": "vi",
       "is_approved": true
     }
   ],
