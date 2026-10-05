@@ -53,6 +53,7 @@ class BadmintonAIApp {
     this.renderOwnerDashboardOrders();
     this.initLeafletMap();
     this.updatePendingMatchesUI();
+    this.startRealtimeSyncLoop();
   }
 
   copyToClipboard(text, label = "Thông tin") {
@@ -3184,6 +3185,16 @@ class BadmintonAIApp {
       saveMockDataToLocalStorage();
     }
 
+    if (typeof broadcastLiveSync === 'function') {
+      broadcastLiveSync('NEW_CHALLENGE', {
+        recipientId: opponent ? opponent.id : opponentId,
+        recipientName: opponentName,
+        senderName: sender.name,
+        roomId: newRoom.id,
+        roomName: newRoom.room_name
+      });
+    }
+
     this.updateHeaderNotificationBadge();
     this.renderIncomingInvitationsBanner();
 
@@ -3255,6 +3266,15 @@ class BadmintonAIApp {
       saveMockDataToLocalStorage();
     }
 
+    if (typeof broadcastLiveSync === 'function') {
+      broadcastLiveSync('ROOM_MEMBER_JOINED', {
+        roomId: room.id,
+        roomName: room.room_name,
+        hostName: room.host_name,
+        memberName: this.currentUser.name
+      });
+    }
+
     this.updateHeaderNotificationBadge();
     this.renderIncomingInvitationsBanner();
 
@@ -3278,6 +3298,113 @@ class BadmintonAIApp {
     this.updateHeaderNotificationBadge();
     this.renderIncomingInvitationsBanner();
     this.showToast("Đã bỏ qua lời mời ghép kèo.");
+  }
+
+  playNotificationChime() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {
+      // Audio autoplay policy fallback
+    }
+  }
+
+  handleLiveSyncEvent(eventData = {}) {
+    // 1. Cap nhat badge thong bao & banner loi moi tuc thi
+    this.updateHeaderNotificationBadge();
+    this.renderIncomingInvitationsBanner();
+
+    // 2. Neu dang o giao dien UI-06 (Danh sach phong & radar ELO), re-render ngay lap tuc
+    if (this.currentView === 'ui-06') {
+      this.executeMatchmakingEngine();
+    }
+
+    // 3. Neu dang o phong chat UI-07, dong bo tin nhan va danh sach thanh vien
+    if (this.currentView === 'ui-07' && this.activeRoom) {
+      const freshRoom = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(this.activeRoom.id));
+      if (freshRoom) {
+        this.activeRoom = freshRoom;
+        this.renderRoomDetailMembers();
+        this.renderChatMessages();
+        this.renderAIRoomTactics();
+      }
+    }
+
+    // 4. Neu co su kien lien quan den user hien tai, phat am thanh va thong bao Toast
+    if (eventData.type === 'NEW_CHALLENGE' || eventData.type === 'ROOM_MEMBER_JOINED') {
+      const payload = eventData.payload || {};
+      const isTarget = this.currentUser && (
+        (payload.recipientId && String(this.currentUser.id) === String(payload.recipientId)) ||
+        (payload.recipientName && this.currentUser.name && payload.recipientName.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase()) ||
+        (payload.hostName && this.currentUser.name && payload.hostName.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase())
+      );
+
+      if (isTarget) {
+        this.playNotificationChime();
+        if (eventData.type === 'ROOM_MEMBER_JOINED') {
+          this.showToast(`⚡ [Trực Tiếp]: ${payload.memberName || 'Đấu thủ'} vừa tham gia phòng "${payload.roomName || ''}" của bạn!`, "info");
+        } else if (eventData.type === 'NEW_CHALLENGE') {
+          this.showToast(`🏸 [Lời Mời Mới]: ${payload.senderName || 'Đối thủ'} vừa gửi lời mời ghép kèo giao lưu tới bạn!`, "info");
+        }
+      }
+    } else if (eventData.type === 'CHAT_MESSAGE') {
+      const payload = eventData.payload || {};
+      if (this.currentView === 'ui-07' && this.activeRoom && String(this.activeRoom.id) === String(payload.roomId)) {
+        if (this.currentUser && payload.sender !== this.currentUser.name) {
+          this.playNotificationChime();
+        }
+      }
+    }
+  }
+
+  startRealtimeSyncLoop() {
+    if (this._syncLoopRunning) return;
+    this._syncLoopRunning = true;
+
+    // Check dinh ky 1 giay / lan de luon dam bao dong bo 24/24 giua tat ca cac phien
+    setInterval(() => {
+      try {
+        if (typeof loadMockDataFromLocalStorage === 'function') {
+          loadMockDataFromLocalStorage();
+        }
+        this.updateHeaderNotificationBadge();
+        this.renderIncomingInvitationsBanner();
+
+        // Neu dang mo UI-07 thi luon giu phong va chat moi nhat
+        if (this.currentView === 'ui-07' && this.activeRoom) {
+          const fresh = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(this.activeRoom.id));
+          if (fresh) {
+            const oldLen = (this.activeRoom.chat_messages || []).length;
+            const newLen = (fresh.chat_messages || []).length;
+            const oldPlayers = (this.activeRoom.players || []).length;
+            const newPlayers = (fresh.players || []).length;
+
+            this.activeRoom = fresh;
+            if (oldLen !== newLen) {
+              this.renderChatMessages();
+            }
+            if (oldPlayers !== newPlayers) {
+              this.renderRoomDetailMembers();
+              this.renderAIRoomTactics();
+            }
+          }
+        }
+      } catch (e) {
+        // Safe cycle
+      }
+    }, 1000);
   }
 
   updateHeaderNotificationBadge() {
@@ -4115,6 +4242,34 @@ class BadmintonAIApp {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
 
+    const hostName = this.activeRoom.host_name;
+    const isJoiningMyOwnRoom = this.currentUser.name === hostName;
+
+    // Gui thong bao ve cho Host (nguoi tao phong ban dau) neu nguoi khac xin vao phong
+    if (hostName && !isJoiningMyOwnRoom) {
+      if (!MockData.notifications) MockData.notifications = [];
+      const hostUser = (MockData.users || []).find(u => u.name && u.name.trim().toLowerCase() === hostName.trim().toLowerCase());
+      
+      const hostNoti = {
+        id: `noti_${Date.now()}`,
+        recipient_id: hostUser ? hostUser.id : null,
+        recipient_name: hostName,
+        recipient_phone: hostUser ? hostUser.phone : null,
+        sender_id: user.id,
+        sender_name: user.name,
+        sender_photo: user.photo || user.avatar || null,
+        sender_tier: userTier.name,
+        type: "ROOM_MEMBER_JOINED",
+        title: `⚡ ${user.name} Vừa Tham Gia Phòng Kèo Của Bạn!`,
+        content: `Tay vợt ${user.name} (Cấp [${userTier.name}]) vừa tham gia vào phòng đấu "${this.activeRoom.room_name}". Hãy vào phòng chat để thống nhất giờ giấc và chiến thuật ngay!`,
+        room_id: this.activeRoom.id,
+        created_at: "Vừa xong",
+        timestamp: Date.now(),
+        is_read: false
+      };
+      MockData.notifications.unshift(hostNoti);
+    }
+
     this.renderRoomDetailMembers();
     this.renderChatMessages();
     this.renderAIRoomTactics();
@@ -4122,6 +4277,16 @@ class BadmintonAIApp {
     if (typeof saveMockDataToLocalStorage === 'function') {
       saveMockDataToLocalStorage();
     }
+
+    if (typeof broadcastLiveSync === 'function') {
+      broadcastLiveSync('ROOM_MEMBER_JOINED', {
+        roomId: this.activeRoom.id,
+        roomName: this.activeRoom.room_name,
+        hostName: hostName,
+        memberName: user.name
+      });
+    }
+
     this.showToast(`🎉 Bạn đã chấp nhận và tham gia kèo đấu "${this.activeRoom.room_name}" thành công!`);
   }
 
@@ -4170,6 +4335,8 @@ class BadmintonAIApp {
     const currentUserName = this.currentUser.name;
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    if (!this.activeRoom.chat_messages) this.activeRoom.chat_messages = [];
+
     this.activeRoom.chat_messages.push({
       sender: currentUserName,
       text: text,
@@ -4179,21 +4346,44 @@ class BadmintonAIApp {
     input.value = '';
     this.renderChatMessages();
 
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    if (typeof broadcastLiveSync === 'function') {
+      broadcastLiveSync('CHAT_MESSAGE', {
+        roomId: this.activeRoom.id,
+        sender: currentUserName,
+        text: text,
+        time: nowTime
+      });
+    }
+
     // If user asks @AI or mentions tactics, auto reply with AI coach advice
     if (text.toLowerCase().includes('@ai') || text.toLowerCase().includes('chiến thuật') || text.toLowerCase().includes('kèo')) {
       setTimeout(() => {
-        this.activeRoom.chat_messages.push({
+        const aiMsg = {
           sender: "🤖 AI Virtual Coach",
           text: `🎯 Trả lời bạn @${currentUserName}: Dựa trên phân tích ELO trận đấu này, đề xuất chiến thuật tối ưu nhất là tập trung kiểm soát nhịp độ, phát cầu ngắn sát lưới và bọc lót chéo góc!`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isAI: true
-        });
+        };
+        this.activeRoom.chat_messages.push(aiMsg);
         this.renderChatMessages();
-      }, 700);
-    }
 
-    if (typeof saveMockDataToLocalStorage === 'function') {
-      saveMockDataToLocalStorage();
+        if (typeof saveMockDataToLocalStorage === 'function') {
+          saveMockDataToLocalStorage();
+        }
+        if (typeof broadcastLiveSync === 'function') {
+          broadcastLiveSync('CHAT_MESSAGE', {
+            roomId: this.activeRoom.id,
+            sender: aiMsg.sender,
+            text: aiMsg.text,
+            time: aiMsg.time,
+            isAI: true
+          });
+        }
+      }, 700);
     }
   }
 
@@ -4502,7 +4692,20 @@ class BadmintonAIApp {
     if (typeof saveMockDataToLocalStorage === 'function') {
       saveMockDataToLocalStorage();
     }
-    this.showToast(`🎉 Đã khởi tạo phòng ghép thành công (Cấp [${requiredTier.name}]) và kích hoạt Radar AI!`);
+
+    if (typeof broadcastLiveSync === 'function') {
+      broadcastLiveSync('ROOM_CREATED', {
+        roomId: newRoom.id,
+        roomName: newRoom.room_name,
+        hostName: currentUserName,
+        requiredTier: requiredTier.name
+      });
+    }
+
+    this.showToast(`🎉 Đã khởi tạo phòng ghép thành công (Cấp [${requiredTier.name}]) và đưa bạn vào phòng!`, "success");
+    setTimeout(() => {
+      this.openRoomChat(newRoom.id);
+    }, 300);
   }
 
   /* ------------------------------------------------------------------------

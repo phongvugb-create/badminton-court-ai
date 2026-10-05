@@ -1553,16 +1553,36 @@ async function fetchCentralServerDatabase() {
   }
 }
 
+// BroadcastChannel de dong bo tuc thi (<10ms) giua cac tab / cua so ma khong co do tre
+const liveSyncChannel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('badminton_live_sync') : null;
+
+function broadcastLiveSync(type, payload = {}) {
+  try {
+    if (liveSyncChannel) {
+      liveSyncChannel.postMessage({ type, payload, timestamp: Date.now() });
+    }
+  } catch (e) {
+    console.warn('BroadcastChannel error:', e);
+  }
+}
+
+if (liveSyncChannel) {
+  liveSyncChannel.onmessage = (event) => {
+    const data = event.data;
+    if (!data) return;
+    loadMockDataFromLocalStorage();
+    if (window.app && window.app.handleLiveSyncEvent) {
+      window.app.handleLiveSyncEvent(data);
+    }
+  };
+}
+
 // Lang nghe su kien storage tu tab / cua so khac tren cung trinh duyet de dong bo lap tuc
 window.addEventListener('storage', (e) => {
   if (e.key === 'badminton_mock_data') {
     loadMockDataFromLocalStorage();
-    if (window.app) {
-      if (app.renderAdminUsers) app.renderAdminUsers();
-      if (app.renderDatabaseInspector) app.renderDatabaseInspector();
-      if (app.renderAdminOverviewFacilities) app.renderAdminOverviewFacilities();
-      if (app.renderCustomerFacilities) app.renderCustomerFacilities();
-      if (app.renderAdminApprovals) app.renderAdminApprovals();
+    if (window.app && window.app.handleLiveSyncEvent) {
+      window.app.handleLiveSyncEvent({ type: 'STORAGE_UPDATED' });
     }
   }
 });
@@ -1575,6 +1595,7 @@ fetchCentralServerDatabase();
 setInterval(() => {
   fetchCentralServerDatabase();
 }, 3000);
+
 
 
 
