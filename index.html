@@ -103,6 +103,12 @@
         <button class="icon-btn" id="header-csdl-btn" onclick="app.navigateTo('ui-20')" title="Xem CSDL Web 9 Bảng (Admin)" style="display: none; border-color: #ffffff; color: #ffffff; background: rgba(255,255,255,0.2);">
           <i class="fa-solid fa-database"></i>
         </button>
+
+        <!-- Notification Bell Button with Live Badge -->
+        <button class="icon-btn" id="header-noti-btn" onclick="app.openNotificationsModal()" title="Thông Báo Ghép Kèo & Hệ Thống" style="display: none; position: relative;">
+          <i class="fa-solid fa-bell"></i>
+          <span id="header-noti-badge" style="display: none; position: absolute; top: -3px; right: -3px; width: 18px; height: 18px; background: #ef4444; color: #fff; font-size: 0.68rem; font-weight: 800; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">0</span>
+        </button>
         
         <!-- Logged-in User Profile Badge (Hidden when NOT logged in) -->
         <div class="user-profile-badge" id="header-user-profile-badge" onclick="app.handleHeaderProfileClick()" title="Hồ Sơ Cá Nhân" style="display: none;">
@@ -222,6 +228,9 @@
                 <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
                   <button type="button" class="btn btn-xs" style="background: #f0fdf4; color: #167946; border: 1px solid #bbf7d0; font-weight: 700; padding: 4px 10px; border-radius: 6px;" onclick="app.fillDemoAccount('CUSTOMER')" title="Điền tài khoản Khách Hàng: 0901234567 / 123456">
                     👤 Khách (Hùng)
+                  </button>
+                  <button type="button" class="btn btn-xs" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; padding: 4px 10px; border-radius: 6px;" onclick="app.fillDemoAccount('CUSTOMER_PHONG')" title="Điền tài khoản Khách Hàng: 0983582321 / password123">
+                    👤 Khách (Phong)
                   </button>
                   <button type="button" class="btn btn-xs" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 700; padding: 4px 10px; border-radius: 6px;" onclick="app.fillDemoAccount('OWNER')" title="Điền tài khoản Chủ Sân: 0988888888 / owner123">
                     🏢 Chủ Sân (Nam)
@@ -756,6 +765,9 @@
               </button>
             </div>
           </div>
+
+          <!-- Active Incoming Matchmaking Invitations Alert Banner -->
+          <div id="mm-active-invitations-banner" style="display: none; margin-bottom: 1.25rem;"></div>
 
           <!-- Compact Filter & Search Panel -->
           <div class="mm-filter-panel">

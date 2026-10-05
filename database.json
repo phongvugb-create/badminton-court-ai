@@ -1554,5 +1554,24 @@
       "confirmation_status": "PENDING",
       "submitted_at": null
     }
+  ],
+  "notifications": [
+    {
+      "id": 1,
+      "recipient_id": 1,
+      "recipient_name": "Nguyễn Văn Hùng",
+      "recipient_phone": "0901234567",
+      "sender_id": 6,
+      "sender_name": "Vũ Nhất Phong",
+      "sender_tier": "Trung bình khá",
+      "sender_photo": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
+      "type": "CHALLENGE_INVITE",
+      "title": "🏸 Lời Mời Ghép Kèo Giao Lưu Mới",
+      "content": "Tay vợt Vũ Nhất Phong (Cấp [Trung bình khá]) vừa gửi lời mời ghép kèo giao lưu với bạn tại CLB Cầu Giấy Pro Center (19:00 - 21:00)!",
+      "room_id": 701,
+      "created_at": "Vừa xong",
+      "timestamp": 1791217000000,
+      "is_read": false
+    }
   ]
 }

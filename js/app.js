@@ -201,6 +201,8 @@ class BadmintonAIApp {
       if (authPills) authPills.style.display = 'inline-flex';
     }
 
+    this.updateHeaderNotificationBadge();
+
     try {
       this.renderHomeAuthBanner();
     } catch (e) {
@@ -718,40 +720,56 @@ class BadmintonAIApp {
 
         <!-- Recent Notification Feed -->
         <div class="glass-card" style="padding: 1.25rem; background: #ffffff;">
-          <h3 style="margin: 0 0 1rem; font-size: 1.1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-inbox text-primary"></i> ${isEn ? 'Recent Messages' : 'Hộp Thư Thông Báo Gần Nhất'}
-          </h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-inbox text-primary"></i> ${isEn ? 'Recent Messages' : 'Hộp Thư Thông Báo Gần Nhất'}
+            </h3>
+            <button class="btn btn-xs btn-outline-primary" onclick="app.openNotificationsModal()" style="font-size: 0.76rem;">
+              <i class="fa-solid fa-expand"></i> ${isEn ? 'View All' : 'Xem Tất Cả'}
+            </button>
+          </div>
 
           <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 10px 12px;">
-              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #166534; font-weight: 700;">
-                <span><i class="fa-solid fa-circle-check"></i> ${isEn ? 'Booking Confirmed' : 'Đặt Sân Thành Công'}</span>
-                <span>${isEn ? '10 mins ago' : '10 phút trước'}</span>
-              </div>
-              <div style="font-size: 0.82rem; color: #0f172a; margin-top: 2px;">
-                ${isEn ? 'Your slot at Catchy Badminton Arena (Court 02, 18:00 - 19:30) is confirmed! QR check-in ready.' : 'Đơn đặt sân BK-20261005-088 tại Catchy Badminton Arena đã được xác nhận. Mã QR check-in đã sẵn sàng.'}
-              </div>
-            </div>
+            ${(() => {
+              const myNotis = (MockData.notifications || []).filter(n => {
+                const matchId = n.recipient_id && user.id && String(n.recipient_id) === String(user.id);
+                const matchName = n.recipient_name && user.name && n.recipient_name.trim().toLowerCase() === user.name.trim().toLowerCase();
+                const matchPhone = n.recipient_phone && user.phone && n.recipient_phone === user.phone;
+                return matchId || matchName || matchPhone;
+              });
 
-            <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 10px 12px;">
-              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #1d4ed8; font-weight: 700;">
-                <span><i class="fa-solid fa-users"></i> ${isEn ? 'AI Matchmaking Alert' : 'Ghép Kèo Cân Bậc'}</span>
-                <span>${isEn ? '1 hour ago' : '1 giờ trước'}</span>
-              </div>
-              <div style="font-size: 0.82rem; color: #0f172a; margin-top: 2px;">
-                ${isEn ? 'Found 3 players of your exact skill rank looking for doubles partners nearby!' : 'AI đã quét thấy 3 tay vợt cùng cấp bậc [Khá] đang mở phòng giao lưu tại khu vực Hoàng Mai!'}
-              </div>
-            </div>
+              if (myNotis.length === 0) {
+                return `
+                  <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 20px; text-align: center; color: #64748b;">
+                    <div style="font-size: 1.8rem; margin-bottom: 6px;">🔔</div>
+                    <div style="font-weight: 700; font-size: 0.9rem;">${isEn ? 'No notifications yet' : 'Chưa có thông báo nào'}</div>
+                    <div style="font-size: 0.78rem;">${isEn ? 'Match invites and system alerts will appear here' : 'Các lời mời ghép kèo và cập nhật hệ thống sẽ hiển thị tại đây'}</div>
+                  </div>
+                `;
+              }
 
-            <div style="background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 10px; padding: 10px 12px;">
-              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #a21caf; font-weight: 700;">
-                <span><i class="fa-solid fa-gift"></i> ${isEn ? 'New Voucher Received' : 'Quà Tặng Hội Viên'}</span>
-                <span>${isEn ? 'Yesterday' : 'Hôm qua'}</span>
-              </div>
-              <div style="font-size: 0.82rem; color: #0f172a; margin-top: 2px;">
-                ${isEn ? 'You received code BADMINTONAI20 offering 20% discount on prime-hour bookings!' : 'Bạn nhận được mã ưu đãi BADMINTONAI20 giảm 20% cho các lượt đặt sân giờ vàng!'}
-              </div>
-            </div>
+              return myNotis.map(n => {
+                const isChallenge = n.type === 'CHALLENGE_INVITE';
+                return `
+                  <div style="background: ${isChallenge ? '#f0fdf4' : '#eff6ff'}; border: 1.5px solid ${isChallenge ? '#86efac' : '#93c5fd'}; border-radius: 10px; padding: 10px 12px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: ${isChallenge ? '#166534' : '#1d4ed8'}; font-weight: 700;">
+                      <span><i class="fa-solid ${isChallenge ? 'fa-bolt' : 'fa-bell'}"></i> ${n.title || (isEn ? 'Notification' : 'Thông Báo')}</span>
+                      <span>${n.created_at || (isEn ? 'Recently' : 'Vừa xong')}</span>
+                    </div>
+                    <div style="font-size: 0.82rem; color: #0f172a; margin-top: 4px; line-height: 1.4;">
+                      ${n.content}
+                    </div>
+                    ${isChallenge && n.room_id ? `
+                      <div style="margin-top: 8px;">
+                        <button class="btn btn-primary btn-sm" onclick="app.acceptChallengeInvitation('${n.id}', ${n.room_id})" style="background: #167946; font-size: 0.76rem; padding: 4px 10px; font-weight: 700;">
+                          <i class="fa-solid fa-users"></i> ${isEn ? 'Join Match Room' : 'Chấp Nhận & Vào Phòng Kèo'}
+                        </button>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('');
+            })()}
           </div>
         </div>
       </div>
@@ -1341,7 +1359,21 @@ class BadmintonAIApp {
 
     if (screenId === 'ui-02') this.renderHomeAuthBanner();
     if (screenId === 'ui-05') this.renderBookingOrdersList();
-    if (screenId === 'ui-06') this.updatePendingMatchesUI();
+    if (screenId === 'ui-06') {
+      this.updatePendingMatchesUI();
+      this.renderIncomingInvitationsBanner();
+      this.executeMatchmakingEngine();
+    }
+    if (screenId === 'ui-07') {
+      if (this.activeRoom) {
+        this.renderRoomDetailMembers();
+        this.renderChatMessages();
+        this.renderAIRoomTactics();
+      } else {
+        const firstRoom = (MockData.matchmaking_rooms && MockData.matchmaking_rooms[0]);
+        if (firstRoom) this.openRoomChat(firstRoom.id);
+      }
+    }
     if (screenId === 'ui-08') this.renderUserProfilePage();
     if (screenId === 'ui-map') this.initGoogleSportsMap();
     if (screenId === 'ui-09') this.renderOwnerDashboardOrders();
@@ -2708,6 +2740,8 @@ class BadmintonAIApp {
     const container = document.getElementById('matchmaking-rooms-grid');
     if (!container) return;
 
+    this.renderIncomingInvitationsBanner();
+
     const isGuest = !this.currentUser;
     const userTierVal = (!isGuest && (this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating)) || 5;
     const userTier = this.getSkillTierInfo(userTierVal);
@@ -3025,7 +3059,7 @@ class BadmintonAIApp {
                   <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
                 </button>
               ` : `
-                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', '${cand.tier.name}')" style="background: linear-gradient(135deg, #167946, #059669); font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
+                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${(cand.name).replace(/'/g, "\\'")}', '${cand.tier.name}', ${cand.id || 'null'}, '${(cand.facility || '').replace(/'/g, "\\'")}', '${(cand.time || '').replace(/'/g, "\\'")}')" style="background: linear-gradient(135deg, #167946, #059669); font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
                   <i class="fa-solid fa-bolt"></i> Ghép Kèo Ngay
                 </button>
               `)}
@@ -3038,13 +3072,424 @@ class BadmintonAIApp {
     container.innerHTML = html;
   }
 
-  challengeOpponentPrompt(opponentName, tierName) {
+  challengeOpponentPrompt(opponentName, tierName, opponentId = null, facility = null, matchTime = null) {
     if (!this.currentUser) {
       this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập để gửi yêu cầu ghép kèo.", "error");
       this.navigateTo('ui-01');
       return;
     }
-    this.showToast(`🏸 Đã gửi lời mời ghép kèo giao lưu cùng hạng tới ${opponentName} (Cấp [${tierName}])!`);
+
+    if (this.currentUser.name === opponentName || (opponentId && String(this.currentUser.id) === String(opponentId))) {
+      this.showToast("⚠️ Bạn không thể tự ghép kèo với chính mình!", "error");
+      return;
+    }
+
+    // Find opponent in MockData.users
+    let opponent = null;
+    if (opponentId) {
+      opponent = (MockData.users || []).find(u => String(u.id) === String(opponentId));
+    }
+    if (!opponent && opponentName) {
+      opponent = (MockData.users || []).find(u => u.name && u.name.trim().toLowerCase() === opponentName.trim().toLowerCase());
+    }
+
+    const sender = this.currentUser;
+    const senderTier = this.getSkillTierInfo(sender.skill_tier_id || sender.skill_tier || sender.tier || sender.elo || 3);
+    const oppTier = opponent ? this.getSkillTierInfo(opponent.skill_tier_id || opponent.skill_tier || opponent.tier || opponent.elo || 3) : { name: tierName || 'Trung bình', tier: 3, display: `Cấp: ${tierName}` };
+
+    const newRoomId = 800 + Math.floor(Math.random() * 9000);
+    const facName = facility || 'CLB Cầu Giấy Pro Center';
+    const timeStr = matchTime || '19:00 - 21:00';
+
+    const newRoom = {
+      id: newRoomId,
+      room_name: `Kèo Solo 1v1: ${sender.name} vs ${opponentName}`,
+      facility_name: facName,
+      match_date: "Hôm nay",
+      match_time: timeStr,
+      match_type: "Đơn 1v1",
+      district: facName.includes("Cầu Giấy") ? "Cầu Giấy" : "Hoàng Mai",
+      price_per_slot: "50.000đ/người",
+      host_name: sender.name,
+      host_id: sender.id,
+      host_photo: sender.photo || sender.avatar || null,
+      host_tier: senderTier.name,
+      required_tier_id: senderTier.tier,
+      current_players: 2,
+      max_players: 2,
+      players: [
+        {
+          id: sender.id,
+          name: sender.name,
+          photo: sender.photo || sender.avatar || null,
+          avatar: (sender.name || 'P').charAt(0),
+          tier_id: senderTier.tier,
+          tier: senderTier.name,
+          role: "Host",
+          team: "A",
+          style: "Công thủ linh hoạt"
+        },
+        {
+          id: opponent ? opponent.id : (opponentId || 999),
+          name: opponentName,
+          photo: opponent ? (opponent.photo || opponent.avatar) : null,
+          avatar: opponentName.charAt(0),
+          tier_id: oppTier.tier,
+          tier: oppTier.name,
+          role: "Member",
+          team: "B",
+          style: "Đã mời ghép kèo"
+        }
+      ],
+      chat_messages: [
+        {
+          sender: "🤖 AI Match Referee",
+          text: `🎉 Kèo đấu 1v1 được khởi tạo giữa ${sender.name} (Cấp [${senderTier.name}]) và ${opponentName} (Cấp [${oppTier.name}]). Phòng chat trực tiếp đã mở!`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isAI: true
+        },
+        {
+          sender: sender.name,
+          text: `Chào ${opponentName}! Mình gửi lời mời ghép kèo cùng hạng tại ${facName} (${timeStr}), bạn vào phòng chốt giờ giao lưu với mình nhé!`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]
+    };
+
+    if (!MockData.matchmaking_rooms) MockData.matchmaking_rooms = [];
+    MockData.matchmaking_rooms.unshift(newRoom);
+
+    // Create notification for opponent
+    if (!MockData.notifications) MockData.notifications = [];
+    const newNoti = {
+      id: `noti_${Date.now()}`,
+      recipient_id: opponent ? opponent.id : opponentId,
+      recipient_name: opponentName,
+      recipient_phone: opponent ? opponent.phone : null,
+      sender_id: sender.id,
+      sender_name: sender.name,
+      sender_photo: sender.photo || sender.avatar || null,
+      sender_tier: senderTier.name,
+      type: "CHALLENGE_INVITE",
+      title: `🏸 Lời Mời Ghép Kèo từ ${sender.name}`,
+      content: `Tay vợt ${sender.name} (Cấp [${senderTier.name}]) vừa gửi lời mời ghép kèo Solo 1v1 với bạn tại ${facName} (${timeStr})!`,
+      room_id: newRoom.id,
+      created_at: "Vừa xong",
+      timestamp: Date.now(),
+      is_read: false
+    };
+    MockData.notifications.unshift(newNoti);
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.updateHeaderNotificationBadge();
+    this.renderIncomingInvitationsBanner();
+
+    this.showToast(`🏸 Đã gửi lời mời ghép kèo tới ${opponentName}! Đang đưa bạn vào phòng giao lưu...`, "success");
+
+    setTimeout(() => {
+      this.openRoomChat(newRoom.id);
+    }, 350);
+  }
+
+  acceptChallengeInvitation(notiId, roomId) {
+    this.closeModal();
+
+    if (!this.currentUser) {
+      this.showToast("⚠️ Vui lòng đăng nhập để vào phòng ghép kèo!", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+
+    // 1. Mark notification as read
+    if (MockData.notifications) {
+      const noti = MockData.notifications.find(n => String(n.id) === String(notiId));
+      if (noti) {
+        noti.is_read = true;
+      }
+    }
+
+    // 2. Find room in MockData.matchmaking_rooms
+    const room = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(roomId));
+    if (!room) {
+      this.showToast("⚠️ Không tìm thấy phòng đấu này hoặc phòng đã kết thúc!", "error");
+      return;
+    }
+
+    // 3. Ensure recipient is in room.players
+    if (!room.players) room.players = [];
+    const userTier = this.getSkillTierInfo(this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.tier || this.currentUser.elo || 3);
+    const existing = room.players.find(p => p.name === this.currentUser.name || (p.id && String(p.id) === String(this.currentUser.id)));
+
+    if (!existing) {
+      room.players.push({
+        id: this.currentUser.id,
+        name: this.currentUser.name,
+        photo: this.currentUser.photo || this.currentUser.avatar || null,
+        avatar: (this.currentUser.name || 'U').charAt(0),
+        tier_id: userTier.tier,
+        tier: userTier.name,
+        role: 'Member',
+        team: 'B',
+        style: 'Đã vào phòng'
+      });
+    } else {
+      if (this.currentUser.photo) existing.photo = this.currentUser.photo;
+      existing.tier_id = userTier.tier;
+      existing.style = 'Đã vào phòng';
+    }
+    room.current_players = room.players.length;
+
+    // 4. Add system referee chat message
+    if (!room.chat_messages) room.chat_messages = [];
+    room.chat_messages.push({
+      sender: "🤖 AI Match Referee",
+      text: `🎉 ${this.currentUser.name} (Cấp [${userTier.name}]) đã chấp nhận lời mời ghép kèo và tham gia phòng! Hai bên đã có mặt đầy đủ, có thể chat trao đổi giờ giấc và sân đấu ngay bên dưới.`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isAI: true
+    });
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.updateHeaderNotificationBadge();
+    this.renderIncomingInvitationsBanner();
+
+    this.showToast(`🎉 Đã tham gia phòng kèo thành công! Đang chuyển vào phòng chat...`, "success");
+
+    setTimeout(() => {
+      this.openRoomChat(room.id);
+    }, 300);
+  }
+
+  declineChallengeInvitation(notiId) {
+    if (MockData.notifications) {
+      const noti = MockData.notifications.find(n => String(n.id) === String(notiId));
+      if (noti) {
+        noti.is_read = true;
+      }
+    }
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+    this.updateHeaderNotificationBadge();
+    this.renderIncomingInvitationsBanner();
+    this.showToast("Đã bỏ qua lời mời ghép kèo.");
+  }
+
+  updateHeaderNotificationBadge() {
+    const notiBtn = document.getElementById('header-noti-btn');
+    const badge = document.getElementById('header-noti-badge');
+    if (!notiBtn) return;
+
+    if (!this.currentUser) {
+      notiBtn.style.display = 'none';
+      if (badge) badge.style.display = 'none';
+      return;
+    }
+
+    notiBtn.style.display = 'inline-flex';
+
+    if (!MockData.notifications) MockData.notifications = [];
+    const myUnread = MockData.notifications.filter(n => {
+      if (n.is_read) return false;
+      const matchId = n.recipient_id && this.currentUser.id && String(n.recipient_id) === String(this.currentUser.id);
+      const matchName = n.recipient_name && this.currentUser.name && n.recipient_name.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase();
+      const matchPhone = n.recipient_phone && this.currentUser.phone && n.recipient_phone === this.currentUser.phone;
+      return matchId || matchName || matchPhone;
+    });
+
+    if (badge) {
+      if (myUnread.length > 0) {
+        badge.style.display = 'flex';
+        badge.textContent = myUnread.length > 9 ? '9+' : myUnread.length;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  }
+
+  renderIncomingInvitationsBanner() {
+    const banner = document.getElementById('mm-active-invitations-banner');
+    if (!banner) return;
+
+    if (!this.currentUser) {
+      banner.style.display = 'none';
+      banner.innerHTML = '';
+      return;
+    }
+
+    if (!MockData.notifications) MockData.notifications = [];
+    const pendingInvites = MockData.notifications.filter(n => {
+      if (n.type !== 'CHALLENGE_INVITE' || n.is_read) return false;
+      const matchId = n.recipient_id && this.currentUser.id && String(n.recipient_id) === String(this.currentUser.id);
+      const matchName = n.recipient_name && this.currentUser.name && n.recipient_name.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase();
+      const matchPhone = n.recipient_phone && this.currentUser.phone && n.recipient_phone === this.currentUser.phone;
+      return matchId || matchName || matchPhone;
+    });
+
+    if (pendingInvites.length === 0) {
+      banner.style.display = 'none';
+      banner.innerHTML = '';
+      return;
+    }
+
+    const inv = pendingInvites[0];
+    const isPhotoUrl = inv.sender_photo && (inv.sender_photo.startsWith('http') || inv.sender_photo.startsWith('data:image'));
+
+    banner.style.display = 'block';
+    banner.innerHTML = `
+      <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #eff6ff 100%); border: 2px solid #16a34a; border-radius: 14px; padding: 14px 18px; box-shadow: 0 6px 20px rgba(22, 163, 74, 0.15); animation: pulse 2.5s infinite;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            ${isPhotoUrl ? `
+              <img src="${inv.sender_photo}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2.5px solid #167946; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+            ` : `
+              <div style="width: 48px; height: 48px; border-radius: 50%; background: #167946; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; border: 2px solid #86efac;">
+                ⚡
+              </div>
+            `}
+            <div>
+              <div style="font-weight: 800; font-size: 1rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                <span>Lời mời ghép kèo mới từ <strong>${inv.sender_name}</strong></span>
+                <span style="background: #167946; color: #fff; font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px;">Cấp: ${inv.sender_tier || 'Cùng cấp'}</span>
+              </div>
+              <div style="font-size: 0.83rem; color: #334155; margin-top: 3px;">
+                ${inv.content}
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-primary btn-sm" onclick="app.acceptChallengeInvitation('${inv.id}', ${inv.room_id})" style="background: linear-gradient(135deg, #167946, #059669); font-weight: 800; padding: 8px 16px; font-size: 0.85rem; box-shadow: 0 4px 12px rgba(22, 121, 70, 0.3);">
+              <i class="fa-solid fa-circle-check"></i> Chấp Nhận & Vào Phòng Chat
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="app.declineChallengeInvitation('${inv.id}')" style="font-size: 0.82rem; padding: 8px 12px;">
+              Bỏ Qua
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  openNotificationsModal() {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Vui lòng đăng nhập để xem thông báo!", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+
+    if (!MockData.notifications) MockData.notifications = [];
+    const myNotis = MockData.notifications.filter(n => {
+      const matchId = n.recipient_id && this.currentUser.id && String(n.recipient_id) === String(this.currentUser.id);
+      const matchName = n.recipient_name && this.currentUser.name && n.recipient_name.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase();
+      const matchPhone = n.recipient_phone && this.currentUser.phone && n.recipient_phone === this.currentUser.phone;
+      return matchId || matchName || matchPhone;
+    });
+
+    let listHtml = '';
+    if (myNotis.length === 0) {
+      listHtml = `
+        <div style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.6;">🔔</div>
+          <h4 style="margin: 0 0 6px; color: #1e293b; font-size: 1.05rem;">Không có thông báo mới</h4>
+          <p style="margin: 0; font-size: 0.85rem;">Khi có đối thủ gửi lời mời ghép kèo hoặc lịch thi đấu, thông báo sẽ hiển thị tại đây.</p>
+        </div>
+      `;
+    } else {
+      listHtml = `<div style="display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; padding-right: 4px;">`;
+      myNotis.forEach(n => {
+        const isChallenge = n.type === 'CHALLENGE_INVITE';
+        const senderPhoto = n.sender_photo;
+        const isPhotoUrl = senderPhoto && (senderPhoto.startsWith('http') || senderPhoto.startsWith('data:image'));
+
+        listHtml += `
+          <div style="background: ${n.is_read ? '#f8fafc' : '#f0fdf4'}; border: 1.5px solid ${n.is_read ? '#e2e8f0' : '#86efac'}; border-radius: 12px; padding: 12px; transition: all 0.2s ease;">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <div style="flex-shrink: 0;">
+                ${isPhotoUrl ? `
+                  <img src="${senderPhoto}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid #167946;">
+                ` : `
+                  <div style="width: 44px; height: 44px; border-radius: 50%; background: ${isChallenge ? '#167946' : '#0284c7'}; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800;">
+                    ${isChallenge ? '🏸' : '🔔'}
+                  </div>
+                `}
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 6px;">
+                  <strong style="font-size: 0.92rem; color: #0f172a;">${n.title || 'Thông báo từ hệ thống'}</strong>
+                  <span style="font-size: 0.72rem; color: ${n.is_read ? '#94a3b8' : '#16a34a'}; font-weight: 700;">
+                    ${n.is_read ? 'Đã xem' : 'Mới'}
+                  </span>
+                </div>
+                <div style="font-size: 0.82rem; color: #334155; line-height: 1.4; margin-bottom: 6px;">
+                  ${n.content}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                  <span style="font-size: 0.72rem; color: #64748b;">
+                    <i class="fa-regular fa-clock"></i> ${n.created_at || 'Vừa xong'}
+                  </span>
+                  ${isChallenge && n.room_id ? `
+                    <div style="display: flex; gap: 6px;">
+                      <button class="btn btn-primary btn-sm" onclick="app.acceptChallengeInvitation('${n.id}', ${n.room_id})" style="background: #167946; font-size: 0.76rem; padding: 4px 10px; font-weight: 700;">
+                        <i class="fa-solid fa-users"></i> Chấp Nhận & Vào Phòng
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      listHtml += `</div>`;
+    }
+
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    modalBody.innerHTML = `
+      <div style="padding: 0.5rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem;">
+          <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-bell text-primary"></i> Trung Tâm Thông Báo
+          </h3>
+          ${myNotis.some(n => !n.is_read) ? `
+            <button class="btn btn-xs btn-secondary" onclick="app.markAllNotificationsRead()" style="font-size: 0.75rem;">
+              <i class="fa-solid fa-check-double"></i> Đã đọc tất cả
+            </button>
+          ` : ''}
+        </div>
+        ${listHtml}
+        <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+          <button class="btn btn-secondary btn-sm" onclick="app.closeModal()">Đóng Cửa Sổ</button>
+        </div>
+      </div>
+    `;
+
+    this.openModal();
+  }
+
+  markAllNotificationsRead() {
+    if (!this.currentUser || !MockData.notifications) return;
+    MockData.notifications.forEach(n => {
+      const matchId = n.recipient_id && this.currentUser.id && String(n.recipient_id) === String(this.currentUser.id);
+      const matchName = n.recipient_name && this.currentUser.name && n.recipient_name.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase();
+      const matchPhone = n.recipient_phone && this.currentUser.phone && n.recipient_phone === this.currentUser.phone;
+      if (matchId || matchName || matchPhone) {
+        n.is_read = true;
+      }
+    });
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+    this.updateHeaderNotificationBadge();
+    this.renderIncomingInvitationsBanner();
+    this.openNotificationsModal();
+    this.showToast("Đã đánh dấu tất cả thông báo là đã đọc.");
   }
 
   renderMatchmakingRooms() {
@@ -3382,7 +3827,11 @@ class BadmintonAIApp {
 
 
   openRoomChat(roomId) {
-    this.activeRoom = MockData.matchmaking_rooms.find(r => r.id === roomId) || MockData.matchmaking_rooms[0];
+    this.activeRoom = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(roomId)) || (MockData.matchmaking_rooms && MockData.matchmaking_rooms[0]);
+    if (!this.activeRoom) {
+      this.showToast("⚠️ Không tìm thấy phòng ghép kèo này!", "error");
+      return;
+    }
     
     const titleEl = document.getElementById('room-detail-title');
     const metaEl = document.getElementById('room-detail-meta');
@@ -3413,18 +3862,22 @@ class BadmintonAIApp {
       if (!this.currentUser) {
         joinBtn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Để Chấp Nhận Kèo`;
         joinBtn.style.background = "#d97706";
+        joinBtn.onclick = () => app.navigateTo('ui-01');
       } else {
-        const isMember = this.activeRoom.players && this.activeRoom.players.some(p => p.name === this.currentUser.name || p.id === this.currentUser.id);
+        const isMember = this.activeRoom.players && this.activeRoom.players.some(p => p.name === this.currentUser.name || (p.id && String(p.id) === String(this.currentUser.id)));
         const isFull = (this.activeRoom.current_players || 0) >= (this.activeRoom.max_players || 4);
         if (isMember) {
           joinBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Bạn Đã Trong Kèo Này`;
           joinBtn.style.background = "#059669";
+          joinBtn.onclick = null;
         } else if (isFull) {
           joinBtn.innerHTML = `<i class="fa-solid fa-ban"></i> Phòng Đã Đủ Thành Viên`;
           joinBtn.style.background = "#64748b";
+          joinBtn.onclick = null;
         } else {
           joinBtn.innerHTML = `<i class="fa-solid fa-user-plus"></i> Chấp Nhận & Tham Gia Kèo Này`;
           joinBtn.style.background = "#167946";
+          joinBtn.onclick = () => app.joinActiveRoomChat();
         }
       }
     }
@@ -6702,10 +7155,11 @@ class BadmintonAIApp {
 
   fillDemoAccount(role) {
     const demoAccounts = {
-      'CUSTOMER': { phone: '0901234567', pass: '123456' },
-      'OWNER': { phone: '0988888888', pass: 'owner123' },
-      'STAFF': { phone: '0922334455', pass: 'staff123' },
-      'ADMIN': { phone: '0999888777', pass: 'admin123' }
+      'CUSTOMER': { phone: '0901234567', pass: '123456', label: 'Khách Hàng (Nguyễn Văn Hùng)' },
+      'CUSTOMER_PHONG': { phone: '0983582321', pass: 'password123', label: 'Khách Hàng (Vũ Nhất Phong)' },
+      'OWNER': { phone: '0988888888', pass: 'owner123', label: 'Chủ Sân (Nam)' },
+      'STAFF': { phone: '0922334455', pass: 'staff123', label: 'Thu Ngân (Tuấn)' },
+      'ADMIN': { phone: '0999888777', pass: 'admin123', label: 'Quản Trị Viên' }
     };
     const acc = demoAccounts[role] || demoAccounts['CUSTOMER'];
     const phoneInput = document.getElementById('login-phone');
@@ -6713,9 +7167,10 @@ class BadmintonAIApp {
     const roleSelect = document.getElementById('login-role-select');
     if (phoneInput) phoneInput.value = acc.phone;
     if (passInput) passInput.value = acc.pass;
-    if (roleSelect) roleSelect.value = role;
-    this.selectLoginRole(role, false);
-    this.showToast(`✨ Đã điền thông tin tài khoản mẫu ${role}! Nhấn "Đăng Nhập" để truy cập.`);
+    const baseRole = role.startsWith('CUSTOMER') ? 'CUSTOMER' : role;
+    if (roleSelect) roleSelect.value = baseRole;
+    this.selectLoginRole(baseRole, false);
+    this.showToast(`✨ Đã điền thông tin tài khoản ${acc.label || role}! Nhấn "Đăng Nhập" để truy cập.`);
   }
 
   handleRegister(e) {

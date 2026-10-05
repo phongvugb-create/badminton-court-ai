@@ -1409,6 +1409,27 @@ const MockData = {
       confirmation_status: "PENDING",
       submitted_at: null
     }
+  ],
+
+  // 15. BẢNG notifications (Hệ thống thông báo đẩy & tin nhắn ghép kèo thời gian thực)
+  notifications: [
+    {
+      id: 1,
+      recipient_id: 1,
+      recipient_name: "Nguyễn Văn Hùng",
+      recipient_phone: "0901234567",
+      sender_id: 6,
+      sender_name: "Vũ Nhất Phong",
+      sender_tier: "Trung bình khá",
+      sender_photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
+      type: "CHALLENGE_INVITE",
+      title: "🏸 Lời Mời Ghép Kèo Giao Lưu Mới",
+      content: "Tay vợt Vũ Nhất Phong (Cấp [Trung bình khá]) vừa gửi lời mời ghép kèo giao lưu với bạn tại CLB Cầu Giấy Pro Center (19:00 - 21:00)!",
+      room_id: 701,
+      created_at: "Vừa xong",
+      timestamp: Date.now(),
+      is_read: false
+    }
   ]
 };
 
@@ -1434,7 +1455,7 @@ function loadMockDataFromLocalStorage() {
 
 function applyDataToMockData(sourceData) {
   if (!sourceData) return;
-  const keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'occupancy_heatmap', 'bookings', 'orders', 'player_profiles', 'elo_histories', 'matches', 'match_players'];
+  const keys = ['courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'occupancy_heatmap', 'bookings', 'orders', 'player_profiles', 'elo_histories', 'matches', 'match_players', 'notifications'];
   keys.forEach(k => {
     if (sourceData[k] && Array.isArray(sourceData[k])) {
       MockData[k] = sourceData[k];
@@ -1469,7 +1490,7 @@ function applyDataToMockData(sourceData) {
 function saveMockDataToLocalStorage() {
   try {
     const payload = {};
-    const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'player_profiles', 'elo_histories', 'matches', 'match_players', 'bookings', 'orders'];
+    const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'player_profiles', 'elo_histories', 'matches', 'match_players', 'bookings', 'orders', 'notifications'];
     keys.forEach(k => {
       if (MockData[k]) payload[k] = MockData[k];
     });
