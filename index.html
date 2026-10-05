@@ -210,9 +210,30 @@
                 </select>
               </div>
 
-              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.25rem; padding: 0.85rem; font-size: 1rem; font-weight: 800; border-radius: 10px; box-shadow: 0 4px 14px rgba(22, 121, 70, 0.35);">
+              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.25rem; padding: 0.85rem; font-size: 1rem; font-weight: 800; border-radius: 10px; box-shadow: 0 4px 14px rgba(22, 121, 70, 0.35); cursor: pointer;">
                 <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Hệ Thống Ngay
               </button>
+
+              <!-- Quick Demo Account Fill Pills -->
+              <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; text-align: center;">
+                <div style="font-size: 0.76rem; color: #64748b; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">
+                  <i class="fa-solid fa-wand-magic-sparkles text-primary"></i> Tài Khoản Thử Nghiệm Nhanh (1 Click)
+                </div>
+                <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-xs" style="background: #f0fdf4; color: #167946; border: 1px solid #bbf7d0; font-weight: 700; padding: 4px 10px; border-radius: 6px;" onclick="app.fillDemoAccount('CUSTOMER')" title="Điền tài khoản Khách Hàng: 0901234567 / 123456">
+                    👤 Khách (Hùng)
+                  </button>
+                  <button type="button" class="btn btn-xs" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 700; padding: 4px 10px; border-radius: 6px;" onclick="app.fillDemoAccount('OWNER')" title="Điền tài khoản Chủ Sân: 0988888888 / owner123">
+                    🏢 Chủ Sân (Nam)
+                  </button>
+                  <button type="button" class="btn btn-xs" style="background: #fefce8; color: #ca8a04; border: 1px solid #fef08a; font-weight: 700; padding: 4px 10px; border-radius: 6px;" onclick="app.fillDemoAccount('STAFF')" title="Điền tài khoản Thu Ngân: 0922334455 / staff123">
+                    🧾 Thu Ngân (Tuấn)
+                  </button>
+                  <button type="button" class="btn btn-xs" style="background: #faf5ff; color: #9333ea; border: 1px solid #e9d5ff; font-weight: 700; padding: 4px 10px; border-radius: 6px;" onclick="app.fillDemoAccount('ADMIN')" title="Điền tài khoản Quản Trị Viên: 0999888777 / admin123">
+                    🔑 Admin Hệ Thống
+                  </button>
+                </div>
+              </div>
             </form>
 
             <!-- Form 2: REGISTER FORM (Hidden by default - Public Registration for CUSTOMER) -->

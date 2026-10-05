@@ -177,7 +177,15 @@ class BadmintonAIApp {
     };
 
     if (this.currentUser) {
-      if (avatarEl) avatarEl.textContent = this.currentUser.avatar || '👤';
+      if (avatarEl) {
+        const photo = this.currentUser.photo || this.currentUser.avatar;
+        if (photo && (photo.startsWith('http') || photo.startsWith('data:image'))) {
+          avatarEl.innerHTML = `<img src="${photo}" alt="${this.currentUser.name}">`;
+          avatarEl.style.padding = '0';
+        } else {
+          avatarEl.textContent = (photo && photo.length <= 3) ? photo : (this.currentUser.name ? this.currentUser.name.charAt(0) : '👤');
+        }
+      }
       if (nameEl) nameEl.textContent = this.currentUser.name;
       if (roleTagEl) roleTagEl.textContent = roleNames[this.currentUser.role] || this.currentUser.role;
       if (profileBadge) profileBadge.style.display = 'inline-flex';
@@ -185,15 +193,25 @@ class BadmintonAIApp {
       if (starBadge) starBadge.style.display = 'flex';
       if (authPills) authPills.style.display = 'none';
     } else {
+      if (avatarEl) avatarEl.textContent = '👤';
+      if (nameEl) nameEl.textContent = 'Khách';
       if (profileBadge) profileBadge.style.display = 'none';
       if (logoutBtn) logoutBtn.style.display = 'none';
       if (starBadge) starBadge.style.display = 'none';
       if (authPills) authPills.style.display = 'inline-flex';
     }
 
-    this.renderHomeAuthBanner();
+    try {
+      this.renderHomeAuthBanner();
+    } catch (e) {
+      console.warn('Error in renderHomeAuthBanner:', e);
+    }
     if (this.currentView === 'ui-08') {
-      this.renderUserProfilePage();
+      try {
+        this.renderUserProfilePage();
+      } catch (e) {
+        console.warn('Error in renderUserProfilePage:', e);
+      }
     }
   }
 
@@ -238,11 +256,16 @@ class BadmintonAIApp {
         'ADMIN': 'Quản Trị Viên'
       };
 
+      const homePhoto = this.currentUser.photo || this.currentUser.avatar;
+      const homeAvatarHtml = (homePhoto && (homePhoto.startsWith('http') || homePhoto.startsWith('data:image')))
+        ? `<img src="${homePhoto}" alt="${this.currentUser.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">`
+        : `<span>${(homePhoto && homePhoto.length <= 3) ? homePhoto : (this.currentUser.name ? this.currentUser.name.charAt(0) : '👤')}</span>`;
+
       container.innerHTML = `
         <div class="home-auth-banner member-banner">
           <div style="display: flex; align-items: center; gap: 14px; flex: 1; min-width: 280px;">
-            <div style="width: 44px; height: 44px; border-radius: 50%; background: #167946; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; flex-shrink: 0; box-shadow: 0 3px 8px rgba(22, 121, 70, 0.3);">
-              ${this.currentUser.avatar || '👤'}
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: #167946; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; flex-shrink: 0; box-shadow: 0 3px 8px rgba(22, 121, 70, 0.3); overflow: hidden; padding: 0;">
+              ${homeAvatarHtml}
             </div>
             <div>
               <div style="font-weight: 800; font-size: 1rem; color: #0f172a; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -1245,13 +1268,21 @@ class BadmintonAIApp {
         'STAFF': 'Thu Ngân',
         'ADMIN': 'Quản Trị'
       };
+      const userPhoto = this.currentUser.photo || this.currentUser.avatar;
+      const avatarHtml = (userPhoto && (userPhoto.startsWith('http') || userPhoto.startsWith('data:image')))
+        ? `<img src="${userPhoto}" alt="${this.currentUser.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">`
+        : `<span>${(userPhoto && userPhoto.length <= 3) ? userPhoto : (this.currentUser.name ? this.currentUser.name.charAt(0) : '👤')}</span>`;
+
+      const userTier = this.getSkillTierInfo(this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating || 5);
+      const tierText = (this.currentUser.role === 'CUSTOMER') ? (userTier.name || 'Khá') : (roleNames[this.currentUser.role] || this.currentUser.role);
+
       html += `
         <div class="sidebar-auth-card member">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="sidebar-auth-avatar member-avatar">${this.currentUser.avatar || '👤'}</div>
+            <div class="sidebar-auth-avatar member-avatar" style="overflow: hidden; padding: 0; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; background: #167946; color: #fff; font-weight: 800;">${avatarHtml}</div>
             <div style="overflow: hidden; flex: 1;">
               <div style="font-weight: 800; font-size: 0.88rem; color: #0f172a; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${this.currentUser.name}</div>
-              <div style="font-size: 0.72rem; color: #167946; font-weight: 700;">${roleNames[this.currentUser.role] || this.currentUser.role} • ELO ${this.currentUser.elo_rating || 1200}</div>
+              <div style="font-size: 0.72rem; color: #167946; font-weight: 700;">${roleNames[this.currentUser.role] || this.currentUser.role} • ${tierText}</div>
             </div>
           </div>
         </div>
@@ -2212,15 +2243,19 @@ class BadmintonAIApp {
   ];
 
   getSkillTierInfo(val) {
-    const tiers = App.SKILL_TIERS || [
-      { tier: 1, name: "Yếu - Tân thủ", display: "🟢 Cấp 1: Yếu - Tân thủ", color: "#16a34a", bg: "#dcfce7", desc: "Mới tập chơi" },
-      { tier: 2, name: "Trung Bình Yếu - Cơ bản", display: "🔵 Cấp 2: Trung Bình Yếu - Cơ bản", color: "#0284c7", bg: "#e0f2fe", desc: "Cơ bản" },
-      { tier: 3, name: "Trung bình", display: "🟡 Cấp 3: Trung bình", color: "#ca8a04", bg: "#fef9c3", desc: "Trung bình" },
-      { tier: 4, name: "Trung bình khá", display: "🟠 Cấp 4: Trung bình khá", color: "#ea580c", bg: "#ffedd5", desc: "Trung bình khá" },
-      { tier: 5, name: "Khá", display: "🔴 Cấp 5: Khá", color: "#dc2626", bg: "#fee2e2", desc: "Khá" },
-      { tier: 6, name: "Giỏi - Thành thạo", display: "🟣 Cấp 6: Giỏi - Thành thạo", color: "#9333ea", bg: "#f3e8ff", desc: "Giỏi" },
-      { tier: 7, name: "Tốt - Chuyên nghiệp", display: "👑 Cấp 7: Tốt - Chuyên nghiệp", color: "#4f46e5", bg: "#e0e7ff", desc: "Chuyên nghiệp" }
+    const tiers = BadmintonAIApp.SKILL_TIERS || [
+      { tier: 1, id: 1, key: "yeu_tan_thu", name: "Yếu - Tân thủ", display: "🟢 Cấp 1: Yếu - Tân thủ", color: "#16a34a", bg: "#dcfce7", desc: "Mới tập chơi", defaultElo: 800 },
+      { tier: 2, id: 2, key: "tb_yeu_co_ban", name: "Trung Bình Yếu - Cơ bản", display: "🔵 Cấp 2: Trung Bình Yếu - Cơ bản", color: "#0284c7", bg: "#e0f2fe", desc: "Cơ bản", defaultElo: 1050 },
+      { tier: 3, id: 3, key: "trung_binh", name: "Trung bình", display: "🟡 Cấp 3: Trung bình", color: "#ca8a04", bg: "#fef9c3", desc: "Trung bình", defaultElo: 1250 },
+      { tier: 4, id: 4, key: "trung_binh_kha", name: "Trung bình khá", display: "🟠 Cấp 4: Trung bình khá", color: "#ea580c", bg: "#ffedd5", desc: "Trung bình khá", defaultElo: 1450 },
+      { tier: 5, id: 5, key: "kha", name: "Khá", display: "🔴 Cấp 5: Khá", color: "#dc2626", bg: "#fee2e2", desc: "Khá", defaultElo: 1650 },
+      { tier: 6, id: 6, key: "gioi_thanh_thao", name: "Giỏi - Thành thạo", display: "🟣 Cấp 6: Giỏi - Thành thạo", color: "#9333ea", bg: "#f3e8ff", desc: "Giỏi", defaultElo: 1850 },
+      { tier: 7, id: 7, key: "tot_chuyen_nghiep", name: "Tốt - Chuyên nghiệp", display: "👑 Cấp 7: Tốt - Chuyên nghiệp", color: "#4f46e5", bg: "#e0e7ff", desc: "Chuyên nghiệp", defaultElo: 2050 }
     ];
+
+    if (val === undefined || val === null) {
+      return tiers[4]; // Default to Khá (Cấp 5)
+    }
 
     if (typeof val === 'number') {
       if (val >= 1 && val <= 7) {
@@ -2243,8 +2278,24 @@ class BadmintonAIApp {
       if (!isNaN(num) && num >= 1 && num <= 7) {
         return tiers[num - 1];
       }
+      // Pass 1: Exact matches first!
       for (const t of tiers) {
-        if (clean === t.key || clean === t.name.toLowerCase() || t.name.toLowerCase().includes(clean) || clean.includes(t.level.toLowerCase())) {
+        if (clean === t.key || clean === t.name.toLowerCase() || (t.level && clean === t.level.toLowerCase())) {
+          return t;
+        }
+      }
+      // Pass 2: Specific keyword priority (longer / more specific first)
+      if (clean.includes('chuyên nghiệp') || clean.includes('tốt')) return tiers[6];
+      if (clean.includes('thành thạo') || clean.includes('giỏi')) return tiers[5];
+      if (clean.includes('trung bình khá') || clean.includes('tb khá')) return tiers[3];
+      if (clean.includes('trung bình yếu') || clean.includes('tb yếu') || clean.includes('cơ bản')) return tiers[1];
+      if (clean.includes('trung bình') || clean.includes('tb')) return tiers[2];
+      if (clean.includes('khá')) return tiers[4];
+      if (clean.includes('tân thủ') || clean.includes('yếu')) return tiers[0];
+      
+      // Pass 3: General includes
+      for (const t of tiers) {
+        if (t.name.toLowerCase().includes(clean)) {
           return t;
         }
       }
@@ -6554,13 +6605,52 @@ class BadmintonAIApp {
   }
 
   handleLogin(e) {
-    e.preventDefault();
-    const phone = document.getElementById('login-phone').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-    const selectedRole = document.getElementById('login-role-select').value;
+    if (e && e.preventDefault) e.preventDefault();
+    const phoneInput = document.getElementById('login-phone');
+    const passInput = document.getElementById('login-password');
+    const roleSelect = document.getElementById('login-role-select');
 
-    // 1. Tim kiem tai khoan nguoi dung theo dung so dien thoại/username nhap vao
-    const user = MockData.users.find(u => u.phone === phone);
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    const password = passInput ? passInput.value.trim() : '';
+    let selectedRole = roleSelect ? roleSelect.value : 'CUSTOMER';
+
+    if (!phone) {
+      this.showToast('⚠️ Vui lòng nhập số điện thoại hoặc tên đăng nhập!', 'error');
+      return;
+    }
+    if (!password) {
+      this.showToast('⚠️ Vui lòng nhập mật khẩu tài khoản!', 'error');
+      return;
+    }
+
+    const cleanPhone = phone.replace(/[\s\-\.]/g, '');
+
+    // 1. Tim kiem tai khoan nguoi dung theo dung so dien thoai / username / name
+    let user = (MockData.users || []).find(u => 
+      u.phone === phone || 
+      u.phone === cleanPhone || 
+      (u.username && u.username.toLowerCase() === phone.toLowerCase()) || 
+      (u.name && u.name.toLowerCase() === phone.toLowerCase())
+    );
+
+    // Fallback: Neu tai khoan mac dinh bi mat do localStorage reset
+    if (!user) {
+      const defaultUsers = [
+        { id: 1, name: "Nguyễn Văn Hùng", phone: "0901234567", password: "123456", role: "CUSTOMER", skill_tier: "Khá", skill_tier_id: 5, elo_rating: 1650, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", joined_date: "15/03/2025", is_approved: true },
+        { id: 2, name: "Trần Thị Mai", phone: "0912345678", password: "123456", role: "CUSTOMER", skill_tier: "Khá", skill_tier_id: 5, elo_rating: 1680, avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", joined_date: "20/06/2025", is_approved: true },
+        { id: 3, name: "Lê Hoàng Nam (Chủ Sân)", phone: "0988888888", password: "owner123", role: "OWNER", facility_id: 101, avatar: "N", joined_date: "10/01/2025", is_approved: true, elo_rating: "N/A" },
+        { id: 4, name: "Phạm Quốc Tuấn (Thu Ngân)", phone: "0922334455", password: "staff123", role: "STAFF", facility_id: 101, avatar: "T", joined_date: "01/02/2025", is_approved: true, elo_rating: "N/A" },
+        { id: 5, name: "Admin Quản Trị", phone: "0999888777", password: "admin123", role: "ADMIN", avatar: "A", joined_date: "01/01/2024", is_approved: true, elo_rating: "N/A" },
+        { id: 6, name: "Vũ Nhất Phong", phone: "0983582321", password: "password123", role: "CUSTOMER", skill_tier: "Trung bình khá", skill_tier_id: 4, elo_rating: 1450, avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", joined_date: "10/01/2025", is_approved: true },
+        { id: 7, name: "Trương Quốc Khánh (Chủ Sân)", phone: "0123456789", password: "02092006", role: "OWNER", facility_id: 101, elo_rating: "N/A", avatar: "K", joined_date: "15/02/2025", is_approved: true }
+      ];
+      const fallback = defaultUsers.find(u => u.phone === phone || u.phone === cleanPhone || (u.name && u.name.toLowerCase() === phone.toLowerCase()));
+      if (fallback) {
+        if (!MockData.users) MockData.users = [];
+        MockData.users.push(fallback);
+        user = fallback;
+      }
+    }
 
     if (!user) {
       this.showToast(`⛔ Đăng nhập thất bại: Số điện thoại/Username "${phone}" chưa được đăng ký trong hệ thống!`, 'error');
@@ -6570,7 +6660,7 @@ class BadmintonAIApp {
     // 2. Kiem tra mat khau chinh xac (tu dong khoi phuc neu mat khau cu bi loi undefined)
     let expectedPassword = user.password;
     if (!expectedPassword || expectedPassword === 'undefined' || expectedPassword === 'null' || !expectedPassword.trim()) {
-      expectedPassword = (user.phone === '0123456789' ? '02092006' : '123456');
+      expectedPassword = (user.phone === '0123456789' ? '02092006' : (user.phone === '0988888888' ? 'owner123' : (user.phone === '0922334455' ? 'staff123' : (user.phone === '0999888777' ? 'admin123' : '123456'))));
       user.password = expectedPassword;
       if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
     }
@@ -6579,19 +6669,10 @@ class BadmintonAIApp {
       return;
     }
 
-    // 3. Kiem tra nghiem ngat: Vai tro tai khoan phai khop voi vai tro dang chon
+    // 3. Tu dong dong bo vai tro neu nguoi dung quen chon dung dropdown
     if (user.role !== selectedRole) {
-      const roleNames = {
-        'CUSTOMER': 'Khách Hàng',
-        'OWNER': 'Chủ Sân',
-        'STAFF': 'Thu Ngân',
-        'ADMIN': 'Quản Trị Viên'
-      };
-      const actualRole = roleNames[user.role] || user.role;
-      const targetRole = roleNames[selectedRole] || selectedRole;
-
-      this.showToast(`⛔ Quyền truy cập bị từ chối: Tài khoản "${user.name}" có vai trò [${actualRole}], không thể đăng nhập vào phân hệ [${targetRole}]!`, 'error');
-      return;
+      selectedRole = user.role;
+      if (roleSelect) roleSelect.value = user.role;
     }
 
     // 4. Kiem tra trang thai phe duyyet (is_approved)
@@ -6617,6 +6698,24 @@ class BadmintonAIApp {
       };
       this.showToast(`🎉 Đăng nhập thành công vai trò ${roleNames[selectedRole] || selectedRole}! Xin chào ${user.name}`);
     }
+  }
+
+  fillDemoAccount(role) {
+    const demoAccounts = {
+      'CUSTOMER': { phone: '0901234567', pass: '123456' },
+      'OWNER': { phone: '0988888888', pass: 'owner123' },
+      'STAFF': { phone: '0922334455', pass: 'staff123' },
+      'ADMIN': { phone: '0999888777', pass: 'admin123' }
+    };
+    const acc = demoAccounts[role] || demoAccounts['CUSTOMER'];
+    const phoneInput = document.getElementById('login-phone');
+    const passInput = document.getElementById('login-password');
+    const roleSelect = document.getElementById('login-role-select');
+    if (phoneInput) phoneInput.value = acc.phone;
+    if (passInput) passInput.value = acc.pass;
+    if (roleSelect) roleSelect.value = role;
+    this.selectLoginRole(role, false);
+    this.showToast(`✨ Đã điền thông tin tài khoản mẫu ${role}! Nhấn "Đăng Nhập" để truy cập.`);
   }
 
   handleRegister(e) {
