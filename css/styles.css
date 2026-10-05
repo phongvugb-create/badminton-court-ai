@@ -3633,3 +3633,99 @@ body {
   justify-content: space-between;
   align-items: center;
 }
+
+/* ==========================================================================
+   AI MATCHMAKING PHOTO UPLOAD & 7-TIER SKILL RANK STYLES
+   ========================================================================== */
+.mm-avatar-img {
+  object-fit: cover;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  background: #e2e8f0;
+}
+
+.mm-avatar-img:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(22, 121, 70, 0.35) !important;
+}
+
+.mm-avatar-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.mm-photo-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #167946;
+  color: #fff;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-face-card-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+}
+
+.player-face-modal-img {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #167946;
+  box-shadow: 0 8px 24px rgba(22, 121, 70, 0.25);
+  margin-bottom: 1rem;
+}
+
+.btn-upload-photo-cta {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff !important;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.28);
+  transition: all 0.2s ease;
+}
+
+.btn-upload-photo-cta:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.38);
+}
+
+.tier-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+}
+
+.room-player-photo-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+

@@ -1414,33 +1414,183 @@ class BadmintonAIApp {
   }
 
   // =========================================================================
-  // RE-ARCHITECTED AI MATCHMAKING & ELO ENGINE (UC006)
-  // Standard 6-Tier Skill Hierarchy (Phân khúc ghép trình tiêu chuẩn):
-  // 1 | Yếu | Tân thủ | 0 | 999
-  // 2 | Trung Bình | Cơ bản | 1000 | 1199
-  // 3 | Trung Bình Khá | | 1200 | 1399
-  // 4 | Khá | | 1400 | 1599
-  // 5 | Giỏi | Thành Thạo | 1600 | 1799
-  // 6 | Tốt | Chuyên Nghiệp | 1800 | NULL (1800+)
+  // 7-TIER SKILL RANKING & AI MATCHMAKING SYSTEM (UC006)
+  // Standard 7-Tier Skill Hierarchy (7 Cấp Bậc Trình Độ Thi Đấu & Ghép Kèo AI):
+  // 1 | Yếu - Tân thủ
+  // 2 | Trung Bình Yếu - Cơ bản
+  // 3 | Trung bình
+  // 4 | Trung bình khá
+  // 5 | Khá
+  // 6 | Giỏi - Thành thạo
+  // 7 | Tốt - Chuyên nghiệp
   // =========================================================================
+  static SKILL_TIERS = [
+    {
+      tier: 1,
+      id: 1,
+      key: "yeu_tan_thu",
+      name: "Yếu - Tân thủ",
+      level: "Yếu",
+      sub: "Tân thủ",
+      display: "🟢 Cấp 1: Yếu - Tân thủ",
+      badgeText: "Yếu - Tân thủ",
+      color: "#16a34a",
+      bg: "#dcfce7",
+      borderColor: "#86efac",
+      desc: "Mới tập chơi, nắm bắt kỹ thuật phát cầu & phản tạt cơ bản",
+      minElo: 0,
+      maxElo: 950,
+      defaultElo: 800
+    },
+    {
+      tier: 2,
+      id: 2,
+      key: "tb_yeu_co_ban",
+      name: "Trung Bình Yếu - Cơ bản",
+      level: "Trung Bình Yếu",
+      sub: "Cơ bản",
+      display: "🔵 Cấp 2: Trung Bình Yếu - Cơ bản",
+      badgeText: "TB Yếu - Cơ bản",
+      color: "#0284c7",
+      bg: "#e0f2fe",
+      borderColor: "#7dd3fc",
+      desc: "Nắm vững luật thi đấu, phông cầu cơ bản, di chuyển bước đầu ổn định",
+      minElo: 951,
+      maxElo: 1150,
+      defaultElo: 1050
+    },
+    {
+      tier: 3,
+      id: 3,
+      key: "trung_binh",
+      name: "Trung bình",
+      level: "Trung bình",
+      sub: "",
+      display: "🟡 Cấp 3: Trung bình",
+      badgeText: "Trung bình",
+      color: "#ca8a04",
+      bg: "#fef9c3",
+      borderColor: "#fde047",
+      desc: "Đánh cầu đều tay, di chuyển thanh thoát, phông cầu sâu và bỏ nhỏ ổn định",
+      minElo: 1151,
+      maxElo: 1350,
+      defaultElo: 1250
+    },
+    {
+      tier: 4,
+      id: 4,
+      key: "trung_binh_kha",
+      name: "Trung bình khá",
+      level: "Trung bình khá",
+      sub: "",
+      display: "🟠 Cấp 4: Trung bình khá",
+      badgeText: "Trung bình khá",
+      color: "#ea580c",
+      bg: "#ffedd5",
+      borderColor: "#fdba74",
+      desc: "Thể lực tốt, chiến thuật bọc lót linh hoạt, smash cơ bản và tạt lưới sắc bén",
+      minElo: 1351,
+      maxElo: 1550,
+      defaultElo: 1450
+    },
+    {
+      tier: 5,
+      id: 5,
+      key: "kha",
+      name: "Khá",
+      level: "Khá",
+      sub: "",
+      display: "🔴 Cấp 5: Khá",
+      badgeText: "Khá",
+      color: "#dc2626",
+      bg: "#fee2e2",
+      borderColor: "#fca5a5",
+      desc: "Kỹ thuật toàn diện, smash uy lực, điều tiết nhịp độ và kiểm soát thế trận vững vàng",
+      minElo: 1551,
+      maxElo: 1750,
+      defaultElo: 1650
+    },
+    {
+      tier: 6,
+      id: 6,
+      key: "gioi_thanh_thao",
+      name: "Giỏi - Thành thạo",
+      level: "Giỏi",
+      sub: "Thành thạo",
+      display: "🟣 Cấp 6: Giỏi - Thành thạo",
+      badgeText: "Giỏi - Thành thạo",
+      color: "#9333ea",
+      bg: "#f3e8ff",
+      borderColor: "#d8b4fe",
+      desc: "Kỹ năng chuyên sâu, thi đấu giải phong trào nhiều năm, phản xạ cực nhạy",
+      minElo: 1751,
+      maxElo: 1950,
+      defaultElo: 1850
+    },
+    {
+      tier: 7,
+      id: 7,
+      key: "tot_chuyen_nghiep",
+      name: "Tốt - Chuyên nghiệp",
+      level: "Tốt",
+      sub: "Chuyên nghiệp",
+      display: "👑 Cấp 7: Tốt - Chuyên nghiệp",
+      badgeText: "Tốt - Chuyên nghiệp",
+      color: "#4f46e5",
+      bg: "#e0e7ff",
+      borderColor: "#a5b4fc",
+      desc: "Đẳng cấp kiện tướng, vận động viên bán chuyên / chuyên nghiệp hoặc HLV đẳng cấp cao",
+      minElo: 1951,
+      maxElo: null,
+      defaultElo: 2050
+    }
+  ];
+
+  getSkillTierInfo(val) {
+    const tiers = App.SKILL_TIERS || [
+      { tier: 1, name: "Yếu - Tân thủ", display: "🟢 Cấp 1: Yếu - Tân thủ", color: "#16a34a", bg: "#dcfce7", desc: "Mới tập chơi" },
+      { tier: 2, name: "Trung Bình Yếu - Cơ bản", display: "🔵 Cấp 2: Trung Bình Yếu - Cơ bản", color: "#0284c7", bg: "#e0f2fe", desc: "Cơ bản" },
+      { tier: 3, name: "Trung bình", display: "🟡 Cấp 3: Trung bình", color: "#ca8a04", bg: "#fef9c3", desc: "Trung bình" },
+      { tier: 4, name: "Trung bình khá", display: "🟠 Cấp 4: Trung bình khá", color: "#ea580c", bg: "#ffedd5", desc: "Trung bình khá" },
+      { tier: 5, name: "Khá", display: "🔴 Cấp 5: Khá", color: "#dc2626", bg: "#fee2e2", desc: "Khá" },
+      { tier: 6, name: "Giỏi - Thành thạo", display: "🟣 Cấp 6: Giỏi - Thành thạo", color: "#9333ea", bg: "#f3e8ff", desc: "Giỏi" },
+      { tier: 7, name: "Tốt - Chuyên nghiệp", display: "👑 Cấp 7: Tốt - Chuyên nghiệp", color: "#4f46e5", bg: "#e0e7ff", desc: "Chuyên nghiệp" }
+    ];
+
+    if (typeof val === 'number') {
+      if (val >= 1 && val <= 7) {
+        return tiers[val - 1];
+      }
+      // If numeric ELO value passed from legacy:
+      if (val <= 950) return tiers[0];
+      if (val <= 1150) return tiers[1];
+      if (val <= 1350) return tiers[2];
+      if (val <= 1550) return tiers[3];
+      if (val <= 1750) return tiers[4];
+      if (val <= 1950) return tiers[5];
+      return tiers[6];
+    }
+
+    if (typeof val === 'string') {
+      const clean = val.trim().toLowerCase();
+      // Match by number string '1'..'7'
+      const num = parseInt(clean, 10);
+      if (!isNaN(num) && num >= 1 && num <= 7) {
+        return tiers[num - 1];
+      }
+      for (const t of tiers) {
+        if (clean === t.key || clean === t.name.toLowerCase() || t.name.toLowerCase().includes(clean) || clean.includes(t.level.toLowerCase())) {
+          return t;
+        }
+      }
+    }
+
+    return tiers[4]; // Default to Khá (Cấp 5)
+  }
+
+  // Alias for backward compatibility
   getEloTierInfo(elo) {
-    const val = (typeof elo === 'number') ? elo : parseInt(elo, 10) || 1200;
-    if (val <= 999) {
-      return { tier: 1, level: "Yếu", sub: "Tân thủ", name: "Yếu - Tân thủ", display: "🟢 Cấp 1: Yếu (Tân thủ)", color: "#16a34a", bg: "#dcfce7", desc: "Mới tập chơi, nắm bắt kỹ thuật & phản tạt cơ bản", min: 0, max: 999, defaultElo: 850 };
-    }
-    if (val <= 1199) {
-      return { tier: 2, level: "Trung Bình", sub: "Cơ bản", name: "Trung Bình - Cơ bản", display: "🔵 Cấp 2: Trung Bình (Cơ bản)", color: "#2563eb", bg: "#dbeafe", desc: "Kỹ thuật cơ bản, di chuyển bộ chân và điều cầu ổn định", min: 1000, max: 1199, defaultElo: 1100 };
-    }
-    if (val <= 1399) {
-      return { tier: 3, level: "Trung Bình Khá", sub: "", name: "Trung Bình Khá", display: "🟡 Cấp 3: Trung Bình Khá", color: "#ca8a04", bg: "#fef9c3", desc: "Có nền tảng tốt, phông cầu sâu và phòng thủ linh hoạt", min: 1200, max: 1399, defaultElo: 1300 };
-    }
-    if (val <= 1599) {
-      return { tier: 4, level: "Khá", sub: "", name: "Khá", display: "🟠 Cấp 4: Khá", color: "#ea580c", bg: "#ffedd5", desc: "Kỹ thuật & chiến thuật sắc bén, smash uy lực, điều tiết nhịp độ", min: 1400, max: 1599, defaultElo: 1450 };
-    }
-    if (val <= 1799) {
-      return { tier: 5, level: "Giỏi", sub: "Thành Thạo", name: "Giỏi - Thành Thạo", display: "🔴 Cấp 5: Giỏi (Thành Thạo)", color: "#dc2626", bg: "#fee2e2", desc: "Kỹ năng toàn diện, smash uy lực, phản xạ nhanh, cọ xát giải phong trào", min: 1600, max: 1799, defaultElo: 1680 };
-    }
-    return { tier: 6, level: "Tốt", sub: "Chuyên Nghiệp", name: "Tốt - Chuyên Nghiệp", display: "🟣 Cấp 6: Tốt (Chuyên Nghiệp)", color: "#7c3aed", bg: "#f3e8ff", desc: "Đẳng cấp VĐV chuyên nghiệp, bán chuyên hoặc kiện tướng", min: 1800, max: null, defaultElo: 1850 };
+    return this.getSkillTierInfo(elo);
   }
 
   getRatingConfidenceInfo(gamesPlayed) {
@@ -1453,219 +1603,176 @@ class BadmintonAIApp {
     return { confidence: 0.95, text: "Xác thực (Độ tin cậy cao)", kFactor: 24, badge: "Xác Thực (K=24)" };
   }
 
-  switchDemoPlayerElo(newElo) {
+  // =========================================================================
+  // PHOTO UPLOAD & FACE RECOGNITION FOR AI MATCHMAKING
+  // =========================================================================
+  triggerPlayerPhotoUpload() {
     if (!this.currentUser) {
-      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để chọn và lưu cấp độ ELO của bạn.", "error");
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập tài khoản để tải ảnh nhận diện.", "error");
       this.navigateTo('ui-01');
       return;
     }
-    if (newElo === 'custom') {
-      this.promptCustomPlayerElo();
-      return;
+    const input = document.getElementById('mm-player-photo-input');
+    if (input) {
+      input.click();
     }
-    this.applyCustomPlayerElo(newElo);
   }
 
-  promptCustomPlayerElo() {
+  handlePlayerPhotoUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
     if (!this.currentUser) {
-      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để tự chọn trình độ ELO của bạn.", "error");
+      this.showToast("⚠️ Vui lòng Đăng Nhập để lưu ảnh nhận diện của bạn!", "error");
       this.navigateTo('ui-01');
       return;
     }
-    const currentElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1200;
-    const input = prompt(
-      "🎯 TỰ CHỌN TRÌNH ĐỘ ELO CỦA BẠN:\n\n" +
-      "Bảng phân khúc tiêu chuẩn:\n" +
-      "• Cấp 1 (Yếu - Tân thủ): 0 - 999 ELO\n" +
-      "• Cấp 2 (Trung Bình - Cơ bản): 1000 - 1199 ELO\n" +
-      "• Cấp 3 (Trung Bình Khá): 1200 - 1399 ELO\n" +
-      "• Cấp 4 (Khá): 1400 - 1599 ELO\n" +
-      "• Cấp 5 (Giỏi - Thành Thạo): 1600 - 1799 ELO\n" +
-      "• Cấp 6 (Tốt - Chuyên Nghiệp): 1800+ ELO\n\n" +
-      "Nhập số điểm ELO mong muốn của bạn (0 - 3500):",
-      currentElo
-    );
-    if (input !== null) {
-      const parsed = parseInt(input.trim(), 10);
-      if (!isNaN(parsed) && parsed >= 0 && parsed <= 3500) {
-        this.applyCustomPlayerElo(parsed);
-      } else {
-        alert("⚠️ Vui lòng nhập số điểm ELO hợp lệ (từ 0 đến 3500)!");
-      }
-    }
-  }
 
-  applyCustomPlayerElo(newElo) {
-    if (!this.currentUser) {
-      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để thiết lập điểm ELO.", "error");
-      this.navigateTo('ui-01');
+    if (!file.type.startsWith('image/')) {
+      this.showToast("⚠️ Vui lòng chọn tệp định dạng hình ảnh hợp lệ (PNG, JPG, JPEG, WEBP)!", "error");
       return;
     }
-    const elo = parseInt(newElo, 10);
-    this.currentUser.elo_rating = elo;
 
-    // Cập nhật vào danh sách users và player_profiles
-    const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.name === this.currentUser.name);
-    if (u) u.elo_rating = elo;
-    const prof = (MockData.player_profiles || []).find(p => p.user_id === this.currentUser.id || p.player_id === this.currentUser.id);
-    if (prof) prof.current_elo = elo;
-
-    const tier = this.getEloTierInfo(elo);
-    const conf = this.getRatingConfidenceInfo(28);
-
-    const eloBadge = document.getElementById('player-profile-elo');
-    const tierBadge = document.getElementById('player-profile-tier');
-    const confBadge = document.getElementById('player-profile-confidence-badge');
-    const select = document.getElementById('quick-demo-elo-select');
-
-    if (eloBadge) eloBadge.innerHTML = `<i class="fa-solid fa-trophy"></i> ELO ${elo}`;
-    if (tierBadge) {
-      tierBadge.textContent = tier.display;
-      tierBadge.style.color = tier.color;
-      tierBadge.style.background = tier.bg;
-    }
-    if (confBadge) {
-      confBadge.textContent = `🎯 Rating Confidence: ${Math.round(conf.confidence * 100)}% (${conf.badge})`;
+    if (file.size > 12 * 1024 * 1024) {
+      this.showToast("⚠️ Kích thước ảnh tối đa là 12MB. Vui lòng chọn ảnh nhỏ hơn!", "error");
+      return;
     }
 
-    if (select) {
-      let matched = false;
-      for (let i = 0; i < select.options.length; i++) {
-        if (parseInt(select.options[i].value, 10) === elo) {
-          select.selectedIndex = i;
-          matched = true;
-          break;
-        }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+
+      // Update current user
+      this.currentUser.avatar = dataUrl;
+      this.currentUser.photo = dataUrl;
+
+      // Update in MockData.users
+      const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.name === this.currentUser.name);
+      if (u) {
+        u.avatar = dataUrl;
+        u.photo = dataUrl;
       }
-      if (!matched) {
-        let customOpt = select.querySelector('option[value="custom"]');
-        if (!customOpt) {
-          customOpt = document.createElement('option');
-          customOpt.value = 'custom';
-          select.appendChild(customOpt);
-        }
-        customOpt.textContent = `✏️ Tự chọn: ELO ${elo} (${tier.name})`;
-        select.value = 'custom';
+
+      // Update in MockData.player_profiles
+      const prof = (MockData.player_profiles || []).find(p => p.user_id === this.currentUser.id || p.player_id === this.currentUser.id);
+      if (prof) {
+        prof.avatar = dataUrl;
+        prof.photo = dataUrl;
       }
-    }
 
-    if (typeof saveMockDataToLocalStorage === 'function') {
-      saveMockDataToLocalStorage();
-    }
+      // Update in active room if member/host
+      if (this.activeRoom && this.activeRoom.players) {
+        this.activeRoom.players.forEach(p => {
+          if (p.name === this.currentUser.name || p.id === this.currentUser.id) {
+            p.avatar = dataUrl;
+            p.photo = dataUrl;
+          }
+        });
+      }
 
-    this.showToast(`🎯 Đã cập nhật trình độ của bạn thành ELO ${elo} (${tier.display})! Đang quét lại đối thủ...`);
-    this.executeMatchmakingEngine();
+      // Save to local storage
+      if (typeof saveMockDataToLocalStorage === 'function') {
+        saveMockDataToLocalStorage();
+      }
+
+      // Update visual avatars
+      this.updateUserAvatarElements(dataUrl);
+      this.executeMatchmakingEngine();
+      if (this.activeRoom) {
+        this.renderRoomDetailMembers();
+        this.renderChatMessages();
+      }
+
+      this.showToast("📸 Đã cập nhật ảnh nhận diện thành công! Đối thủ ghép kèo giờ đây có thể nhận diện diện mạo của bạn.");
+    };
+
+    reader.readAsDataURL(file);
   }
 
-  showEloTiersGuideModal() {
+  updateUserAvatarElements(photoUrl) {
+    const avatarEl = document.getElementById('player-profile-avatar');
+    if (avatarEl) {
+      avatarEl.innerHTML = `<img src="${photoUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+    }
+    const faceStatusEl = document.getElementById('player-face-status');
+    if (faceStatusEl) {
+      faceStatusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã có ảnh diện mạo`;
+      faceStatusEl.style.color = "#16a34a";
+    }
+  }
+
+  renderPlayerAvatarHtml(userOrPlayer, size = 36, extraStyle = "") {
+    if (!userOrPlayer) return `<div class="avatar" style="width: ${size}px; height: ${size}px; border-radius: 50%; background: #64748b; color: #fff; display: inline-flex; align-items: center; justify-content: center;">👤</div>`;
+    
+    const photo = userOrPlayer.photo || userOrPlayer.avatar;
+    const name = userOrPlayer.name || userOrPlayer.host_name || 'Đối thủ';
+    const isPhotoUrl = photo && (photo.startsWith('data:image') || photo.startsWith('http') || photo.includes('/'));
+
+    if (isPhotoUrl) {
+      return `
+        <div class="mm-avatar-container" style="display: inline-block; position: relative;">
+          <img src="${photo}" alt="${name}" class="mm-avatar-img" style="width: ${size}px; height: ${size}px; border-radius: 50%; border: 2px solid #167946; box-shadow: 0 2px 6px rgba(0,0,0,0.12); ${extraStyle}" title="Bấm để xem ảnh nhận diện khuôn mặt của ${name}" onclick="event.stopPropagation(); app.showPlayerFaceModal('${name.replace(/'/g, "\\'")}', '${photo}')">
+          <span class="mm-photo-badge" title="Đã có ảnh nhận diện"><i class="fa-solid fa-camera"></i></span>
+        </div>
+      `;
+    }
+
+    const initial = name.charAt(0).toUpperCase();
+    return `
+      <div class="avatar mm-avatar-fallback" style="width: ${size}px; height: ${size}px; font-size: ${Math.round(size * 0.42)}px; background: #167946; color: #fff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; border: 2px solid #86efac; ${extraStyle}" title="${name}">
+        ${initial}
+      </div>
+    `;
+  }
+
+  showPlayerFaceModal(playerName, photoUrl, tierName, notes) {
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;
 
-    const currentElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1450;
-    const currentTier = this.getEloTierInfo(currentElo);
+    const tier = this.getSkillTierInfo(tierName || 5);
+    const hasPhoto = photoUrl && (photoUrl.startsWith('data:image') || photoUrl.startsWith('http') || photoUrl.includes('/'));
+    const displayImg = hasPhoto ? photoUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
 
     modalBody.innerHTML = `
-      <div style="padding: 0.5rem 0;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
-          <div>
-            <h3 style="margin: 0; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-layer-group text-primary"></i> Bảng Phân Khúc Ghép Trình ELO
-            </h3>
-            <p style="margin: 4px 0 0; font-size: 0.82rem; color: #64748b;">
-              Chuẩn 6 phân khúc trình độ thi đấu & quyền tự chọn ELO cá nhân
-            </p>
+      <div style="padding: 1rem 0; text-align: center;">
+        <div style="margin-bottom: 1.25rem;">
+          <h3 style="margin: 0 0 4px; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-id-badge text-primary"></i> Nhận Diện Khuôn Mặt & Ngoại Hình Đối Thủ
+          </h3>
+          <p style="margin: 0; font-size: 0.84rem; color: #64748b;">
+            Giúp bạn dễ dàng nhận diện đối thủ khi đến điểm hẹn tại sân cầu lông
+          </p>
+        </div>
+
+        <div class="player-face-card-preview" style="max-width: 420px; margin: 0 auto; background: #ffffff; border: 2px solid #86efac; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
+          <img src="${displayImg}" alt="${playerName}" class="player-face-modal-img" style="width: 170px; height: 170px; border-radius: 50%; object-fit: cover; border: 4px solid #167946; box-shadow: 0 8px 24px rgba(22, 121, 70, 0.25);">
+          
+          <h2 style="margin: 0 0 6px; font-size: 1.35rem; color: #0f172a; font-weight: 800;">${playerName}</h2>
+          
+          <div style="margin-bottom: 12px;">
+            <span class="tier-badge-pill" style="background: ${tier.bg}; color: ${tier.color}; font-size: 0.85rem; padding: 4px 14px; font-weight: 800;">
+              ${tier.display}
+            </span>
           </div>
-          <span style="background: ${currentTier.bg}; color: ${currentTier.color}; font-size: 0.8rem; font-weight: 800; padding: 4px 10px; border-radius: 9999px;">
-            Trình của bạn: ELO ${currentElo} (${currentTier.name})
-          </span>
+
+          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 12px 14px; text-align: left; font-size: 0.82rem; color: #166534; line-height: 1.5; margin-bottom: 12px; width: 100%;">
+            <div style="font-weight: 700; margin-bottom: 4px;"><i class="fa-solid fa-circle-check"></i> Xác Thực Ngoại Hình Người Chơi:</div>
+            <div>• Cấp bậc trình độ: <strong>${tier.name}</strong> (${tier.desc})</div>
+            <div>• Trạng thái nhận diện: <strong style="color: #16a34a;">Đã xác nhận ảnh chụp thực tế</strong></div>
+          </div>
+
+          <div style="font-size: 0.8rem; color: #475569; line-height: 1.5; text-align: left; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; width: 100%;">
+            💡 <strong>Gợi ý nhận diện tại sân:</strong> Bạn hãy quan sát khuôn mặt này tại khu vực ghế chờ hoặc bảng số sân để chào hỏi và bắt đầu trận đấu giao lưu đúng giờ!
+          </div>
         </div>
 
-        <div style="overflow-x: auto; margin-bottom: 1.25rem;">
-          <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-            <thead>
-              <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1; text-align: left;">
-                <th style="padding: 8px 10px;">Cấp</th>
-                <th style="padding: 8px 10px;">Phân Khúc</th>
-                <th style="padding: 8px 10px;">Trình Độ Phụ</th>
-                <th style="padding: 8px 10px; text-align: center;">ELO Min</th>
-                <th style="padding: 8px 10px; text-align: center;">ELO Max</th>
-                <th style="padding: 8px 10px; text-align: right;">Hành Động</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 1 ? '#f0fdf4' : 'transparent'};">
-                <td style="padding: 10px;"><span style="background: #dcfce7; color: #16a34a; font-weight: 800; padding: 2px 8px; border-radius: 6px;">1</span></td>
-                <td style="padding: 10px; font-weight: 700; color: #16a34a;">Yếu</td>
-                <td style="padding: 10px; color: #475569;">Tân thủ</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">0</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">999</td>
-                <td style="padding: 10px; text-align: right;">
-                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(850); app.closeModal();">Chọn (~850)</button>
-                </td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 2 ? '#eff6ff' : 'transparent'};">
-                <td style="padding: 10px;"><span style="background: #dbeafe; color: #2563eb; font-weight: 800; padding: 2px 8px; border-radius: 6px;">2</span></td>
-                <td style="padding: 10px; font-weight: 700; color: #2563eb;">Trung Bình</td>
-                <td style="padding: 10px; color: #475569;">Cơ bản</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">1000</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">1199</td>
-                <td style="padding: 10px; text-align: right;">
-                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1100); app.closeModal();">Chọn (~1100)</button>
-                </td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 3 ? '#fefce8' : 'transparent'};">
-                <td style="padding: 10px;"><span style="background: #fef9c3; color: #ca8a04; font-weight: 800; padding: 2px 8px; border-radius: 6px;">3</span></td>
-                <td style="padding: 10px; font-weight: 700; color: #ca8a04;">Trung Bình Khá</td>
-                <td style="padding: 10px; color: #94a3b8;">—</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">1200</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">1399</td>
-                <td style="padding: 10px; text-align: right;">
-                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1300); app.closeModal();">Chọn (~1300)</button>
-                </td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 4 ? '#fff7ed' : 'transparent'};">
-                <td style="padding: 10px;"><span style="background: #ffedd5; color: #ea580c; font-weight: 800; padding: 2px 8px; border-radius: 6px;">4</span></td>
-                <td style="padding: 10px; font-weight: 700; color: #ea580c;">Khá</td>
-                <td style="padding: 10px; color: #94a3b8;">—</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">1400</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">1599</td>
-                <td style="padding: 10px; text-align: right;">
-                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1450); app.closeModal();">Chọn (~1450)</button>
-                </td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e2e8f0; background: ${currentTier.tier === 5 ? '#fef2f2' : 'transparent'};">
-                <td style="padding: 10px;"><span style="background: #fee2e2; color: #dc2626; font-weight: 800; padding: 2px 8px; border-radius: 6px;">5</span></td>
-                <td style="padding: 10px; font-weight: 700; color: #dc2626;">Giỏi</td>
-                <td style="padding: 10px; color: #475569;">Thành Thạo</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">1600</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">1799</td>
-                <td style="padding: 10px; text-align: right;">
-                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1680); app.closeModal();">Chọn (~1680)</button>
-                </td>
-              </tr>
-              <tr style="background: ${currentTier.tier === 6 ? '#faf5ff' : 'transparent'};">
-                <td style="padding: 10px;"><span style="background: #f3e8ff; color: #7c3aed; font-weight: 800; padding: 2px 8px; border-radius: 6px;">6</span></td>
-                <td style="padding: 10px; font-weight: 700; color: #7c3aed;">Tốt</td>
-                <td style="padding: 10px; color: #475569;">Chuyên Nghiệp</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700;">1800</td>
-                <td style="padding: 10px; text-align: center; font-weight: 700; color: #7c3aed;">NULL (1800+)</td>
-                <td style="padding: 10px; text-align: right;">
-                  <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerElo(1850); app.closeModal();">Chọn (~1850)</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div style="background: #f1f5f9; border-radius: 10px; padding: 12px; margin-bottom: 1rem; font-size: 0.82rem; color: #334155;">
-          <i class="fa-solid fa-circle-info text-primary"></i> <strong>Quyền tự chọn trình độ:</strong> Bạn có thể chọn bất kỳ phân khúc nào ở trên hoặc bấm nút bên dưới để tự nhập số điểm ELO mong muốn của mình mà không bị giới hạn.
-        </div>
-
-        <div style="display: flex; gap: 8px; justify-content: flex-end;">
-          <button class="btn btn-secondary btn-sm" onclick="app.closeModal()">Đóng</button>
-          <button class="btn btn-primary btn-sm" onclick="app.closeModal(); app.promptCustomPlayerElo();" style="background: #167946;">
-            <i class="fa-solid fa-pen-to-square"></i> Tự Nhập Số ELO Của Tôi
-          </button>
+        <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 10px;">
+          <button class="btn btn-secondary" onclick="app.closeModal()">Đóng Cửa Sổ</button>
+          ${this.currentUser && this.currentUser.name === playerName ? `
+            <button class="btn btn-primary" onclick="app.closeModal(); app.triggerPlayerPhotoUpload();" style="background: #167946;">
+              <i class="fa-solid fa-camera"></i> Đổi Ảnh Nhận Diện Khác
+            </button>
+          ` : ''}
         </div>
       </div>
     `;
@@ -1673,64 +1780,228 @@ class BadmintonAIApp {
     this.openModal();
   }
 
+  // =========================================================================
+  // 7 SKILL TIERS GUIDE & SELECTION MODAL
+  // =========================================================================
+  showEloTiersGuideModal() {
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) return;
+
+    const currentTierVal = (this.currentUser && (this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating)) || 5;
+    const currentTier = this.getSkillTierInfo(currentTierVal);
+    const tiers = App.SKILL_TIERS;
+
+    let rowsHtml = '';
+    tiers.forEach(t => {
+      const isSelected = currentTier.tier === t.tier;
+      rowsHtml += `
+        <tr style="border-bottom: 1px solid #e2e8f0; background: ${isSelected ? '#f0fdf4' : 'transparent'}; transition: background 0.2s ease;">
+          <td style="padding: 12px 10px; font-weight: 800;">
+            <span style="background: ${t.bg}; color: ${t.color}; font-size: 0.82rem; padding: 3px 9px; border-radius: 6px; border: 1px solid ${t.borderColor || '#cbd5e1'};">
+              Cấp ${t.tier}
+            </span>
+          </td>
+          <td style="padding: 12px 10px; font-weight: 800; color: ${t.color}; font-size: 0.95rem;">
+            ${t.name}
+          </td>
+          <td style="padding: 12px 10px; font-size: 0.83rem; color: #475569; line-height: 1.4;">
+            ${t.desc}
+          </td>
+          <td style="padding: 12px 10px; text-align: center;">
+            <span class="badge" style="background: ${t.bg}; color: ${t.color}; font-weight: 700; font-size: 0.75rem;">
+              Cân kèo Cấp ${t.tier}
+            </span>
+          </td>
+          <td style="padding: 12px 10px; text-align: right;">
+            ${isSelected ? `
+              <span style="color: #16a34a; font-weight: 800; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-circle-check"></i> Đang Chọn
+              </span>
+            ` : `
+              <button class="btn btn-xs btn-outline-primary" onclick="app.applyCustomPlayerSkillTier(${t.tier}); app.closeModal();" style="font-weight: 700; padding: 4px 10px;">
+                Chọn Cấp Này
+              </button>
+            `}
+          </td>
+        </tr>
+      `;
+    });
+
+    const userPhoto = (this.currentUser && (this.currentUser.photo || this.currentUser.avatar)) || '';
+    const hasPhoto = userPhoto && (userPhoto.startsWith('data:image') || userPhoto.startsWith('http') || userPhoto.includes('/'));
+
+    modalBody.innerHTML = `
+      <div style="padding: 0.5rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <h3 style="margin: 0; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-layer-group text-primary"></i> Bảng 7 Cấp Bậc Trình Độ Ghép Kèo AI
+            </h3>
+            <p style="margin: 4px 0 0; font-size: 0.82rem; color: #64748b;">
+              Hệ thống tự động xét kèo cân đối cùng hạng mức trình độ - Không áp dụng điểm số phức tạp
+            </p>
+          </div>
+          <span style="background: ${currentTier.bg}; color: ${currentTier.color}; font-size: 0.82rem; font-weight: 800; padding: 5px 12px; border-radius: 9999px; border: 1.5px solid ${currentTier.color};">
+            Cấp bậc của bạn: ${currentTier.name}
+          </span>
+        </div>
+
+        <div style="overflow-x: auto; margin-bottom: 1.25rem; border: 1px solid #e2e8f0; border-radius: 12px;">
+          <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 0;">
+            <thead>
+              <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1; text-align: left;">
+                <th style="padding: 10px;">Hạng</th>
+                <th style="padding: 10px;">Cấp Bậc Trình Độ</th>
+                <th style="padding: 10px;">Đặc Điểm & Kỹ Năng Thi Đấu</th>
+                <th style="padding: 10px; text-align: center;">Quy Chuẩn AI</th>
+                <th style="padding: 10px; text-align: right;">Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Section: Personal Photo Upload for Opponent Recognition -->
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%); border: 1.5px solid #86efac; border-radius: 12px; padding: 14px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${hasPhoto ? `
+              <img src="${userPhoto}" alt="Avatar" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2.5px solid #167946; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
+            ` : `
+              <div style="width: 48px; height: 48px; border-radius: 50%; background: #167946; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800;">
+                ${this.currentUser ? this.currentUser.name.charAt(0) : '👤'}
+              </div>
+            `}
+            <div>
+              <strong style="color: #0f172a; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-camera text-primary"></i> Ảnh Nhận Diện Ngoại Hình Của Bạn
+              </strong>
+              <div style="font-size: 0.78rem; color: #475569; margin-top: 2px;">
+                Tải ảnh khuôn mặt từ thiết bị để đối thủ nhận diện và tìm thấy bạn dễ dàng khi đến sân.
+              </div>
+            </div>
+          </div>
+          <div>
+            <button class="btn btn-primary btn-sm" onclick="app.closeModal(); app.triggerPlayerPhotoUpload();" style="background: #0284c7; font-weight: 700;">
+              <i class="fa-solid fa-arrow-up-from-bracket"></i> ${hasPhoto ? 'Đổi Ảnh Từ Thiết Bị' : 'Tải Ảnh Lên Ngay'}
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button class="btn btn-secondary btn-sm" onclick="app.closeModal()">Đóng Bảng</button>
+        </div>
+      </div>
+    `;
+
+    this.openModal();
+  }
+
+  applyCustomPlayerSkillTier(tierId) {
+    if (!this.currentUser) {
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để chọn cấp bậc trình độ.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+
+    const tier = this.getSkillTierInfo(tierId);
+    this.currentUser.skill_tier_id = tier.tier;
+    this.currentUser.skill_tier = tier.name;
+    this.currentUser.elo_rating = tier.defaultElo || 1650;
+
+    // Update in MockData.users and MockData.player_profiles
+    const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.name === this.currentUser.name);
+    if (u) {
+      u.skill_tier = tier.name;
+      u.skill_tier_id = tier.tier;
+      u.elo_rating = tier.defaultElo || 1650;
+    }
+    const prof = (MockData.player_profiles || []).find(p => p.user_id === this.currentUser.id || p.player_id === this.currentUser.id);
+    if (prof) {
+      prof.skill_level = tier.name;
+      prof.current_elo = tier.defaultElo || 1650;
+    }
+
+    // Update visual badge in UI-06
+    const tierBadge = document.getElementById('player-profile-tier');
+    if (tierBadge) {
+      tierBadge.textContent = tier.display;
+      tierBadge.style.color = tier.color;
+      tierBadge.style.background = tier.bg;
+    }
+
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage();
+    }
+
+    this.showToast(`🎯 Bạn đã chọn trình độ: ${tier.display}! AI đang tự động lọc các kèo đấu cùng hạng mức...`);
+    this.executeMatchmakingEngine();
+  }
+
+  // Legacy fallback proxy
+  applyCustomPlayerElo(newElo) {
+    const tier = this.getSkillTierInfo(newElo);
+    this.applyCustomPlayerSkillTier(tier.tier);
+  }
+
+  promptCustomPlayerElo() {
+    this.showEloTiersGuideModal();
+  }
+
+  switchDemoPlayerElo(newElo) {
+    const tier = this.getSkillTierInfo(newElo);
+    this.applyCustomPlayerSkillTier(tier.tier);
+  }
+
   handleMatchTypeChange(val) {
     this.currentMatchType = val;
     this.executeMatchmakingEngine();
   }
 
-  simulateDynamicRangeStep() {
-    this.expandRadarRangeStep();
-  }
-
   expandRadarRangeStep() {
     this.currentWaitTimer = (this.currentWaitTimer || 0) + 30;
-    if (this.currentWaitTimer > 150) this.currentWaitTimer = 0;
-    
-    let range = 50;
-    if (this.currentWaitTimer >= 120) range = 200;
-    else if (this.currentWaitTimer >= 60) range = 150;
-    else if (this.currentWaitTimer >= 30) range = 100;
+    if (this.currentWaitTimer > 90) this.currentWaitTimer = 0;
 
     const rangeBadge = document.getElementById('dynamic-range-badge');
     const waitTimerEl = document.getElementById('dynamic-wait-timer');
-    if (rangeBadge) rangeBadge.textContent = `Dải ELO: ±${range}`;
-    if (waitTimerEl) waitTimerEl.textContent = `(Thời gian chờ: ${this.currentWaitTimer}s)`;
+    const matchingSelect = document.getElementById('finder-skill-matching');
 
-    this.showToast(`⚡ Radar tự động mở rộng dải tìm kiếm lên ±${range} ELO (chờ ${this.currentWaitTimer}s)!`);
-    this.executeMatchmakingEngine();
-  }
-
-  startDynamicMatchmakingSearch() {
-    if (!this.currentUser) {
-      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập để AI tìm đối thủ ngang trình theo điểm ELO của bạn.", "info");
-      this.navigateTo('ui-01');
-      return;
+    if (this.currentWaitTimer === 0) {
+      if (rangeBadge) rangeBadge.textContent = "Hạng mức: Cùng cấp bậc";
+      if (matchingSelect) matchingSelect.value = "same";
+      this.showToast("🎯 Radar AI: Đang quét người chơi cùng hạng mức tuyệt đối (100% cân kèo)!");
+    } else if (this.currentWaitTimer <= 30) {
+      if (rangeBadge) rangeBadge.textContent = "Hạng mức: Lệch tối đa 1 cấp (+Chấp điểm)";
+      if (matchingSelect) matchingSelect.value = "adjacent";
+      this.showToast("⚖️ Radar AI mở rộng: Quét người chơi cùng hạng mức hoặc chênh lệch tối đa 1 cấp (+3 điểm chấp)!");
+    } else {
+      if (rangeBadge) rangeBadge.textContent = "Hạng mức: Mở rộng giao lưu mọi cấp";
+      if (matchingSelect) matchingSelect.value = "all";
+      this.showToast("🌐 Radar AI mở rộng tối đa: Giao lưu với mọi cấp bậc trình độ!");
     }
 
-    this.currentWaitTimer = 0;
-    const rangeBadge = document.getElementById('dynamic-range-badge');
-    const waitTimerEl = document.getElementById('dynamic-wait-timer');
-    if (rangeBadge) rangeBadge.textContent = `Dải ELO: ±50`;
-    if (waitTimerEl) waitTimerEl.textContent = `(Thời gian chờ: 0s)`;
-
-    this.showToast("🚀 Khởi động Matching Score Engine & Radar dải động...");
+    if (waitTimerEl) waitTimerEl.textContent = `(Chờ: ${this.currentWaitTimer}s)`;
     this.executeMatchmakingEngine();
   }
 
+  // =========================================================================
+  // CORE AI MATCHMAKING ENGINE: 7 SKILL TIERS AUTO-BALANCING
+  // =========================================================================
   executeMatchmakingEngine() {
     const container = document.getElementById('matchmaking-rooms-grid');
     if (!container) return;
 
     const isGuest = !this.currentUser;
-    const userElo = (!isGuest && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1200;
+    const userTierVal = (!isGuest && (this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating)) || 5;
+    const userTier = this.getSkillTierInfo(userTierVal);
     const userName = !isGuest ? this.currentUser.name : "Khách (Chưa đăng nhập)";
-    const userTier = this.getEloTierInfo(userElo);
 
     // Sync UI-06 profile card with actual logged-in user or guest state
     const profileNameEl = document.getElementById('player-profile-name');
-    const profileAvatarEl = document.getElementById('player-profile-avatar');
-    const profileEloEl = document.getElementById('player-profile-elo');
+    const profileAvatarContainer = document.getElementById('player-profile-avatar-container');
     const profileTierEl = document.getElementById('player-profile-tier');
+    const faceStatusEl = document.getElementById('player-face-status');
 
     if (profileNameEl) {
       if (isGuest) {
@@ -1739,71 +2010,102 @@ class BadmintonAIApp {
         profileNameEl.textContent = this.currentUser.name;
       }
     }
-    if (profileAvatarEl) {
-      profileAvatarEl.textContent = !isGuest ? (this.currentUser.avatar || this.currentUser.name.charAt(0)) : '👤';
+
+    if (profileAvatarContainer && !isGuest) {
+      const photo = this.currentUser.photo || this.currentUser.avatar;
+      const isPhotoUrl = photo && (photo.startsWith('data:image') || photo.startsWith('http') || photo.includes('/'));
+      if (isPhotoUrl) {
+        profileAvatarContainer.innerHTML = `
+          <img src="${photo}" alt="Avatar" class="mm-avatar-img" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #167946; box-shadow: 0 2px 6px rgba(0,0,0,0.12);">
+          <span class="mm-photo-badge" title="Tải ảnh nhận diện"><i class="fa-solid fa-camera"></i></span>
+        `;
+      } else {
+        profileAvatarContainer.innerHTML = `
+          <div class="avatar" id="player-profile-avatar" style="width: 36px; height: 36px; font-size: 0.95rem; background: #167946; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; border: 2px solid #86efac;">
+            ${this.currentUser.name ? this.currentUser.name.charAt(0) : 'H'}
+          </div>
+          <span class="mm-photo-badge" title="Tải ảnh nhận diện"><i class="fa-solid fa-camera"></i></span>
+        `;
+      }
     }
-    if (profileEloEl) {
-      profileEloEl.innerHTML = `<i class="fa-solid fa-trophy"></i> ELO ${userElo}`;
-    }
+
     if (profileTierEl) {
       profileTierEl.textContent = userTier.display;
       profileTierEl.style.color = userTier.color;
       profileTierEl.style.background = userTier.bg;
+      profileTierEl.style.borderColor = userTier.borderColor || '#cbd5e1';
     }
 
-    const waitSeconds = this.currentWaitTimer || 0;
-    let dynamicRange = 50;
-    if (waitSeconds >= 120) dynamicRange = 200;
-    else if (waitSeconds >= 60) dynamicRange = 150;
-    else if (waitSeconds >= 30) dynamicRange = 100;
+    if (faceStatusEl) {
+      const hasPhoto = this.currentUser && (this.currentUser.photo || (this.currentUser.avatar && (this.currentUser.avatar.startsWith('data:image') || this.currentUser.avatar.startsWith('http'))));
+      if (hasPhoto) {
+        faceStatusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã tải ảnh diện mạo`;
+        faceStatusEl.style.color = "#16a34a";
+      } else {
+        faceStatusEl.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber"></i> Chưa có ảnh khuôn mặt`;
+        faceStatusEl.style.color = "#d97706";
+      }
+    }
 
-    const maxDeltaSelect = document.getElementById('finder-max-delta');
-    const selectedDelta = maxDeltaSelect ? parseInt(maxDeltaSelect.value, 10) : 100;
-    const effectiveDelta = Math.max(selectedDelta, dynamicRange);
-
+    const skillMatchingFilter = document.getElementById('finder-skill-matching')?.value || 'same';
     const matchTypeEl = document.getElementById('finder-match-type');
-    const matchType = matchTypeEl ? matchTypeEl.value : 'SINGLES';
-
-    const preferredArea = document.getElementById('finder-area')?.value || 'Cầu Giấy';
+    const matchType = matchTypeEl ? matchTypeEl.value : 'DOUBLES';
+    const preferredArea = document.getElementById('finder-area')?.value || 'Hoàng Mai';
     const preferredTime = document.getElementById('finder-time')?.value || '18:00 - 20:00';
-
-    // Weights: ELO 50%, Time 20%, Location 15%, Skill 10%, History 5%
-    const weights = { elo: 0.50, time: 0.20, loc: 0.15, skill: 0.10, hist: 0.05 };
 
     let candidatePool = [];
 
     // 1. Gather other players
     (MockData.users || []).forEach(u => {
       if (u.role === 'CUSTOMER' && u.name !== userName) {
-        const cElo = typeof u.elo_rating === 'number' ? u.elo_rating : 1200;
-        const diff = Math.abs(userElo - cElo);
+        const uTier = this.getSkillTierInfo(u.skill_tier_id || u.skill_tier || u.elo_rating || 5);
+        const tierDiff = Math.abs(userTier.tier - uTier.tier);
 
-        if (diff <= effectiveDelta) {
-          const sElo = Math.max(0, 100 - (diff * 0.5));
-          const sTime = 95.0; // High overlap in preferred slot
-          const sLoc = preferredArea === 'Cầu Giấy' ? 95.0 : 80.0;
-          const sSkill = Math.max(30, 100 - (Math.abs(userTier.tier - this.getEloTierInfo(cElo).tier) * 20));
-          const sHist = 90.0;
+        let isMatchAllowed = false;
+        if (skillMatchingFilter === 'same') {
+          isMatchAllowed = (tierDiff === 0);
+        } else if (skillMatchingFilter === 'adjacent') {
+          isMatchAllowed = (tierDiff <= 1);
+        } else {
+          isMatchAllowed = true;
+        }
 
-          const matchScore = Math.round((sElo * weights.elo + sTime * weights.time + sLoc * weights.loc + sSkill * weights.skill + sHist * weights.hist) * 10) / 10;
-          
-          // Logistic probability: P(A) = 1 / (1 + 10^((cElo - userElo)/400))
-          const expA = 1.0 / (1.0 + Math.pow(10, (cElo - userElo) / 400.0));
-          const winRateA = Math.round(expA * 100);
-          const winRateB = 100 - winRateA;
+        if (isMatchAllowed) {
+          // Calculate MatchScore: Tier (50%), Time (25%), Location (25%)
+          const sSkill = tierDiff === 0 ? 100.0 : (tierDiff === 1 ? 85.0 : Math.max(30, 70 - tierDiff * 15));
+          const sTime = 95.0;
+          const sLoc = 90.0;
+          const matchScore = Math.round(sSkill * 0.50 + sTime * 0.25 + sLoc * 0.25);
+
+          // Win rate estimation based on skill rank
+          let winRateA = 50;
+          let winRateB = 50;
+          if (tierDiff === 1) {
+            if (userTier.tier > uTier.tier) { winRateA = 58; winRateB = 42; }
+            else { winRateA = 42; winRateB = 58; }
+          } else if (tierDiff >= 2) {
+            if (userTier.tier > uTier.tier) { winRateA = 70; winRateB = 30; }
+            else { winRateA = 30; winRateB = 70; }
+          }
 
           candidatePool.push({
             id: u.id,
             name: u.name,
-            elo: cElo,
-            tier: this.getEloTierInfo(cElo),
-            diff: diff,
+            photo: u.photo || u.avatar,
+            avatar: u.avatar,
+            tier: uTier,
+            tierDiff: tierDiff,
             matchScore: matchScore,
-            subScores: { elo: Math.round(sElo), time: Math.round(sTime), loc: Math.round(sLoc), skill: Math.round(sSkill) },
+            subScores: {
+              tier: tierDiff === 0 ? "Cùng cấp" : `Lệch ${tierDiff} cấp`,
+              time: "95%",
+              loc: "90%",
+              balance: tierDiff === 0 ? "100% Cân kèo" : (tierDiff === 1 ? "Kèo lệch 1 cấp" : "Kèo thách đấu")
+            },
             winRateA: winRateA,
             winRateB: winRateB,
             matchType: matchType,
-            facility: preferredArea === 'Cầu Giấy' ? 'CLB Cầu Giấy Pro Center' : 'CLB Catchy Badminton Arena',
+            facility: preferredArea === 'Hoàng Mai' ? 'CLB Catchy Badminton Arena' : 'CLB Cầu Giấy Pro Center',
             time: preferredTime,
             isRoom: false
           });
@@ -1811,35 +2113,54 @@ class BadmintonAIApp {
       }
     });
 
-    // 2. Also incorporate matchmaking rooms
+    // 2. Gather Matchmaking Rooms
     (MockData.matchmaking_rooms || []).forEach(r => {
-      const rMin = r.required_elo_min || 1200;
-      const rMax = r.required_elo_max || 1600;
-      const rMid = Math.round((rMin + rMax) / 2);
-      const diff = Math.abs(userElo - rMid);
+      const rTier = this.getSkillTierInfo(r.required_tier_id || r.required_tier || r.host_tier || r.required_elo_min || 5);
+      const tierDiff = Math.abs(userTier.tier - rTier.tier);
 
-      if (diff <= effectiveDelta + 50) {
-        const sElo = Math.max(0, 100 - (diff * 0.5));
-        const sTime = 90.0;
-        const sLoc = (r.district && r.district.includes(preferredArea)) ? 100.0 : 80.0;
-        const sSkill = 90.0;
-        const sHist = (matchType === 'DOUBLES' && r.match_type.includes('Đôi')) ? 100.0 : 75.0;
+      let isMatchAllowed = false;
+      if (skillMatchingFilter === 'same') {
+        isMatchAllowed = (tierDiff === 0);
+      } else if (skillMatchingFilter === 'adjacent') {
+        isMatchAllowed = (tierDiff <= 1);
+      } else {
+        isMatchAllowed = true;
+      }
 
-        const matchScore = Math.round((sElo * weights.elo + sTime * weights.time + sLoc * weights.loc + sSkill * weights.skill + sHist * weights.hist) * 10) / 10;
-        const expA = 1.0 / (1.0 + Math.pow(10, (rMid - userElo) / 400.0));
+      if (isMatchAllowed) {
+        const sSkill = tierDiff === 0 ? 100.0 : (tierDiff === 1 ? 88.0 : Math.max(35, 75 - tierDiff * 15));
+        const sTime = 95.0;
+        const sLoc = (r.district && r.district.includes(preferredArea)) ? 100.0 : 85.0;
+        const matchScore = Math.round(sSkill * 0.50 + sTime * 0.25 + sLoc * 0.25);
+
+        let winRateA = 50;
+        let winRateB = 50;
+        if (tierDiff === 1) {
+          if (userTier.tier > rTier.tier) { winRateA = 56; winRateB = 44; }
+          else { winRateA = 44; winRateB = 56; }
+        } else if (tierDiff >= 2) {
+          if (userTier.tier > rTier.tier) { winRateA = 68; winRateB = 32; }
+          else { winRateA = 32; winRateB = 68; }
+        }
 
         candidatePool.push({
           id: r.id,
           roomId: r.id,
           name: r.room_name,
           hostName: r.host_name,
-          elo: rMid,
-          tier: this.getEloTierInfo(rMid),
-          diff: diff,
+          photo: r.host_photo || (r.players && r.players[0] && r.players[0].photo) || null,
+          avatar: (r.players && r.players[0] && r.players[0].avatar) || 'R',
+          tier: rTier,
+          tierDiff: tierDiff,
           matchScore: matchScore,
-          subScores: { elo: Math.round(sElo), time: Math.round(sTime), loc: Math.round(sLoc), skill: Math.round(sSkill) },
-          winRateA: Math.round(expA * 100),
-          winRateB: 100 - Math.round(expA * 100),
+          subScores: {
+            tier: tierDiff === 0 ? "Cùng cấp" : `Lệch ${tierDiff} cấp`,
+            time: "95%",
+            loc: "100%",
+            balance: tierDiff === 0 ? "100% Cân kèo" : (tierDiff === 1 ? "Kèo chấp điểm" : "Kèo thách đấu")
+          },
+          winRateA: winRateA,
+          winRateB: winRateB,
           matchType: r.match_type,
           facility: r.facility_name,
           time: `${r.match_date} (${r.match_time})`,
@@ -1849,43 +2170,48 @@ class BadmintonAIApp {
       }
     });
 
-    // Sort descending by matchScore
-    candidatePool.sort((a, b) => b.matchScore - a.matchScore);
+    // Apply sorting
+    const sortBy = this.currentMMSort || 'ai-match';
+    if (sortBy === 'tier-asc') {
+      candidatePool.sort((a, b) => a.tier.tier - b.tier.tier);
+    } else if (sortBy === 'tier-desc') {
+      candidatePool.sort((a, b) => b.tier.tier - a.tier.tier);
+    } else {
+      candidatePool.sort((a, b) => b.matchScore - a.matchScore);
+    }
 
     // Update total count
     const countEl = document.getElementById('mm-total-count');
     if (countEl) countEl.textContent = candidatePool.length;
 
-    // Generate explainable AI Recommendation Narrative
+    // Narrative Insight
     const narrativeEl = document.getElementById('ai-recom-narrative');
-    const tipEl = document.getElementById('ai-recom-tactical-tip');
     const matchBadge = document.getElementById('ai-recom-match-badge');
 
     if (candidatePool.length > 0) {
       const best = candidatePool[0];
-      if (matchBadge) matchBadge.textContent = `🎯 Khớp ${best.matchScore}% (${best.diff <= 50 ? 'Cân bằng hoàn hảo' : 'Độ lệch hợp lý'})`;
+      if (matchBadge) matchBadge.textContent = `🎯 Khớp ${best.matchScore}% (${best.tierDiff === 0 ? 'Cùng cấp bậc hoàn hảo' : 'Lệch ' + best.tierDiff + ' cấp'})`;
       if (narrativeEl) {
         narrativeEl.innerHTML = `
-          <strong>AI Recommendation:</strong> Bạn đang có <strong>ELO ${userElo} (${userTier.display})</strong>. 
-          Hệ thống đề xuất ghép tốt nhất với <strong>${best.name} (ELO ${best.elo})</strong> với điểm phù hợp 
+          <strong>AI Recommendation:</strong> Bạn thuộc cấp <strong>[${userTier.name}]</strong>. 
+          Hệ thống đề xuất tốt nhất với <strong>${best.name} (${best.tier.display})</strong> đạt độ phù hợp 
           <strong style="color: #16a34a;">${best.matchScore}%</strong>. 
-          Chênh lệch ELO chỉ <strong>${best.diff} điểm</strong>, xác suất chiến thắng dự kiến <strong>${best.winRateA}% - ${best.winRateB}%</strong>, 
-          cùng rảnh khung giờ <strong>${best.time}</strong> tại cụm sân <strong>${best.facility}</strong>.
+          ${best.tierDiff === 0 ? 'Hai bên cùng hạng mức trình độ, tỉ lệ cân bằng 50% - 50%.' : `Chênh lệch ${best.tierDiff} cấp, AI đề xuất cơ chế chấp điểm công bằng.`}
+          Cả hai đều có ảnh nhận diện để gặp nhau tại <strong>${best.facility}</strong>.
         `;
       }
-      if (tipEl) {
-        tipEl.innerHTML = `💡 <em>Chiến thuật AI: Đối thủ có lối đánh phản tạt và smash tốc độ. Bạn nên chủ động ép sâu 2 góc cuối sân và duy trì thế trận bền cầu ở set đầu tiên!</em>`;
-      }
     } else {
-      if (narrativeEl) narrativeEl.innerHTML = `Chưa tìm thấy đối thủ trong dải ELO ±${effectiveDelta}. Hãy nhấn <strong>"Mở Rộng Dải Radar (+30s)"</strong> hoặc đợi hệ thống tự động quét mở rộng dải tìm kiếm!`;
+      if (narrativeEl) narrativeEl.innerHTML = `Chưa tìm thấy phòng ghép cùng cấp <strong>[${userTier.name}]</strong>. Hãy nhấn <strong>"Nới Rộng Cấp Bậc"</strong> hoặc chọn mục <strong>"Cho phép lệch tối đa 1 cấp"</strong> để tìm bạn chơi nhanh chóng!`;
     }
 
     // Render Cards in Grid
     let html = '';
     candidatePool.forEach(cand => {
       let badgeBg = '#16a34a';
-      if (cand.matchScore < 80) badgeBg = '#ca8a04';
-      if (cand.matchScore < 70) badgeBg = '#dc2626';
+      if (cand.matchScore < 85) badgeBg = '#ca8a04';
+      if (cand.matchScore < 75) badgeBg = '#dc2626';
+
+      const hasPhoto = cand.photo && (cand.photo.startsWith('data:image') || cand.photo.startsWith('http') || cand.photo.includes('/'));
 
       html += `
         <div class="mm-room-card">
@@ -1897,47 +2223,63 @@ class BadmintonAIApp {
               <span class="badge ${cand.matchType.includes('Đôi') ? 'badge-info' : 'badge-warning'}" style="font-size: 0.72rem; padding: 3px 8px;">
                 ${cand.matchType.includes('Đôi') ? '🏸 Đôi 2v2' : '⚡ Đơn 1v1'}
               </span>
-              <span class="elo-badge" style="font-size: 0.76rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">
-                ELO ${cand.elo}
+              <span class="tier-badge-pill" style="background: ${cand.tier.bg}; color: ${cand.tier.color}; border: 1px solid ${cand.tier.borderColor || '#cbd5e1'};">
+                ${cand.tier.badgeText || cand.tier.name}
               </span>
             </div>
           </div>
 
           <div class="mm-card-body">
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
-                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a; line-height: 1.3;">${cand.name}</h3>
-                <span style="background: ${cand.tier.bg}; color: ${cand.tier.color}; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; white-space: nowrap;">
-                  ${cand.tier.display}
-                </span>
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <!-- Player/Host Photo -->
+              <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="app.showPlayerFaceModal('${(cand.hostName || cand.name).replace(/'/g, "\\'")}', '${hasPhoto ? cand.photo : ''}', '${cand.tier.name}')">
+                ${hasPhoto ? `
+                  <img src="${cand.photo}" alt="${cand.hostName || cand.name}" class="mm-avatar-img" style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2.5px solid #167946; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
+                  <span class="mm-photo-badge" title="Đã có ảnh nhận diện"><i class="fa-solid fa-camera"></i></span>
+                ` : `
+                  <div class="avatar" style="width: 52px; height: 52px; font-size: 1.25rem; background: #167946; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; border: 2.5px solid #86efac;">
+                    ${(cand.hostName || cand.name).charAt(0)}
+                  </div>
+                `}
               </div>
-              <div style="font-size: 0.82rem; color: #64748b; line-height: 1.5;">
-                <div><i class="fa-solid fa-location-dot text-rose" style="width: 14px;"></i> ${cand.facility}</div>
-                <div><i class="fa-solid fa-clock text-amber" style="width: 14px;"></i> ${cand.time}</div>
+
+              <!-- Information -->
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 4px;">
+                  <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #0f172a; line-height: 1.3;">${cand.name}</h3>
+                </div>
+                <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 4px;">
+                  ${cand.isRoom ? `Chủ phòng: <strong style="color: #0f172a;">${cand.hostName}</strong>` : `Đấu thủ: <strong style="color: #0f172a;">${cand.name}</strong>`}
+                  • <span style="color: ${cand.tier.color}; font-weight: 700;">${cand.tier.display}</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #64748b; line-height: 1.4;">
+                  <div><i class="fa-solid fa-location-dot text-rose" style="width: 14px;"></i> ${cand.facility}</div>
+                  <div><i class="fa-solid fa-clock text-amber" style="width: 14px;"></i> ${cand.time}</div>
+                </div>
               </div>
             </div>
 
-            <!-- Multi-Criteria MatchScore Breakdown -->
-            <div class="mm-match-breakdown-row">
+            <!-- Multi-Criteria Breakdown -->
+            <div class="mm-match-breakdown-row" style="margin-top: 8px;">
               <div class="mm-match-metric-box">
-                <div class="mm-match-metric-label">Độ Lệch</div>
-                <div class="mm-match-metric-value" style="color: #166534;">±${cand.diff}</div>
+                <div class="mm-match-metric-label">Hạng Mức</div>
+                <div class="mm-match-metric-value" style="color: ${cand.tierDiff === 0 ? '#166534' : '#ea580c'}; font-size: 0.76rem;">${cand.subScores.tier}</div>
               </div>
               <div class="mm-match-metric-box">
                 <div class="mm-match-metric-label">Khung Giờ</div>
-                <div class="mm-match-metric-value" style="color: #0284c7;">${cand.subScores.time}%</div>
+                <div class="mm-match-metric-value" style="color: #0284c7;">${cand.subScores.time}</div>
               </div>
               <div class="mm-match-metric-box">
                 <div class="mm-match-metric-label">Cụm Sân</div>
-                <div class="mm-match-metric-value" style="color: #e11d48;">${cand.subScores.loc}%</div>
+                <div class="mm-match-metric-value" style="color: #e11d48;">${cand.subScores.loc}</div>
               </div>
               <div class="mm-match-metric-box">
-                <div class="mm-match-metric-label">Kỹ Năng</div>
-                <div class="mm-match-metric-value" style="color: #7c3aed;">${cand.subScores.skill}%</div>
+                <div class="mm-match-metric-label">Cân Đối</div>
+                <div class="mm-match-metric-value" style="color: #7c3aed; font-size: 0.76rem;">${cand.subScores.balance}</div>
               </div>
             </div>
 
-            <!-- Predicted Win Rate Duel Bar -->
+            <!-- Predicted Win Rate Bar -->
             <div class="mm-winrate-container">
               <div class="mm-winrate-labels">
                 <span style="color: #166534;"><i class="fa-solid fa-shield-halved"></i> Bạn: ${cand.winRateA}%</span>
@@ -1951,23 +2293,23 @@ class BadmintonAIApp {
           </div>
 
           <div class="mm-card-footer">
-            <span style="font-size: 0.8rem; font-weight: 700; color: ${cand.diff <= 50 ? '#166534' : '#b45309'}; display: flex; align-items: center; gap: 4px;">
-              ${cand.diff <= 50 ? '<i class="fa-solid fa-circle-check"></i> Cân kèo hoàn hảo' : '<i class="fa-solid fa-bolt"></i> Kèo thách đấu (+ ' + cand.diff + ' ELO)'}
+            <span style="font-size: 0.8rem; font-weight: 700; color: ${cand.tierDiff === 0 ? '#166534' : '#b45309'}; display: flex; align-items: center; gap: 4px;">
+              ${cand.tierDiff === 0 ? '<i class="fa-solid fa-circle-check"></i> Cùng hạng mức (Chuẩn 100%)' : `<i class="fa-solid fa-scale-balanced"></i> Lệch ${cand.tierDiff} cấp (Có chấp điểm)`}
             </span>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-secondary btn-sm" onclick="app.loadRoomIntoEloSimulator(${cand.id})" style="font-size: 0.78rem; padding: 4px 10px; font-weight: 600;" title="Mô phỏng xác suất ELO">
-                <i class="fa-solid fa-brain"></i> Mô Phỏng
+              <button class="btn btn-secondary btn-sm" onclick="app.showPlayerFaceModal('${(cand.hostName || cand.name).replace(/'/g, "\\'")}', '${hasPhoto ? cand.photo : ''}', '${cand.tier.name}')" style="font-size: 0.78rem; padding: 4px 9px;" title="Xem ảnh khuôn mặt nhận diện đối thủ">
+                <i class="fa-solid fa-camera"></i> Xem Diện Mạo
               </button>
               ${cand.isRoom ? `
                 <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${cand.roomId})" style="background: #167946; font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
                   <i class="fa-solid fa-users"></i> Vào Phòng
                 </button>
               ` : (isGuest ? `
-                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', ${cand.elo})" style="background: #d97706; font-size: 0.78rem; padding: 4px 12px; font-weight: 700;" title="Đăng nhập để ghép kèo">
-                  <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Để Ghép
+                <button class="btn btn-primary btn-sm" onclick="app.navigateTo('ui-01')" style="background: #d97706; font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
+                  <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
                 </button>
               ` : `
-                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', ${cand.elo})" style="background: linear-gradient(135deg, #167946, #059669); font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
+                <button class="btn btn-primary btn-sm" onclick="app.challengeOpponentPrompt('${cand.name}', '${cand.tier.name}')" style="background: linear-gradient(135deg, #167946, #059669); font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
                   <i class="fa-solid fa-bolt"></i> Ghép Kèo Ngay
                 </button>
               `)}
@@ -1980,13 +2322,13 @@ class BadmintonAIApp {
     container.innerHTML = html;
   }
 
-  challengeOpponentPrompt(opponentName, opponentElo) {
+  challengeOpponentPrompt(opponentName, tierName) {
     if (!this.currentUser) {
-      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để gửi yêu cầu ghép kèo đấu.", "error");
+      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập để gửi yêu cầu ghép kèo.", "error");
       this.navigateTo('ui-01');
       return;
     }
-    this.showToast(`🏸 Đã gửi lời mời ghép kèo giao lưu tới ${opponentName} (ELO ${opponentElo})!`);
+    this.showToast(`🏸 Đã gửi lời mời ghép kèo giao lưu cùng hạng tới ${opponentName} (Cấp [${tierName}])!`);
   }
 
   renderMatchmakingRooms() {
@@ -2371,9 +2713,84 @@ class BadmintonAIApp {
       }
     }
 
+    this.renderRoomDetailMembers();
     this.renderChatMessages();
     this.renderAIRoomTactics();
     this.navigateTo('ui-07');
+  }
+
+  renderRoomDetailMembers() {
+    const container = document.getElementById('room-detail-members-grid');
+    if (!container || !this.activeRoom) return;
+
+    const room = this.activeRoom;
+    const players = room.players || [];
+    const maxPlayers = room.max_players || 4;
+    let html = '';
+
+    players.forEach((p) => {
+      const pTier = this.getSkillTierInfo(p.tier_id || p.tier || p.elo || 5);
+      const photo = p.photo || p.avatar;
+      const isPhotoUrl = photo && (photo.startsWith('data:image') || photo.startsWith('http') || photo.includes('/'));
+      const isHost = p.role === 'Host' || p.name === room.host_name;
+      const isMe = this.currentUser && (p.name === this.currentUser.name || p.id === this.currentUser.id);
+
+      html += `
+        <div style="background: #ffffff; border: 1.5px solid ${isHost ? '#10b981' : '#cbd5e1'}; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
+          <div style="position: relative; cursor: pointer; flex-shrink: 0;" onclick="app.showPlayerFaceModal('${p.name.replace(/'/g, "\\'")}', '${isPhotoUrl ? photo : ''}', '${pTier.name}')">
+            ${isPhotoUrl ? `
+              <img src="${photo}" alt="${p.name}" class="mm-avatar-img" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2.5px solid #167946; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+              <span class="mm-photo-badge" title="Đã có ảnh nhận diện khuôn mặt"><i class="fa-solid fa-camera"></i></span>
+            ` : `
+              <div class="avatar" style="width: 48px; height: 48px; border-radius: 50%; background: #167946; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 2px solid #86efac;">
+                ${p.name.charAt(0)}
+              </div>
+            `}
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 6px; justify-content: space-between;">
+              <span style="font-weight: 800; font-size: 0.88rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${p.name} ${isMe ? '<span style="color: #167946; font-size: 0.72rem;">(Bạn)</span>' : ''}
+              </span>
+              ${isHost ? `<span style="background: #dcfce7; color: #16a34a; font-size: 0.68rem; font-weight: 800; padding: 1px 6px; border-radius: 4px;">Host</span>` : ''}
+            </div>
+            <div style="margin-top: 3px;">
+              <span class="tier-badge-pill" style="background: ${pTier.bg}; color: ${pTier.color}; font-size: 0.72rem; padding: 2px 8px; border: 1px solid ${pTier.borderColor || '#cbd5e1'};">
+                ${pTier.badgeText || pTier.name}
+              </span>
+            </div>
+            <div style="margin-top: 4px; display: flex; gap: 6px;">
+              <button class="btn btn-xs btn-outline-secondary" onclick="app.showPlayerFaceModal('${p.name.replace(/'/g, "\\'")}', '${isPhotoUrl ? photo : ''}', '${pTier.name}')" style="font-size: 0.7rem; padding: 2px 6px;">
+                <i class="fa-solid fa-expand"></i> Diện Mạo
+              </button>
+              ${isMe ? `
+                <button class="btn btn-xs btn-primary" onclick="app.triggerPlayerPhotoUpload()" style="font-size: 0.7rem; padding: 2px 6px; background: #0284c7;">
+                  <i class="fa-solid fa-camera"></i> Đổi Ảnh
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    // Render empty slots
+    const emptySlots = maxPlayers - players.length;
+    for (let i = 0; i < emptySlots; i++) {
+      html += `
+        <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; opacity: 0.8;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.82rem; color: #64748b;">Chờ thành viên thứ ${players.length + i + 1}...</div>
+            <div style="font-size: 0.72rem; color: #94a3b8;">AI đang tìm kiếm tay vợt cùng cấp bậc</div>
+          </div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
   }
 
   renderAIRoomTactics() {
@@ -2382,6 +2799,7 @@ class BadmintonAIApp {
 
     const room = this.activeRoom;
     const isDoubles = room.match_type && room.match_type.includes('Đôi');
+    const roomTier = this.getSkillTierInfo(room.required_tier_id || room.required_tier || 5);
 
     body.innerHTML = `
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 10px;">
@@ -2391,8 +2809,8 @@ class BadmintonAIApp {
           </div>
           <div style="font-size: 0.8rem; color: #475569;">
             • Thể thức: <strong>${room.match_type || 'Đôi Nam/Nữ'}</strong> | Khung giờ: <strong>${room.match_time}</strong><br>
-            • Dải ELO yêu cầu: <strong>${room.required_elo_min} - ${room.required_elo_max}</strong><br>
-            • Dự đoán thế trận: <strong>${room.ai_prediction || 'Cân bằng, kịch tính'}</strong>
+            • Cấp bậc yêu cầu: <span class="tier-badge-pill" style="background: ${roomTier.bg}; color: ${roomTier.color}; border: 1px solid ${roomTier.borderColor || '#cbd5e1'}; font-size: 0.75rem; padding: 1px 7px;">${roomTier.display}</span><br>
+            • Đánh giá AI: <strong>${room.ai_prediction || 'Kèo cùng cấp bậc vô cùng cân đối, kịch tính.'}</strong>
           </div>
         </div>
 
@@ -2419,7 +2837,7 @@ class BadmintonAIApp {
       const coachTips = [
         "💡 [Chiến Thuật AI]: Nhận thấy đối thủ có lối chơi đập cầu uy lực nhưng di chuyển đuôi sân chậm. Đề xuất: Kéo cầu 2 góc biên và chủ động bỏ nhỏ sát lưới!",
         "🏸 [Chiến Thuật AI]: Đội bạn nên tập trung khai thác khoảng trống giữa 2 tay vợt khi họ chuyển đổi công sang thủ. Sử dụng các quả tạt cầu ngang thắt lưng!",
-        "⚡ [Chiến Thuật AI]: Tỉ lệ thắng của kèo này là 51% - 49%. Khuyên bạn nên khởi động kỹ khớp cổ chân và cổ tay trước trận 10 phút để tối ưu tốc độ phản xạ!",
+        "⚡ [Chiến Thuật AI]: Tỉ lệ thắng của kèo này là 50% - 50%. Khuyên bạn nên khởi động kỹ khớp cổ chân và cổ tay trước trận 10 phút để tối ưu tốc độ phản xạ!",
         "🎯 [Chiến Thuật AI]: Đối thủ có xu hướng giao cầu bổng về cuối sân. Hãy sẵn sàng lùi đón cầu sớm để thực hiện cú smash chéo sân dứt điểm!"
       ];
       const randomTip = coachTips[Math.floor(Math.random() * coachTips.length)];
@@ -2453,21 +2871,25 @@ class BadmintonAIApp {
     if (!room) return;
 
     const p1Name = document.getElementById('matchup-p1-name');
-    const p1Elo = document.getElementById('matchup-p1-elo');
+    const p1TierSelect = document.getElementById('matchup-p1-tier');
     const p2Name = document.getElementById('matchup-p2-name');
-    const p2Elo = document.getElementById('matchup-p2-elo');
+    const p2TierSelect = document.getElementById('matchup-p2-tier');
+
+    const userTierVal = (this.currentUser && (this.currentUser.skill_tier_id || this.currentUser.skill_tier)) || 5;
+    const userTier = this.getSkillTierInfo(userTierVal);
+    const roomTier = this.getSkillTierInfo(room.required_tier_id || room.required_tier || room.host_tier || 5);
 
     if (p1Name) p1Name.value = (this.currentUser && this.currentUser.name) ? this.currentUser.name : 'Bạn (Chưa đăng nhập)';
-    if (p1Elo) p1Elo.value = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1200;
+    if (p1TierSelect) p1TierSelect.value = String(userTier.tier);
     if (p2Name) p2Name.value = room.host_name || 'Đối thủ Host';
-    if (p2Elo) p2Elo.value = room.host_elo || 1480;
+    if (p2TierSelect) p2TierSelect.value = String(roomTier.tier);
 
     const card = document.getElementById('ai-elo-predictor-card');
     if (card) {
       card.style.display = 'block';
       this.runAIMatchupCalculation();
       card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      this.showToast(`🧠 Đã tải dữ liệu phòng "${room.room_name}" vào bộ dự báo AI!`);
+      this.showToast(`🧠 Đã tải dữ liệu phòng "${room.room_name}" vào bộ so sánh AI!`);
     }
   }
 
@@ -2500,12 +2922,17 @@ class BadmintonAIApp {
       return;
     }
 
+    const userTier = this.getSkillTierInfo(user.skill_tier_id || user.skill_tier || 5);
+
     if (!this.activeRoom.players) this.activeRoom.players = [];
     this.activeRoom.players.push({
       id: user.id,
       name: user.name,
-      elo: user.elo_rating || 1200,
+      tier: userTier.name,
+      tier_id: userTier.tier,
+      elo: user.elo_rating || userTier.defaultElo || 1650,
       avatar: user.avatar || user.name.charAt(0),
+      photo: user.photo || user.avatar || null,
       role: 'Member',
       style: 'Công thủ linh hoạt',
       team: 'B'
@@ -2515,10 +2942,11 @@ class BadmintonAIApp {
 
     this.activeRoom.chat_messages.push({
       sender: "🤖 AI Match Referee",
-      text: `🎉 Chào mừng ${user.name} (ELO ${user.elo_rating || 1200}) đã chấp nhận kèo và tham gia phòng! Kèo đấu hiện có ${this.activeRoom.current_players}/${this.activeRoom.max_players} thành viên.`,
+      text: `🎉 Chào mừng ${user.name} (Cấp [${userTier.name}]) đã chấp nhận kèo và tham gia phòng! Kèo đấu hiện có ${this.activeRoom.current_players}/${this.activeRoom.max_players} thành viên.`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
 
+    this.renderRoomDetailMembers();
     this.renderChatMessages();
     this.renderAIRoomTactics();
     this.renderMatchmakingRooms();
@@ -2615,20 +3043,24 @@ class BadmintonAIApp {
       facOptions += `<option value="${f.id}">${f.name} (${f.address || ''})</option>`;
     });
 
-    const currentUserElo = (this.currentUser && typeof this.currentUser.elo_rating === 'number') ? this.currentUser.elo_rating : 1450;
-    const userTier = this.getEloTierInfo(currentUserElo);
+    const userTierVal = (this.currentUser && (this.currentUser.skill_tier_id || this.currentUser.skill_tier)) || 5;
+    const userTier = this.getSkillTierInfo(userTierVal);
+    const userPhoto = (this.currentUser && (this.currentUser.photo || this.currentUser.avatar)) || '';
+    const hasPhoto = userPhoto && (userPhoto.startsWith('data:image') || userPhoto.startsWith('http') || userPhoto.includes('/'));
 
     modalBody.innerHTML = `
       <div style="padding: 0.5rem 0;">
         <h3 style="margin: 0 0 6px; color: #0f172a; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
-          <i class="fa-solid fa-users-viewfinder text-primary"></i> Khởi Tạo Phòng Ghép Kèo AI Mới
+          <i class="fa-solid fa-users-viewfinder text-primary"></i> Khởi Tạo Phòng Ghép Kèo AI Cân Bằng Cấp Bậc
         </h3>
-        <p style="color: #64748b; font-size: 0.82rem; margin-bottom: 1rem;">Hệ thống AI sẽ tự động phân tích và gợi ý đối thủ tương thích ELO sau khi bạn tạo phòng.</p>
+        <p style="color: #64748b; font-size: 0.82rem; margin-bottom: 1rem;">
+          Hệ thống AI tự động xét kèo cùng hạng mức trình độ (7 cấp bậc chuẩn) để ghép các tay vợt cân sức vào thi đấu.
+        </p>
 
         <form onsubmit="app.handleCreateRoom(event)">
           <div class="form-group">
             <label class="form-label">Tên Phòng Ghép / Tiêu Đề</label>
-            <input type="text" id="modal-room-name" class="form-control" value="Giao lưu Săn Kèo Đôi Nam Nữ Cân Kèo" required>
+            <input type="text" id="modal-room-name" class="form-control" value="Giao lưu Săn Kèo Cân Kèo Cùng Cấp" required>
           </div>
 
           <div class="form-group">
@@ -2655,76 +3087,98 @@ class BadmintonAIApp {
             </div>
           </div>
 
-          <!-- Phân Khúc Ghép Trình Tiêu Chuẩn & Tự Chọn Dải ELO Min - Max -->
+          <!-- Phân Khúc Ghép Trình Tiêu Chuẩn 7 Cấp Bậc (Không dùng điểm số ELO) -->
           <div class="form-group" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label class="form-label" style="margin: 0; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-layer-group text-primary"></i> Phân Khúc Ghép Trình Yêu Cầu
+                <i class="fa-solid fa-layer-group text-primary"></i> Cấp Bậc Trình Độ Yêu Cầu Ghép Kèo
               </label>
-              <span id="tier-selection-badge" style="font-size: 0.72rem; font-weight: 800; background: #ffedd5; color: #ea580c; padding: 3px 8px; border-radius: 6px;">
-                Cấp 4: Khá (1400 - 1599)
+              <span id="tier-selection-badge" style="font-size: 0.72rem; font-weight: 800; background: ${userTier.bg}; color: ${userTier.color}; padding: 3px 8px; border-radius: 6px;">
+                ${userTier.display}
               </span>
             </div>
 
-            <!-- Dropdown chọn phân khúc 1-6 hoặc Tùy chọn tự do -->
-            <select id="modal-tier-select" class="form-control" style="font-weight: 700; margin-bottom: 8px; font-size: 0.88rem;" onchange="app.onModalTierChange(this.value)">
-              <option value="1">🟢 1 | Yếu - Tân thủ (0 - 999 ELO)</option>
-              <option value="2">🔵 2 | Trung Bình - Cơ bản (1000 - 1199 ELO)</option>
-              <option value="3">🟡 3 | Trung Bình Khá (1200 - 1399 ELO)</option>
-              <option value="4" selected>🟠 4 | Khá (1400 - 1599 ELO)</option>
-              <option value="5">🔴 5 | Giỏi - Thành Thạo (1600 - 1799 ELO)</option>
-              <option value="6">🟣 6 | Tốt - Chuyên Nghiệp (1800+ ELO)</option>
-              <option value="custom">🎯 Tự chọn trình độ tự do (Nhập Min - Max ELO tùy ý)</option>
+            <!-- Dropdown chọn cấp bậc 1-7 -->
+            <select id="modal-tier-select" class="form-control" style="font-weight: 700; margin-bottom: 8px; font-size: 0.88rem;" onchange="app.onModalSkillTierChange(this.value)">
+              <option value="1">🟢 1 | Yếu - Tân thủ</option>
+              <option value="2">🔵 2 | Trung Bình Yếu - Cơ bản</option>
+              <option value="3">🟡 3 | Trung bình</option>
+              <option value="4">🟠 4 | Trung bình khá</option>
+              <option value="5" ${userTier.tier === 5 ? 'selected' : ''}>🔴 5 | Khá</option>
+              <option value="6">🟣 6 | Giỏi - Thành thạo</option>
+              <option value="7">👑 7 | Tốt - Chuyên nghiệp</option>
             </select>
 
             <!-- 1-Click Fast Tier Buttons (Pills) -->
             <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;">
-              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(1)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #dcfce7; color: #16a34a; border: 1px solid #86efac; font-weight: 700;">1: Yếu (0-999)</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(2)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #dbeafe; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 700;">2: TB (1000-1199)</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(3)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fef9c3; color: #ca8a04; border: 1px solid #fde047; font-weight: 700;">3: TB Khá (1200-1399)</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(4)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #ffedd5; color: #ea580c; border: 1px solid #fed7aa; font-weight: 700;">4: Khá (1400-1599)</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(5)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700;">5: Giỏi (1600-1799)</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalTier(6)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #f3e8ff; color: #7c3aed; border: 1px solid #d8b4fe; font-weight: 700;">6: Tốt (1800+)</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalTier('custom')" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 700;">✍️ Tự Do</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(1)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #dcfce7; color: #16a34a; border: 1px solid #86efac; font-weight: 700;">1: Yếu</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(2)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #e0f2fe; color: #0284c7; border: 1px solid #7dd3fc; font-weight: 700;">2: TB Yếu</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(3)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fef9c3; color: #ca8a04; border: 1px solid #fde047; font-weight: 700;">3: Trung bình</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(4)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #ffedd5; color: #ea580c; border: 1px solid #fdba74; font-weight: 700;">4: TB Khá</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(5)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700;">5: Khá</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(6)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #f3e8ff; color: #9333ea; border: 1px solid #d8b4fe; font-weight: 700;">6: Giỏi</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(7)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #e0e7ff; color: #4f46e5; border: 1px solid #a5b4fc; font-weight: 700;">7: Chuyên nghiệp</button>
             </div>
 
-            <!-- Tự do nhập hoặc tinh chỉnh dải điểm ELO (Min - Max) -->
-            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 5px;">
-              Dải ELO yêu cầu (Người dùng được toàn quyền gõ số ELO tự do):
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <div>
-                <span style="font-size: 0.75rem; color: #475569; font-weight: 700;">ELO Tối Thiểu:</span>
-                <input type="number" id="modal-elo-min" class="form-control" value="1400" min="0" max="3000" oninput="app.onManualEloInput()" required>
-              </div>
-              <div>
-                <span style="font-size: 0.75rem; color: #475569; font-weight: 700;">ELO Tối Đa:</span>
-                <input type="number" id="modal-elo-max" class="form-control" value="1599" min="0" max="3000" oninput="app.onManualEloInput()" required>
-              </div>
-            </div>
+            <!-- Cơ chế AI Cân Kèo -->
+            <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px;">
+              Tiêu chuẩn cân kèo của AI:
+            </label>
+            <select id="modal-room-tolerance" class="form-control" style="font-size: 0.82rem;">
+              <option value="same" selected>🎯 Chỉ ghép tay vợt cùng cấp bậc chính xác (100% Cân Kèo Tuyệt Đối)</option>
+              <option value="adjacent">⚖️ Cho phép ghép lệch tối đa 1 cấp (AI tự động tính toán điểm chấp công bằng)</option>
+              <option value="all">🌐 Mở rộng ghép mọi cấp bậc giao lưu</option>
+            </select>
           </div>
 
-          <!-- Tự chọn trình độ cá nhân của bạn khi làm chủ phòng -->
+          <!-- Trình Độ & Ảnh Nhận Diện Của Bạn (Host) -->
           <div class="form-group" style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 10px 12px; margin-bottom: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-size: 0.8rem; font-weight: 700; color: #166534;">
-                <i class="fa-solid fa-user-check"></i> Trình Độ Cá Nhân Của Bạn (Tự chọn hoặc chỉnh ELO):
+                <i class="fa-solid fa-user-check"></i> Cấp Bậc & Ảnh Diện Mạo Của Bạn (Host):
               </span>
               <span id="modal-host-tier-preview" style="font-size: 0.75rem; font-weight: 800; background: ${userTier.bg}; color: ${userTier.color}; padding: 2px 8px; border-radius: 6px;">
                 ${userTier.display}
               </span>
             </div>
-            <div style="display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 8px; align-items: center;">
-              <select id="modal-host-tier-select" class="form-control" style="font-size: 0.82rem;" onchange="app.onModalHostTierChange(this.value)">
-                <option value="850" ${currentUserElo < 1000 ? 'selected' : ''}>🟢 Cấp 1: Yếu (Tân thủ - ~850)</option>
-                <option value="1100" ${currentUserElo >= 1000 && currentUserElo < 1200 ? 'selected' : ''}>🔵 Cấp 2: Trung Bình (Cơ bản - ~1100)</option>
-                <option value="1300" ${currentUserElo >= 1200 && currentUserElo < 1400 ? 'selected' : ''}>🟡 Cấp 3: TB Khá (~1300)</option>
-                <option value="1450" ${currentUserElo >= 1400 && currentUserElo < 1600 ? 'selected' : ''}>🟠 Cấp 4: Khá (~1450)</option>
-                <option value="1680" ${currentUserElo >= 1600 && currentUserElo < 1800 ? 'selected' : ''}>🔴 Cấp 5: Giỏi (Thành Thạo - ~1680)</option>
-                <option value="1850" ${currentUserElo >= 1800 ? 'selected' : ''}>🟣 Cấp 6: Tốt (Chuyên Nghiệp - 1800+)</option>
-                <option value="custom">✏️ Tự nhập số điểm ELO bất kỳ...</option>
-              </select>
-              <input type="number" id="modal-host-elo-input" class="form-control" value="${currentUserElo}" min="0" max="3500" style="font-size: 0.85rem; font-weight: 800; text-align: center; color: #166534;" oninput="app.onModalHostEloCustomInput(this.value)" placeholder="Điểm ELO của bạn" title="Tự do nhập điểm ELO của bản thân">
+            
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center;">
+              <!-- Host Face Photo Upload Preview -->
+              <div style="text-align: center;">
+                <div style="position: relative; display: inline-block; cursor: pointer;" onclick="app.triggerPlayerPhotoUpload()">
+                  ${hasPhoto ? `
+                    <img src="${userPhoto}" alt="${this.currentUser.name}" class="mm-avatar-img" style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2.5px solid #167946; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                    <span class="mm-photo-badge" title="Tải ảnh nhận diện từ thiết bị"><i class="fa-solid fa-camera"></i></span>
+                  ` : `
+                    <div class="avatar" style="width: 52px; height: 52px; border-radius: 50%; background: #167946; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; border: 2px solid #86efac;">
+                      ${this.currentUser.name.charAt(0)}
+                    </div>
+                    <span class="mm-photo-badge" title="Tải ảnh nhận diện từ thiết bị"><i class="fa-solid fa-camera"></i></span>
+                  `}
+                </div>
+                <div style="margin-top: 3px;">
+                  <button type="button" class="btn btn-xs btn-outline-primary" onclick="app.triggerPlayerPhotoUpload()" style="font-size: 0.68rem; padding: 2px 6px;">
+                    <i class="fa-solid fa-camera"></i> ${hasPhoto ? 'Đổi ảnh' : 'Tải ảnh'}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Host Skill Tier Selection -->
+              <div>
+                <label style="font-size: 0.75rem; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Cấp bậc của bạn:</label>
+                <select id="modal-host-tier-select" class="form-control" style="font-size: 0.82rem; font-weight: 700;" onchange="app.onModalHostSkillTierChange(this.value)">
+                  <option value="1" ${userTier.tier === 1 ? 'selected' : ''}>🟢 Cấp 1: Yếu - Tân thủ</option>
+                  <option value="2" ${userTier.tier === 2 ? 'selected' : ''}>🔵 Cấp 2: Trung Bình Yếu - Cơ bản</option>
+                  <option value="3" ${userTier.tier === 3 ? 'selected' : ''}>🟡 Cấp 3: Trung bình</option>
+                  <option value="4" ${userTier.tier === 4 ? 'selected' : ''}>🟠 Cấp 4: Trung bình khá</option>
+                  <option value="5" ${userTier.tier === 5 ? 'selected' : ''}>🔴 Cấp 5: Khá</option>
+                  <option value="6" ${userTier.tier === 6 ? 'selected' : ''}>🟣 Cấp 6: Giỏi - Thành thạo</option>
+                  <option value="7" ${userTier.tier === 7 ? 'selected' : ''}>👑 Cấp 7: Tốt - Chuyên nghiệp</option>
+                </select>
+                <span style="font-size: 0.72rem; color: #64748b; margin-top: 2px; display: block;">
+                  📸 Ảnh diện mạo sẽ giúp đối thủ nhận ra bạn ngay khi tới sân.
+                </span>
+              </div>
             </div>
           </div>
 
@@ -2740,7 +3194,7 @@ class BadmintonAIApp {
           </div>
 
           <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 10px; margin: 10px 0; font-size: 0.8rem; color: #166534;">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> <strong>AI Auto-Balance:</strong> Tự động tính toán điểm chấp nếu có thành viên chênh lệch > 150 ELO tham gia.
+            <i class="fa-solid fa-wand-magic-sparkles"></i> <strong>AI Auto-Balance:</strong> Tự động xét kèo cùng hạng mức và tính toán điểm chấp nếu có thành viên chênh lệch 1 cấp bậc tham gia.
           </div>
 
           <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; background: linear-gradient(135deg, #167946 0%, #059669 100%); font-weight: 700;">
@@ -2753,87 +3207,31 @@ class BadmintonAIApp {
     this.openModal();
   }
 
-  onModalTierChange(tierVal) {
-    const minInput = document.getElementById('modal-elo-min');
-    const maxInput = document.getElementById('modal-elo-max');
+  onModalSkillTierChange(tierVal) {
+    const tier = this.getSkillTierInfo(parseInt(tierVal, 10));
     const badge = document.getElementById('tier-selection-badge');
-    if (!minInput || !maxInput) return;
-
-    if (tierVal === '1') {
-      minInput.value = 0;
-      maxInput.value = 999;
-      if (badge) { badge.textContent = "Cấp 1: Yếu (0-999)"; badge.style.background = "#dcfce7"; badge.style.color = "#16a34a"; }
-    } else if (tierVal === '2') {
-      minInput.value = 1000;
-      maxInput.value = 1199;
-      if (badge) { badge.textContent = "Cấp 2: Trung Bình (1000-1199)"; badge.style.background = "#dbeafe"; badge.style.color = "#2563eb"; }
-    } else if (tierVal === '3') {
-      minInput.value = 1200;
-      maxInput.value = 1399;
-      if (badge) { badge.textContent = "Cấp 3: TB Khá (1200-1399)"; badge.style.background = "#fef9c3"; badge.style.color = "#ca8a04"; }
-    } else if (tierVal === '4') {
-      minInput.value = 1400;
-      maxInput.value = 1599;
-      if (badge) { badge.textContent = "Cấp 4: Khá (1400-1599)"; badge.style.background = "#ffedd5"; badge.style.color = "#ea580c"; }
-    } else if (tierVal === '5') {
-      minInput.value = 1600;
-      maxInput.value = 1799;
-      if (badge) { badge.textContent = "Cấp 5: Giỏi (1600-1799)"; badge.style.background = "#fee2e2"; badge.style.color = "#dc2626"; }
-    } else if (tierVal === '6') {
-      minInput.value = 1800;
-      maxInput.value = 2500;
-      if (badge) { badge.textContent = "Cấp 6: Tốt (1800+)"; badge.style.background = "#f3e8ff"; badge.style.color = "#7c3aed"; }
-    } else {
-      if (badge) { badge.textContent = "Tự do tùy chỉnh"; badge.style.background = "#e0f2fe"; badge.style.color = "#0284c7"; }
+    if (badge) {
+      badge.textContent = tier.display;
+      badge.style.background = tier.bg;
+      badge.style.color = tier.color;
     }
   }
 
-  selectModalTier(tier) {
+  selectModalSkillTier(tier) {
     const select = document.getElementById('modal-tier-select');
     if (select) {
       select.value = String(tier);
-      this.onModalTierChange(String(tier));
+      this.onModalSkillTierChange(String(tier));
     }
   }
 
-  onManualEloInput() {
-    const select = document.getElementById('modal-tier-select');
-    const badge = document.getElementById('tier-selection-badge');
-    if (select) select.value = 'custom';
-    if (badge) {
-      badge.textContent = "Tự do tùy chỉnh";
-      badge.style.background = "#e0f2fe";
-      badge.style.color = "#0284c7";
-    }
-  }
-
-  onModalHostTierChange(val) {
-    const hostEloInput = document.getElementById('modal-host-elo-input');
+  onModalHostSkillTierChange(val) {
+    const tier = this.getSkillTierInfo(parseInt(val, 10));
     const preview = document.getElementById('modal-host-tier-preview');
-    if (val === 'custom') {
-      if (hostEloInput) hostEloInput.focus();
-    } else {
-      const elo = parseInt(val, 10);
-      if (hostEloInput) hostEloInput.value = elo;
-      if (preview) {
-        const tier = this.getEloTierInfo(elo);
-        preview.textContent = tier.display;
-        preview.style.color = tier.color;
-        preview.style.background = tier.bg;
-      }
-    }
-  }
-
-  onModalHostEloCustomInput(val) {
-    const elo = parseInt(val, 10);
-    const preview = document.getElementById('modal-host-tier-preview');
-    const select = document.getElementById('modal-host-tier-select');
-    if (!isNaN(elo) && preview) {
-      const tier = this.getEloTierInfo(elo);
+    if (preview) {
       preview.textContent = tier.display;
       preview.style.color = tier.color;
       preview.style.background = tier.bg;
-      if (select) select.value = 'custom';
     }
   }
 
@@ -2849,25 +3247,31 @@ class BadmintonAIApp {
     const facId = parseInt(document.getElementById('modal-room-facility')?.value || '101', 10);
     const matchType = document.getElementById('modal-room-type')?.value || 'Đôi Nam/Nữ';
     const matchTime = document.getElementById('modal-room-time')?.value || '18:00 - 20:00 (Hôm nay)';
-    const minElo = parseInt(document.getElementById('modal-elo-min')?.value || '1400', 10);
-    const maxElo = parseInt(document.getElementById('modal-elo-max')?.value || '1600', 10);
+    const requiredTierVal = parseInt(document.getElementById('modal-tier-select')?.value || '5', 10);
+    const hostTierVal = parseInt(document.getElementById('modal-host-tier-select')?.value || '5', 10);
+    const tolerance = document.getElementById('modal-room-tolerance')?.value || 'same';
     const court = document.getElementById('modal-room-court')?.value || 'Sân số 03';
     const price = document.getElementById('modal-room-price')?.value || '45.000đ';
 
+    const requiredTier = this.getSkillTierInfo(requiredTierVal);
+    const hostTier = this.getSkillTierInfo(hostTierVal);
     const fac = MockData.facilities.find(f => f.id === facId) || MockData.facilities[0];
     const isDoubles = matchType.includes('Đôi');
     const maxPlayers = isDoubles ? 4 : 2;
     const currentUserName = this.currentUser.name;
-    
-    // Tự chọn ELO của host từ modal nếu đã chỉnh sửa
-    const hostEloInput = document.getElementById('modal-host-elo-input');
-    const customHostElo = hostEloInput ? parseInt(hostEloInput.value, 10) : null;
-    const currentUserElo = (!isNaN(customHostElo) && customHostElo > 0) ? customHostElo : (this.currentUser.elo_rating || 1450);
 
-    // Cập nhật lại ELO cho currentUser nếu người dùng tự chỉnh sửa
-    this.currentUser.elo_rating = currentUserElo;
+    // Update currentUser skill tier
+    this.currentUser.skill_tier_id = hostTier.tier;
+    this.currentUser.skill_tier = hostTier.name;
+    this.currentUser.elo_rating = hostTier.defaultElo || 1650;
     const u = (MockData.users || []).find(x => x.id === this.currentUser.id || x.name === this.currentUser.name);
-    if (u) u.elo_rating = currentUserElo;
+    if (u) {
+      u.skill_tier = hostTier.name;
+      u.skill_tier_id = hostTier.tier;
+      u.elo_rating = hostTier.defaultElo || 1650;
+    }
+
+    const hostPhoto = this.currentUser.photo || (this.currentUser.avatar && (this.currentUser.avatar.startsWith('data:image') || this.currentUser.avatar.startsWith('http')) ? this.currentUser.avatar : null);
 
     const newRoom = {
       id: Date.now(),
@@ -2877,8 +3281,12 @@ class BadmintonAIApp {
       district: fac.address || 'Hà Nội',
       match_date: "Hôm nay, 22/09/2026",
       match_time: matchTime,
-      required_elo_min: minElo,
-      required_elo_max: maxElo,
+      required_tier: requiredTier.name,
+      required_tier_id: requiredTier.tier,
+      host_tier: hostTier.name,
+      host_tier_id: hostTier.tier,
+      host_photo: hostPhoto,
+      match_tolerance: tolerance,
       match_type: matchType,
       court_number: court,
       price_per_slot: price,
@@ -2886,18 +3294,35 @@ class BadmintonAIApp {
       max_players: maxPlayers,
       status: "OPEN",
       host_name: currentUserName,
-      host_elo: currentUserElo,
       ai_compatibility: 98,
-      ai_prediction: "Phòng mới tạo. Trình độ ELO yêu cầu rất cân bằng, AI đang mời các tay vợt phù hợp.",
-      ai_handicap: "Đồng banh (0 điểm)",
+      ai_prediction: `Phòng mới tạo. Trình độ yêu cầu [${requiredTier.name}], AI đang mời các tay vợt cùng hạng mức phù hợp.`,
+      ai_handicap: "Cùng cấp bậc - Đồng banh (0 điểm)",
       category: isDoubles ? 'doubles' : 'singles',
       is_ai_recommended: true,
       players: [
-        { name: currentUserName, elo: currentUserElo, avatar: currentUserName.charAt(0), role: 'Host', style: 'Công thủ toàn diện', team: 'A' }
+        {
+          name: currentUserName,
+          tier: hostTier.name,
+          tier_id: hostTier.tier,
+          elo: hostTier.defaultElo || 1650,
+          avatar: currentUserName.charAt(0),
+          photo: hostPhoto,
+          role: 'Host',
+          style: 'Công thủ toàn diện',
+          team: 'A'
+        }
       ],
       chat_messages: [
-        { sender: "🤖 AI Match Referee", text: `Phòng ghép "${name}" đã khởi tạo thành công! Radar AI đang tự động gửi thông báo đến các tay vợt ELO ${minElo}-${maxElo}.`, time: "vừa xong" },
-        { sender: currentUserName, text: "Chào mọi người, phòng đã sẵn sàng, mời anh em vào giao lưu!", time: "vừa xong" }
+        {
+          sender: "🤖 AI Match Referee",
+          text: `Phòng ghép "${name}" đã khởi tạo thành công! Radar AI đang tự động gửi thông báo đến các tay vợt thuộc cấp [${requiredTier.name}].`,
+          time: "vừa xong"
+        },
+        {
+          sender: currentUserName,
+          text: `Chào mọi người, phòng đã sẵn sàng cho kèo giao lưu trình độ [${requiredTier.name}], mời anh em vào đánh cùng!`,
+          time: "vừa xong"
+        }
       ]
     };
 
@@ -2908,7 +3333,7 @@ class BadmintonAIApp {
     if (typeof saveMockDataToLocalStorage === 'function') {
       saveMockDataToLocalStorage();
     }
-    this.showToast(`🎉 Đã khởi tạo phòng ghép thành công (Yêu cầu ELO ${minElo}-${maxElo}) và kích hoạt Radar AI!`);
+    this.showToast(`🎉 Đã khởi tạo phòng ghép thành công (Cấp [${requiredTier.name}]) và kích hoạt Radar AI!`);
   }
 
   /* ------------------------------------------------------------------------
@@ -6355,24 +6780,48 @@ class BadmintonAIApp {
   runAIMatchupCalculation() {
     const p1Name = document.getElementById('matchup-p1-name')?.value.trim() || 'Người chơi 1';
     const p2Name = document.getElementById('matchup-p2-name')?.value.trim() || 'Người chơi 2';
-    const elo1 = parseInt(document.getElementById('matchup-p1-elo')?.value || '1450', 10);
-    const elo2 = parseInt(document.getElementById('matchup-p2-elo')?.value || '1680', 10);
+    
+    // Tier resolution
+    const p1TierInput = document.getElementById('matchup-p1-tier')?.value;
+    const p2TierInput = document.getElementById('matchup-p2-tier')?.value;
+    const tier1 = this.getSkillTierInfo(p1TierInput ? parseInt(p1TierInput, 10) : 5);
+    const tier2 = this.getSkillTierInfo(p2TierInput ? parseInt(p2TierInput, 10) : 5);
 
-    // Standard International ELO Logistic Curve Formula:
-    // E_A = 1 / (1 + 10^((R_B - R_A)/400))
-    const exponent = (elo2 - elo1) / 400;
-    const prob1 = 1 / (1 + Math.pow(10, exponent));
-    const prob2 = 1 - prob1;
+    // AI Logistic probability based on skill tier differences (1 tier diff ~ 8-10% win rate shift)
+    const tierDiff = tier1.tier - tier2.tier; // positive if p1 is higher
+    let p1Percent = 50;
+    let p2Percent = 50;
+    let handicapRecommendation = "Đồng banh (0 điểm)";
 
-    const p1Percent = Math.round(prob1 * 100);
-    const p2Percent = 100 - p1Percent;
-
-    // K-Factor rating adjustment simulation (K=32)
-    const kFactor = 32;
-    const p1WinDelta = Math.round(kFactor * (1 - prob1));
-    const p1LossDelta = Math.round(kFactor * (0 - prob1)); // negative
-    const p2WinDelta = Math.round(kFactor * (1 - prob2));
-    const p2LossDelta = Math.round(kFactor * (0 - prob2));
+    if (tierDiff === 0) {
+      p1Percent = 50;
+      p2Percent = 50;
+      handicapRecommendation = "Đồng banh (0 điểm chấp - Cân bằng tuyệt đối)";
+    } else if (tierDiff === 1) {
+      p1Percent = 58;
+      p2Percent = 42;
+      handicapRecommendation = `${p1Name} chấp ${p2Name} 2 - 3 điểm / set`;
+    } else if (tierDiff === -1) {
+      p1Percent = 42;
+      p2Percent = 58;
+      handicapRecommendation = `${p2Name} chấp ${p1Name} 2 - 3 điểm / set`;
+    } else if (tierDiff === 2) {
+      p1Percent = 70;
+      p2Percent = 30;
+      handicapRecommendation = `${p1Name} chấp ${p2Name} 4 - 5 điểm / set`;
+    } else if (tierDiff === -2) {
+      p1Percent = 30;
+      p2Percent = 70;
+      handicapRecommendation = `${p2Name} chấp ${p1Name} 4 - 5 điểm / set`;
+    } else if (tierDiff >= 3) {
+      p1Percent = 82;
+      p2Percent = 18;
+      handicapRecommendation = `${p1Name} chấp ${p2Name} 6 - 8 điểm / set`;
+    } else {
+      p1Percent = 18;
+      p2Percent = 82;
+      handicapRecommendation = `${p2Name} chấp ${p1Name} 6 - 8 điểm / set`;
+    }
 
     // Update UI elements
     const label1 = document.getElementById('matchup-p1-winrate-label');
@@ -6382,57 +6831,57 @@ class BadmintonAIApp {
     const balanceBadge = document.getElementById('matchup-match-balance-badge');
     const analysisContent = document.getElementById('matchup-analysis-content');
 
-    if (label1) label1.innerHTML = `<i class="fa-solid fa-shield-halved"></i> ${p1Name}: <strong>${p1Percent}%</strong>`;
-    if (label2) label2.innerHTML = `<strong>${p2Percent}%</strong> :${p2Name} <i class="fa-solid fa-bolt"></i>`;
+    if (label1) label1.innerHTML = `<i class="fa-solid fa-shield-halved"></i> ${p1Name} (${tier1.badgeText || tier1.name}): <strong>${p1Percent}%</strong>`;
+    if (label2) label2.innerHTML = `<strong>${p2Percent}%</strong> :${p2Name} (${tier2.badgeText || tier2.name}) <i class="fa-solid fa-bolt"></i>`;
     if (bar1) bar1.style.width = `${p1Percent}%`;
     if (bar2) bar2.style.width = `${p2Percent}%`;
 
-    const diff = Math.abs(elo1 - elo2);
+    const absDiff = Math.abs(tierDiff);
     if (balanceBadge) {
-      if (diff <= 50) {
+      if (absDiff === 0) {
         balanceBadge.className = "tag-badge";
         balanceBadge.style.background = "#ecfdf5";
         balanceBadge.style.color = "#15803d";
-        balanceBadge.textContent = `Cân bằng hoàn hảo (Δ ${diff} ELO)`;
-      } else if (diff <= 150) {
+        balanceBadge.textContent = `Cân bằng tuyệt đối (Cùng cấp ${tier1.name})`;
+      } else if (absDiff === 1) {
         balanceBadge.className = "tag-badge";
         balanceBadge.style.background = "#eff6ff";
         balanceBadge.style.color = "#1d4ed8";
-        balanceBadge.textContent = `Chênh lệch nhẹ (Δ ${diff} ELO)`;
+        balanceBadge.textContent = `Chênh lệch nhẹ (Lệch 1 cấp bậc)`;
       } else {
         balanceBadge.className = "tag-badge";
         balanceBadge.style.background = "#fffbeb";
         balanceBadge.style.color = "#b45309";
-        balanceBadge.textContent = `Kèo lệch thách đấu (Δ ${diff} ELO)`;
+        balanceBadge.textContent = `Kèo lệch thách đấu (Lệch ${absDiff} cấp bậc)`;
       }
     }
 
     if (analysisContent) {
       analysisContent.innerHTML = `
         <div style="background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
-          <strong style="color: #166534; font-size: 0.88rem;"><i class="fa-solid fa-chart-line"></i> Biến Động ELO Cho ${p1Name}:</strong>
+          <strong style="color: #166534; font-size: 0.88rem;"><i class="fa-solid fa-award"></i> Trình Độ & Cơ Hội ${p1Name}:</strong>
           <div style="margin-top: 6px; font-size: 0.82rem; line-height: 1.5;">
-            <div>• Nếu Thắng: <span style="color: #16a34a; font-weight: 800;">+${p1WinDelta} ELO</span> (Lên ${elo1 + p1WinDelta} điểm)</div>
-            <div>• Nếu Thua: <span style="color: #ef4444; font-weight: 800;">${p1LossDelta} ELO</span> (Về ${elo1 + p1LossDelta} điểm)</div>
-            <div style="margin-top: 4px; color: #475569;">• Dự đoán tỉ số: <strong>${p1Percent >= p2Percent ? '21 - ' + Math.max(12, Math.round(21 * (p2Percent / p1Percent))) : Math.max(12, Math.round(21 * (p1Percent / p2Percent))) + ' - 21'}</strong></div>
+            <div>• Cấp bậc: <span style="color: ${tier1.color}; font-weight: 800;">${tier1.display}</span></div>
+            <div>• Khả năng thắng: <span style="color: #16a34a; font-weight: 800;">${p1Percent}%</span></div>
+            <div style="margin-top: 4px; color: #475569;">• Dự đoán tỉ số set: <strong>${p1Percent >= p2Percent ? '21 - ' + Math.max(12, Math.round(21 * (p2Percent / p1Percent))) : Math.max(12, Math.round(21 * (p1Percent / p2Percent))) + ' - 21'}</strong></div>
           </div>
         </div>
         <div style="background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
-          <strong style="color: #1e40af; font-size: 0.88rem;"><i class="fa-solid fa-chart-line"></i> Biến Động ELO Cho ${p2Name}:</strong>
+          <strong style="color: #1e40af; font-size: 0.88rem;"><i class="fa-solid fa-award"></i> Trình Độ & Cơ Hội ${p2Name}:</strong>
           <div style="margin-top: 6px; font-size: 0.82rem; line-height: 1.5;">
-            <div>• Nếu Thắng: <span style="color: #16a34a; font-weight: 800;">+${p2WinDelta} ELO</span> (Lên ${elo2 + p2WinDelta} điểm)</div>
-            <div>• Nếu Thua: <span style="color: #ef4444; font-weight: 800;">${p2LossDelta} ELO</span> (Về ${elo2 + p2LossDelta} điểm)</div>
-            <div style="margin-top: 4px; color: #475569;">• Tỉ lệ kiểm soát cầu: <strong>${p2Percent}%</strong></div>
+            <div>• Cấp bậc: <span style="color: ${tier2.color}; font-weight: 800;">${tier2.display}</span></div>
+            <div>• Khả năng thắng: <span style="color: #2563eb; font-weight: 800;">${p2Percent}%</span></div>
+            <div style="margin-top: 4px; color: #475569;">• Đánh giá kỹ năng: <strong>${tier2.desc}</strong></div>
           </div>
         </div>
         <div style="background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
-          <strong style="color: #6b21a8; font-size: 0.88rem;"><i class="fa-solid fa-brain"></i> Phân Tích Chiến Thuật AI:</strong>
+          <strong style="color: #6b21a8; font-size: 0.88rem;"><i class="fa-solid fa-brain"></i> Đề Xuất Cân Bằng & Chấp Điểm AI:</strong>
           <div style="margin-top: 6px; font-size: 0.82rem; color: #334155; line-height: 1.5;">
-            ${diff <= 50 
-              ? '🎯 <strong>Kèo Cân Bằng Tuyệt Đối:</strong> Trận đấu phụ thuộc vào độ chính xác trong các pha gài cầu sát lưới và tâm lý thi đấu ở các điểm số then chốt (sau điểm 18).' 
-              : diff <= 150
-              ? `⚡ <strong>Kèo Chênh Lệch Vừa Phải:</strong> ${p1Percent < p2Percent ? p1Name : p2Name} có lợi thế về tốc độ đập cầu. Đấu thủ còn lại nên tập trung phòng thủ sâu 2 góc và phản tạt nhanh ngang lưới.`
-              : `⚖️ <strong>Đề Xuất Chấp Điểm AI:</strong> Chênh lệch ${diff} ELO. AI khuyến nghị ${elo1 > elo2 ? p1Name : p2Name} chấp ${Math.min(7, Math.round(diff / 45))} điểm/set để trận đấu đạt mức cân bằng 50-50!`}
+            ${absDiff === 0 
+              ? '🎯 <strong>Kèo Cùng Cấp Cân Bằng Tuyệt Đối:</strong> Không cần chấp điểm. Trận đấu phụ thuộc vào sự ổn định trong các pha gài cầu sát lưới và thể lực set cuối.' 
+              : absDiff === 1
+              ? `⚡ <strong>Đề Xuất Chấp Điểm:</strong> Chênh lệch 1 cấp bậc (${tier1.name} vs ${tier2.name}). Khuyến nghị: <strong>${handicapRecommendation}</strong> để trận đấu đạt trạng thái cân bằng lý tưởng 50-50!`
+              : `⚖️ <strong>Đề Xuất Kèo Thách Đấu:</strong> Chênh lệch ${absDiff} cấp bậc. AI khuyến nghị: <strong>${handicapRecommendation}</strong> để duy trì tính cạnh tranh và kịch tính.`}
           </div>
         </div>
       `;

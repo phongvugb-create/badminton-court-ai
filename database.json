@@ -6,8 +6,11 @@
       "phone": "0901234567",
       "password": "123456",
       "role": "CUSTOMER",
-      "elo_rating": 1450,
-      "avatar": "H",
+      "skill_tier": "Khá",
+      "skill_tier_id": 5,
+      "elo_rating": 1650,
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+      "photo": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
       "is_approved": true
     },
     {
@@ -16,8 +19,11 @@
       "phone": "0912345678",
       "password": "123456",
       "role": "CUSTOMER",
+      "skill_tier": "Khá",
+      "skill_tier_id": 5,
       "elo_rating": 1680,
-      "avatar": "M",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80",
+      "photo": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80",
       "is_approved": true
     },
     {
@@ -58,8 +64,11 @@
       "phone": "0983582321",
       "password": "password123",
       "role": "CUSTOMER",
-      "elo_rating": 1200,
-      "avatar": "V",
+      "skill_tier": "Trung bình khá",
+      "skill_tier_id": 4,
+      "elo_rating": 1450,
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
+      "photo": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
       "is_approved": true
     },
     {
@@ -1272,49 +1281,51 @@
   "matchmaking_rooms": [
     {
       "id": 701,
-      "room_name": "Giao lưu Trình độ Khá (ELO 1400 - 1600)",
+      "room_name": "Giao lưu Kèo Đôi Cân Bằng Cấp [Khá]",
       "facility_name": "CLB Cầu Lông Catchy Badminton Arena (Hoàng Mai, Hà Nội)",
       "match_date": "12/09/2026",
       "match_time": "18:00 - 20:00",
-      "required_elo_min": 1400,
-      "required_elo_max": 1600,
+      "required_tier": "Khá",
+      "required_tier_id": 5,
       "match_type": "Đôi Nam/Nữ",
       "current_players": 3,
       "max_players": 4,
       "status": "OPEN",
       "host_name": "Nguyễn Văn Hùng",
-      "host_elo": 1450,
+      "host_tier": "Khá",
+      "host_tier_id": 5,
       "chat_messages": [
         {
           "sender": "Nguyễn Văn Hùng",
-          "text": "Chào mọi người, nhóm mình còn thiếu 1 tay vợt ELO 1450+ đánh đôi nhé!",
+          "text": "Chào mọi người, nhóm mình còn thiếu 1 bạn cùng hạng Khá để ghép đôi cân kèo nhé!",
           "time": "16:45"
         },
         {
           "sender": "Trần Thị Mai",
-          "text": "Mình ELO 1680 vừa tham gia rồi nha!",
+          "text": "Mình trình độ Khá vừa tham gia rồi nha!",
           "time": "16:50"
         }
       ]
     },
     {
       "id": 702,
-      "room_name": "Săn Kèo Đơn Nam ELO Cao (1700+)",
+      "room_name": "Săn Kèo Đơn Nam Cấp [Giỏi - Thành thạo]",
       "facility_name": "CLB Cầu Lông Ba Đình Star Arena (Ba Đình, Hà Nội)",
       "match_date": "12/09/2026",
       "match_time": "19:00 - 21:00",
-      "required_elo_min": 1700,
-      "required_elo_max": 2000,
+      "required_tier": "Giỏi - Thành thạo",
+      "required_tier_id": 6,
       "match_type": "Đơn Nam",
       "current_players": 1,
       "max_players": 2,
       "status": "OPEN",
       "host_name": "Hoàng Văn Nam",
-      "host_elo": 1780,
+      "host_tier": "Giỏi - Thành thạo",
+      "host_tier_id": 6,
       "chat_messages": [
         {
           "sender": "Hoàng Văn Nam",
-          "text": "Cần tìm đối thủ cọ xát giao lưu đơn nam tối mai!",
+          "text": "Cần tìm đối thủ cọ xát giao lưu đơn nam cùng hạng Giỏi - Thành thạo tối mai!",
           "time": "15:10"
         }
       ]

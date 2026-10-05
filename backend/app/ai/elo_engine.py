@@ -17,68 +17,92 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 
 # =============================================================================
-# 1. ELO TIERS & CONFIGURATION
+# 1. 7 SKILL TIERS (CẤP BẬC TRÌNH ĐỘ MATCHMAKING) & CONFIGURATION
 # =============================================================================
 DEFAULT_ELO_TIERS = [
     {
         "tier": 1,
-        "name": "Tân thủ",
-        "display": "🟢 Yếu (Tân thủ)",
+        "name": "Yếu - Tân thủ",
+        "level": "Yếu",
+        "sub": "Tân thủ",
+        "display": "🟢 Cấp 1: Yếu - Tân thủ",
         "min_elo": 0,
-        "max_elo": 999,
+        "max_elo": 950,
         "color": "#16a34a",
         "badge_bg": "#dcfce7",
-        "description": "Mới chơi, đang làm quen với nhịp độ và kỹ thuật phát cầu cơ bản."
+        "description": "Mới tập chơi, nắm bắt kỹ thuật phát cầu & phản tạt cơ bản."
     },
     {
         "tier": 2,
-        "name": "Cơ bản",
-        "display": "🔵 Trung Bình (Cơ bản)",
-        "min_elo": 1000,
-        "max_elo": 1199,
-        "color": "#2563eb",
-        "badge_bg": "#dbeafe",
-        "description": "Biết kỹ thuật cơ bản, phản tạt và di chuyển ổn định."
+        "name": "Trung Bình Yếu - Cơ bản",
+        "level": "Trung Bình Yếu",
+        "sub": "Cơ bản",
+        "display": "🔵 Cấp 2: Trung Bình Yếu - Cơ bản",
+        "min_elo": 951,
+        "max_elo": 1150,
+        "color": "#0284c7",
+        "badge_bg": "#e0f2fe",
+        "description": "Nắm vững luật thi đấu, phông cầu cơ bản, di chuyển bước đầu ổn định."
     },
     {
         "tier": 3,
-        "name": "Trung Bình Khá",
-        "display": "🟡 Trung Bình Khá",
-        "min_elo": 1200,
-        "max_elo": 1399,
+        "name": "Trung bình",
+        "level": "Trung bình",
+        "sub": "",
+        "display": "🟡 Cấp 3: Trung bình",
+        "min_elo": 1151,
+        "max_elo": 1350,
         "color": "#ca8a04",
         "badge_bg": "#fef9c3",
-        "description": "Có nền tảng thể lực, đánh cầu bền bỉ, chiến thuật cơ bản."
+        "description": "Đánh cầu đều tay, di chuyển thanh thoát, phông cầu sâu và bỏ nhỏ ổn định."
     },
     {
         "tier": 4,
-        "name": "Khá",
-        "display": "🟠 Khá",
-        "min_elo": 1400,
-        "max_elo": 1599,
+        "name": "Trung bình khá",
+        "level": "Trung bình khá",
+        "sub": "",
+        "display": "🟠 Cấp 4: Trung bình khá",
+        "min_elo": 1351,
+        "max_elo": 1550,
         "color": "#ea580c",
         "badge_bg": "#ffedd5",
-        "description": "Kỹ thuật và chiến thuật khá, smash uy lực, điều cầu biến hóa."
+        "description": "Có nền tảng thể lực, bọc lót linh hoạt, smash cơ bản và tạt lưới sắc bén."
     },
     {
         "tier": 5,
-        "name": "Thành Thạo",
-        "display": "🔴 Giỏi (Thành Thạo)",
-        "min_elo": 1600,
-        "max_elo": 1799,
+        "name": "Khá",
+        "level": "Khá",
+        "sub": "",
+        "display": "🔴 Cấp 5: Khá",
+        "min_elo": 1551,
+        "max_elo": 1750,
         "color": "#dc2626",
         "badge_bg": "#fee2e2",
-        "description": "Kỹ năng toàn diện, thi đấu ổn định, phản xạ và di chuyển xuất sắc."
+        "description": "Kỹ thuật toàn diện, smash uy lực, điều tiết nhịp độ và kiểm soát thế trận vững vàng."
     },
     {
         "tier": 6,
-        "name": "Chuyên Nghiệp",
-        "display": "🟣 Tốt (Chuyên Nghiệp)",
-        "min_elo": 1800,
-        "max_elo": 9999,
-        "color": "#7c3aed",
+        "name": "Giỏi - Thành thạo",
+        "level": "Giỏi",
+        "sub": "Thành thạo",
+        "display": "🟣 Cấp 6: Giỏi - Thành thạo",
+        "min_elo": 1751,
+        "max_elo": 1950,
+        "color": "#9333ea",
         "badge_bg": "#f3e8ff",
-        "description": "Trình độ rất cao, đẳng cấp vận động viên thi đấu giải phong trào lớn/bán chuyên."
+        "description": "Kỹ năng chuyên sâu, thi đấu giải phong trào nhiều năm, phản xạ cực nhạy."
+    },
+    {
+        "tier": 7,
+        "name": "Tốt - Chuyên nghiệp",
+        "level": "Tốt",
+        "sub": "Chuyên nghiệp",
+        "display": "👑 Cấp 7: Tốt - Chuyên nghiệp",
+        "min_elo": 1951,
+        "max_elo": 9999,
+        "color": "#4f46e5",
+        "badge_bg": "#e0e7ff",
+        "description": "Đẳng cấp kiện tướng, vận động viên bán chuyên / chuyên nghiệp hoặc HLV đẳng cấp cao."
     }
 ]
 
@@ -88,7 +112,22 @@ def get_tier_for_elo(elo: int, tiers: Optional[List[Dict[str, Any]]] = None) -> 
     for t in tiers_to_use:
         if t["min_elo"] <= elo <= t["max_elo"]:
             return t
-    return tiers_to_use[0] if elo < 1000 else tiers_to_use[-1]
+    return tiers_to_use[0] if elo < 950 else tiers_to_use[-1]
+
+def get_tier_by_rank(tier_id: int) -> Dict[str, Any]:
+    """Finds the corresponding tier by its tier rank ID (1 to 7)."""
+    for t in DEFAULT_ELO_TIERS:
+        if t["tier"] == tier_id:
+            return t
+    return DEFAULT_ELO_TIERS[3]  # default to Trung bình khá
+
+def get_tier_by_name(name: str) -> Dict[str, Any]:
+    """Finds tier by its Vietnamese name."""
+    clean = name.strip().lower()
+    for t in DEFAULT_ELO_TIERS:
+        if clean in t["name"].lower() or t["name"].lower() in clean:
+            return t
+    return DEFAULT_ELO_TIERS[3]
 
 
 # =============================================================================

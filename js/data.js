@@ -5,12 +5,12 @@
 const MockData = {
   // 1. BẢNG users
   users: [
-    { id: 1, name: "Nguyễn Văn Hùng", phone: "0901234567", password: "123456", role: "CUSTOMER", elo_rating: 1450, avatar: "H", is_approved: true },
-    { id: 2, name: "Trần Thị Mai", phone: "0912345678", password: "123456", role: "CUSTOMER", elo_rating: 1680, avatar: "M", is_approved: true },
-    { id: 3, name: "Lê Hoàng Nam (Chủ Sân)", phone: "0988888888", password: "owner123", role: "OWNER", facility_id: 101, avatar: "N", is_approved: true },
-    { id: 4, name: "Phạm Quốc Tuấn (Thu Ngân)", phone: "0922334455", password: "staff123", role: "STAFF", facility_id: 101, avatar: "T", is_approved: true },
-    { id: 5, name: "Admin Quản Trị", phone: "0999888777", password: "admin123", role: "ADMIN", avatar: "A", is_approved: true },
-    { id: 6, name: "Vũ Nhất Phong", phone: "0983582321", password: "password123", role: "CUSTOMER", elo_rating: 1200, avatar: "V", is_approved: true },
+    { id: 1, name: "Nguyễn Văn Hùng", phone: "0901234567", password: "123456", role: "CUSTOMER", skill_tier: "Khá", skill_tier_id: 5, elo_rating: 1650, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", is_approved: true },
+    { id: 2, name: "Trần Thị Mai", phone: "0912345678", password: "123456", role: "CUSTOMER", skill_tier: "Khá", skill_tier_id: 5, elo_rating: 1680, avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", is_approved: true },
+    { id: 3, name: "Lê Hoàng Nam (Chủ Sân)", phone: "0988888888", password: "owner123", role: "OWNER", facility_id: 101, avatar: "N", is_approved: true, elo_rating: "N/A" },
+    { id: 4, name: "Phạm Quốc Tuấn (Thu Ngân)", phone: "0922334455", password: "staff123", role: "STAFF", facility_id: 101, avatar: "T", is_approved: true, elo_rating: "N/A" },
+    { id: 5, name: "Admin Quản Trị", phone: "0999888777", password: "admin123", role: "ADMIN", avatar: "A", is_approved: true, elo_rating: "N/A" },
+    { id: 6, name: "Vũ Nhất Phong", phone: "0983582321", password: "password123", role: "CUSTOMER", skill_tier: "Trung bình khá", skill_tier_id: 4, elo_rating: 1450, avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", is_approved: true },
     { id: 7, name: "Trương Quốc Khánh (Chủ Sân)", phone: "0123456789", password: "02092006", role: "OWNER", facility_id: 101, elo_rating: "N/A", avatar: "K", is_approved: true }
   ],
 
@@ -979,18 +979,20 @@ const MockData = {
     }
   ],
 
-  // 8. BẢNG matchmaking_rooms (Danh mục phòng ghép kèo AI thông minh)
+  // 8. BẢNG matchmaking_rooms (Danh mục phòng ghép kèo AI thông minh theo 7 Cấp Bậc Trình Độ)
   matchmaking_rooms: [
     {
       id: 701,
-      room_name: "Giao lưu Đôi Nam Nữ Cân Kèo (ELO 1400 - 1550)",
+      room_name: "Giao lưu Đôi Nam Nữ Cân Kèo Cấp [Khá]",
       facility_id: 101,
       facility_name: "CLB Cầu Lông Catchy Badminton Arena",
       district: "Hoàng Mai, Hà Nội",
       match_date: "Hôm nay, 22/09/2026",
       match_time: "18:00 - 20:00",
-      required_elo_min: 1400,
-      required_elo_max: 1550,
+      required_tier: "Khá",
+      required_tier_id: 5,
+      required_elo_min: 1551,
+      required_elo_max: 1750,
       match_type: "Đôi Nam/Nữ",
       court_number: "Sân 03 (Thảm Enlio VIP)",
       price_per_slot: "45.000đ",
@@ -998,33 +1000,38 @@ const MockData = {
       max_players: 4,
       status: "OPEN",
       host_name: "Lê Hoàng Quân",
-      host_elo: 1460,
-      ai_compatibility: 98,
-      ai_prediction: "Tỉ lệ thắng dự kiến 51% - 49%. Độ cân bằng hoàn hảo, nhịp độ công thủ tốc độ cao.",
+      host_tier: "Khá",
+      host_tier_id: 5,
+      host_elo: 1650,
+      host_photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+      ai_compatibility: 99,
+      ai_prediction: "Cân kèo hoàn hảo cùng hạng mức Khá (Cấp 5). Tốc độ trận đấu cao, giằng co hấp dẫn.",
       ai_handicap: "Đồng banh (0 điểm)",
       category: "doubles",
       is_ai_recommended: true,
       players: [
-        { name: "Lê Hoàng Quân", elo: 1460, avatar: "Q", role: "Host", style: "Công thủ toàn diện", team: "A" },
-        { name: "Trần Thị Mai", elo: 1480, avatar: "M", role: "Member", style: "Bắt lưới & Tạt cầu", team: "A" },
-        { name: "Phạm Quốc Tuấn", elo: 1430, avatar: "T", role: "Member", style: "Phòng thủ dẻo dai", team: "B" }
+        { name: "Lê Hoàng Quân", skill_tier: "Khá", tier_id: 5, elo: 1650, avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80", role: "Host", style: "Công thủ toàn diện", team: "A" },
+        { name: "Trần Thị Mai", skill_tier: "Khá", tier_id: 5, elo: 1680, avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", role: "Member", style: "Bắt lưới & Tạt cầu", team: "A" },
+        { name: "Phạm Quốc Tuấn", skill_tier: "Khá", tier_id: 5, elo: 1620, avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=300&q=80", role: "Member", style: "Phòng thủ dẻo dai", team: "B" }
       ],
       chat_messages: [
-        { sender: "🤖 AI Match Referee", text: "Chào mừng các tay vợt! AI đã phân tích kèo đấu: Độ cân bằng 98%, dự kiến trận đấu 3 ván kịch tính!", time: "16:30" },
-        { sender: "Lê Hoàng Quân", text: "Chào mọi người, nhóm mình còn thiếu 1 tay vợt ELO quanh 1450 đánh đôi nhé!", time: "16:45" },
-        { sender: "Trần Thị Mai", text: "Mình ELO 1480 vừa vào phòng rồi, đánh đôi với Quân nhé!", time: "16:50" },
-        { sender: "Phạm Quốc Tuấn", text: "Mình bên đội B rồi, cần thêm 1 bạn ghép cùng quẩy nhiệt tình tối nay!", time: "17:05" }
+        { sender: "🤖 AI Match Referee", text: "Chào mừng các tay vợt! AI đã thẩm định: Phòng thi đấu chuẩn cấp bậc [Khá], 100% người chơi cùng hạng mức!", time: "16:30" },
+        { sender: "Lê Hoàng Quân", text: "Chào mọi người, phòng mình cần thêm 1 bạn cùng cấp Khá để đánh đôi cân kèo nhé!", time: "16:45" },
+        { sender: "Trần Thị Mai", text: "Mình cấp Khá vừa vào phòng rồi, ảnh nhận diện ở avatar nhé!", time: "16:50" },
+        { sender: "Phạm Quốc Tuấn", text: "Mình bên đội B rồi, chào đón đồng đội cùng hạng vào quẩy nhiệt tình!", time: "17:05" }
       ]
     },
     {
       id: 702,
-      room_name: "Săn Kèo Đơn Nam Thách Đấu (ELO 1700 - 1950)",
+      room_name: "Săn Kèo Đơn Nam Cấp [Giỏi - Thành thạo]",
       facility_id: 103,
       facility_name: "CLB Cầu Lông Ba Đình Star Arena",
       district: "Ba Đình, Hà Nội",
       match_date: "Hôm nay, 22/09/2026",
       match_time: "19:30 - 21:30",
-      required_elo_min: 1700,
+      required_tier: "Giỏi - Thành thạo",
+      required_tier_id: 6,
+      required_elo_min: 1751,
       required_elo_max: 1950,
       match_type: "Đơn Nam",
       court_number: "Sân 01 (Thảm Yonex Tour)",
@@ -1033,30 +1040,35 @@ const MockData = {
       max_players: 2,
       status: "OPEN",
       host_name: "Hoàng Văn Nam",
-      host_elo: 1780,
-      ai_compatibility: 68,
-      ai_prediction: "Kèo thách đấu hạng A. Host có smash tốc độ 320km/h. Cần thể lực bền bỉ và di chuyển nhanh.",
-      ai_handicap: "AI Handicap: Chấp 4 điểm/set",
+      host_tier: "Giỏi - Thành thạo",
+      host_tier_id: 6,
+      host_elo: 1820,
+      host_photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
+      ai_compatibility: 95,
+      ai_prediction: "Kèo solo chất lượng cao giữa các tay vợt Giỏi - Thành thạo. Lối đánh tốc độ cao, smash sắc nét.",
+      ai_handicap: "Đồng banh (0 điểm)",
       category: "singles",
       is_ai_recommended: false,
       players: [
-        { name: "Hoàng Văn Nam", elo: 1780, avatar: "N", role: "Host", style: "Tấn công dồn dập & Smash uy lực", team: "A" }
+        { name: "Hoàng Văn Nam", skill_tier: "Giỏi - Thành thạo", tier_id: 6, elo: 1820, avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80", role: "Host", style: "Tấn công dồn dập & Smash uy lực", team: "A" }
       ],
       chat_messages: [
-        { sender: "🤖 AI Match Referee", text: "Hệ thống AI Handicap đã kích hoạt: Đối thủ có thể nhận chấp từ 3-5 điểm nếu ELO chênh lệch.", time: "15:00" },
-        { sender: "Hoàng Văn Nam", text: "Cần tìm đối thủ cọ xát giao lưu đơn nam tối nay, có chấp điểm thoải mái nhé!", time: "15:10" }
+        { sender: "🤖 AI Match Referee", text: "AI Matchmaking: Đã kích hoạt xét kèo theo cấp [Giỏi - Thành thạo].", time: "15:00" },
+        { sender: "Hoàng Văn Nam", text: "Cần tìm bạn cùng hạng Giỏi - Thành thạo solo đơn nam tối nay, có ảnh diện mạo đối chiếu ở avatar!", time: "15:10" }
       ]
     },
     {
       id: 703,
-      room_name: "Kèo Đôi Nam Tốc Độ Cao & Phản Tạt (ELO 1420 - 1580)",
+      room_name: "Kèo Đôi Nam Tốc Độ Cao Cấp [Khá]",
       facility_id: 105,
       facility_name: "CLB Cầu Lông Cầu Giấy Pro Center",
       district: "Cầu Giấy, Hà Nội",
       match_date: "Hôm nay, 22/09/2026",
       match_time: "20:00 - 22:00",
-      required_elo_min: 1420,
-      required_elo_max: 1580,
+      required_tier: "Khá",
+      required_tier_id: 5,
+      required_elo_min: 1551,
+      required_elo_max: 1750,
       match_type: "Đôi Nam",
       court_number: "Sân 05 (Thảm Victor Quốc Tế)",
       price_per_slot: "50.000đ",
@@ -1064,30 +1076,35 @@ const MockData = {
       max_players: 4,
       status: "OPEN",
       host_name: "Đỗ Minh Đức",
-      host_elo: 1490,
-      ai_compatibility: 96,
-      ai_prediction: "Độ tương thích ELO 96%. Đấu pháp phối hợp phản tạt nhanh và kiểm soát cầu giữa sân.",
+      host_tier: "Khá",
+      host_tier_id: 5,
+      host_elo: 1670,
+      host_photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80",
+      ai_compatibility: 97,
+      ai_prediction: "Cân bằng tuyệt đối cùng cấp Khá. Đấu pháp phối hợp phản tạt nhanh và kiểm soát cầu giữa sân.",
       ai_handicap: "Đồng banh (0 điểm)",
       category: "doubles",
       is_ai_recommended: true,
       players: [
-        { name: "Đỗ Minh Đức", elo: 1490, avatar: "Đ", role: "Host", style: "Đập cầu uy lực", team: "A" },
-        { name: "Ngô Quốc Khánh", elo: 1440, avatar: "K", role: "Member", style: "Điều cầu góc xa", team: "B" }
+        { name: "Đỗ Minh Đức", skill_tier: "Khá", tier_id: 5, elo: 1670, avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80", role: "Host", style: "Đập cầu uy lực", team: "A" },
+        { name: "Ngô Quốc Khánh", skill_tier: "Khá", tier_id: 5, elo: 1640, avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=300&q=80", role: "Member", style: "Điều cầu góc xa", team: "B" }
       ],
       chat_messages: [
-        { sender: "Đỗ Minh Đức", text: "Kèo đánh tốc độ cao nhé anh em, chuẩn bị sẵn vợt căng 11kg!", time: "14:20" }
+        { sender: "Đỗ Minh Đức", text: "Kèo đánh đôi cùng cấp Khá nhé anh em, chuẩn bị sẵn vợt căng 11kg!", time: "14:20" }
       ]
     },
     {
       id: 704,
-      room_name: "Giao Lưu Cuối Ngày - Chia Tiền Sân Vui Vẻ (ELO 1380 - 1500)",
+      room_name: "Giao Lưu Cuối Ngày Cấp [Trung bình khá]",
       facility_id: 102,
       facility_name: "CLB Cầu Lông Đống Đa Sport Hub",
       district: "Đống Đa, Hà Nội",
       match_date: "Hôm nay, 22/09/2026",
       match_time: "21:00 - 23:00",
-      required_elo_min: 1380,
-      required_elo_max: 1500,
+      required_tier: "Trung bình khá",
+      required_tier_id: 4,
+      required_elo_min: 1351,
+      required_elo_max: 1550,
       match_type: "Đôi Nam/Nữ",
       court_number: "Sân 02 (Thảm Xanh Lá)",
       price_per_slot: "40.000đ",
@@ -1095,32 +1112,37 @@ const MockData = {
       max_players: 4,
       status: "OPEN",
       host_name: "Bùi Đình Trọng",
-      host_elo: 1420,
+      host_tier: "Trung bình khá",
+      host_tier_id: 4,
+      host_elo: 1480,
+      host_photo: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=300&q=80",
       ai_compatibility: 99,
-      ai_prediction: "Khớp ELO 99% với bạn (1450). Trận đấu giao lưu cực kỳ vui vẻ, chia sẻ tiền sân tự động.",
+      ai_prediction: "Khớp 100% với cấp Trung bình khá. Trận đấu giao lưu cực kỳ vui vẻ, chia sẻ tiền sân tự động.",
       ai_handicap: "Đồng banh (0 điểm)",
       category: "doubles",
       is_ai_recommended: true,
       players: [
-        { name: "Bùi Đình Trọng", elo: 1420, avatar: "T", role: "Host", style: "Bền bỉ thể lực", team: "A" },
-        { name: "Vũ Hải Yến", elo: 1410, avatar: "Y", role: "Member", style: "Khống chế lưới", team: "A" },
-        { name: "Lê Minh Tuấn", elo: 1470, avatar: "T", role: "Member", style: "Công thủ linh hoạt", team: "B" }
+        { name: "Bùi Đình Trọng", skill_tier: "Trung bình khá", tier_id: 4, elo: 1480, avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=300&q=80", role: "Host", style: "Bền bỉ thể lực", team: "A" },
+        { name: "Vũ Hải Yến", skill_tier: "Trung bình khá", tier_id: 4, elo: 1440, avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80", role: "Member", style: "Khống chế lưới", team: "A" },
+        { name: "Lê Minh Tuấn", skill_tier: "Trung bình khá", tier_id: 4, elo: 1510, avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80", role: "Member", style: "Công thủ linh hoạt", team: "B" }
       ],
       chat_messages: [
-        { sender: "Bùi Đình Trọng", text: "Anh em vào giao lưu dưỡng sinh giải tỏa căng thẳng sau giờ làm nào!", time: "17:15" },
-        { sender: "Vũ Hải Yến", text: "Mình có mang theo nước bù khoáng cho cả sân nha!", time: "17:20" }
+        { sender: "Bùi Đình Trọng", text: "Anh em cùng hạng Trung bình khá vào giao lưu dưỡng sinh giải tỏa căng thẳng sau giờ làm nào!", time: "17:15" },
+        { sender: "Vũ Hải Yến", text: "Mình có ảnh đại diện rồi nhé, nhận diện gặp nhau ở cổng sân!", time: "17:20" }
       ]
     },
     {
       id: 705,
-      room_name: "Kèo Giao Hữu AI Chấp Điểm (ELO Lệch 200+)",
+      room_name: "Kèo Giao Hữu AI Chấp Điểm (Khá vs TB Khá)",
       facility_id: 104,
       facility_name: "CLB Cầu Lông Thanh Xuân Sport Arena",
       district: "Thanh Xuân, Hà Nội",
       match_date: "Ngày mai, 23/09/2026",
       match_time: "17:30 - 19:30",
-      required_elo_min: 1300,
-      required_elo_max: 1700,
+      required_tier: "Trung bình khá",
+      required_tier_id: 4,
+      required_elo_min: 1351,
+      required_elo_max: 1550,
       match_type: "Đơn Nam",
       court_number: "Sân 04 (Thảm Enlio)",
       price_per_slot: "60.000đ",
@@ -1128,29 +1150,34 @@ const MockData = {
       max_players: 2,
       status: "OPEN",
       host_name: "Phan Anh Vũ",
+      host_tier: "Khá",
+      host_tier_id: 5,
       host_elo: 1660,
-      ai_compatibility: 85,
-      ai_prediction: "Hệ thống AI tự động cân bằng: Người chơi ELO thấp hơn được cộng +3.5 điểm mỗi ván đấu.",
-      ai_handicap: "AI Handicap: Chấp +3.5 điểm/set",
+      host_photo: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=300&q=80",
+      ai_compatibility: 88,
+      ai_prediction: "Hệ thống AI tự động cân bằng: Người chơi cấp Trung bình khá được cộng +3 điểm mỗi set khi đấu với Host cấp Khá.",
+      ai_handicap: "AI Handicap: Chấp +3 điểm/set",
       category: "handicap",
       is_ai_recommended: true,
       players: [
-        { name: "Phan Anh Vũ", elo: 1660, avatar: "V", role: "Host", style: "Chiến thuật & Kỹ thuật", team: "A" }
+        { name: "Phan Anh Vũ", skill_tier: "Khá", tier_id: 5, elo: 1660, avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=300&q=80", role: "Host", style: "Chiến thuật & Kỹ thuật", team: "A" }
       ],
       chat_messages: [
-        { sender: "Phan Anh Vũ", text: "Kèo chấp điểm AI tính toán rất công bằng, hoan nghênh anh em ELO 1300-1500 giao lưu học hỏi!", time: "13:00" }
+        { sender: "Phan Anh Vũ", text: "Kèo chấp điểm AI tính toán rất công bằng, hoan nghênh anh em cấp Trung bình khá giao lưu học hỏi!", time: "13:00" }
       ]
     },
     {
       id: 706,
-      room_name: "Kèo Đôi Nam Nữ Rèn Thể Lực & Phản Xạ (ELO 1400 - 1520)",
+      room_name: "Kèo Đôi Cân Bằng Cấp [Trung bình]",
       facility_id: 106,
       facility_name: "CLB Cầu Lông Nam Từ Liêm Smash Center",
       district: "Nam Từ Liêm, Hà Nội",
       match_date: "Hôm nay, 22/09/2026",
       match_time: "19:00 - 21:00",
-      required_elo_min: 1400,
-      required_elo_max: 1520,
+      required_tier: "Trung bình",
+      required_tier_id: 3,
+      required_elo_min: 1151,
+      required_elo_max: 1350,
       match_type: "Đôi Nam/Nữ",
       court_number: "Sân 06 (Thảm Đỏ Thi Đấu)",
       price_per_slot: "45.000đ",
@@ -1158,30 +1185,35 @@ const MockData = {
       max_players: 4,
       status: "OPEN",
       host_name: "Nguyễn Thành Long",
-      host_elo: 1445,
-      ai_compatibility: 97,
-      ai_prediction: "Độ khớp 97%. Nhịp độ trận đấu đều đặn, thích hợp tăng cường cảm giác cầu.",
+      host_tier: "Trung bình",
+      host_tier_id: 3,
+      host_elo: 1300,
+      host_photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
+      ai_compatibility: 98,
+      ai_prediction: "Cân bằng tuyệt hảo cùng cấp Trung bình (Cấp 3). Nhịp độ thi đấu vừa sức, rèn luyện cảm giác cầu.",
       ai_handicap: "Đồng banh (0 điểm)",
       category: "doubles",
       is_ai_recommended: true,
       players: [
-        { name: "Nguyễn Thành Long", elo: 1445, avatar: "L", role: "Host", style: "Điều cầu", team: "A" },
-        { name: "Trịnh Diệu Linh", elo: 1430, avatar: "D", role: "Member", style: "Tạt lưới", team: "B" }
+        { name: "Nguyễn Thành Long", skill_tier: "Trung bình", tier_id: 3, elo: 1300, avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80", role: "Host", style: "Điều cầu", team: "A" },
+        { name: "Trịnh Diệu Linh", skill_tier: "Trung bình", tier_id: 3, elo: 1280, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80", role: "Member", style: "Tạt lưới", team: "B" }
       ],
       chat_messages: [
-        { sender: "Nguyễn Thành Long", text: "Phòng đang có 2 bạn rồi, cần thêm 1 cặp nữa là đủ 4 người!", time: "16:00" }
+        { sender: "Nguyễn Thành Long", text: "Phòng đang có 2 bạn rồi, cần thêm 2 bạn cùng cấp Trung bình nữa là đẹp đội hình!", time: "16:00" }
       ]
     },
     {
       id: 707,
-      room_name: "Tập Luyện & Sửa Động Tác Cơ Bản (ELO 1100 - 1350)",
+      room_name: "Tập Luyện Cơ Bản Cấp [Trung Bình Yếu - Cơ bản]",
       facility_id: 107,
       facility_name: "CLB Cầu Lông Tây Hồ View Arena",
       district: "Tây Hồ, Hà Nội",
       match_date: "Ngày mai, 23/09/2026",
       match_time: "06:00 - 08:00",
-      required_elo_min: 1100,
-      required_elo_max: 1350,
+      required_tier: "Trung Bình Yếu - Cơ bản",
+      required_tier_id: 2,
+      required_elo_min: 951,
+      required_elo_max: 1150,
       match_type: "Giao Lưu Tự Do",
       court_number: "Sân 02 (Thảm Xám)",
       price_per_slot: "35.000đ",
@@ -1189,31 +1221,36 @@ const MockData = {
       max_players: 4,
       status: "OPEN",
       host_name: "Hoàng Thu Trang",
-      host_elo: 1280,
-      ai_compatibility: 74,
-      ai_prediction: "Trình độ nhập môn & cơ bản. Phù hợp khởi động ngày mới nhẹ nhàng.",
-      ai_handicap: "AI Handicap: Hướng dẫn kỹ thuật",
-      category: "handicap",
-      is_ai_recommended: false,
+      host_tier: "Trung Bình Yếu - Cơ bản",
+      host_tier_id: 2,
+      host_elo: 1050,
+      host_photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80",
+      ai_compatibility: 96,
+      ai_prediction: "Phù hợp cho cấp Trung Bình Yếu - Cơ bản (Cấp 2). Giao lưu nhẹ nhàng buổi sáng, cùng tiến bộ.",
+      ai_handicap: "Đồng banh (0 điểm)",
+      category: "doubles",
+      is_ai_recommended: true,
       players: [
-        { name: "Hoàng Thu Trang", elo: 1280, avatar: "T", role: "Host", style: "Tân thủ", team: "A" },
-        { name: "Phạm Hải Đăng", elo: 1250, avatar: "Đ", role: "Member", style: "Cơ bản", team: "A" },
-        { name: "Nguyễn Mai Anh", elo: 1300, avatar: "A", role: "Member", style: "Tập luyện", team: "B" }
+        { name: "Hoàng Thu Trang", skill_tier: "Trung Bình Yếu - Cơ bản", tier_id: 2, elo: 1050, avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80", role: "Host", style: "Tân thủ", team: "A" },
+        { name: "Phạm Hải Đăng", skill_tier: "Trung Bình Yếu - Cơ bản", tier_id: 2, elo: 1020, avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80", role: "Member", style: "Cơ bản", team: "A" },
+        { name: "Nguyễn Mai Anh", skill_tier: "Trung Bình Yếu - Cơ bản", tier_id: 2, elo: 1080, avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", role: "Member", style: "Tập luyện", team: "B" }
       ],
       chat_messages: [
-        { sender: "Hoàng Thu Trang", text: "Chào cả nhà, sáng mai đánh nhẹ nhàng 6h sáng tại Tây Hồ nhé!", time: "18:00" }
+        { sender: "Hoàng Thu Trang", text: "Chào cả nhà, sáng mai đánh nhẹ nhàng 6h sáng tại Tây Hồ cùng cấp nhé!", time: "18:00" }
       ]
     },
     {
       id: 708,
-      room_name: "Đại Chiến Bán Chuyên - Đơn Nam Hạng A (ELO 1800 - 2100)",
+      room_name: "Đại Chiến Đỉnh Cao Cấp [Tốt - Chuyên nghiệp]",
       facility_id: 108,
       facility_name: "CLB Cầu Lông Hà Đông Master Club",
       district: "Hà Đông, Hà Nội",
       match_date: "Hôm nay, 22/09/2026",
       match_time: "20:30 - 22:30",
-      required_elo_min: 1800,
-      required_elo_max: 2100,
+      required_tier: "Tốt - Chuyên nghiệp",
+      required_tier_id: 7,
+      required_elo_min: 1951,
+      required_elo_max: 9999,
       match_type: "Đơn Nam",
       court_number: "Sân VIP 01 (Thảm Yonex Pro)",
       price_per_slot: "100.000đ",
@@ -1221,17 +1258,56 @@ const MockData = {
       max_players: 2,
       status: "OPEN",
       host_name: "Vũ Quang Huy",
-      host_elo: 1920,
-      ai_compatibility: 55,
-      ai_prediction: "Đấu thủ bán chuyên quốc gia. Tốc độ di chuyển cực nhanh, đập cầu cắm sân.",
-      ai_handicap: "AI Handicap: Chấp 6 điểm/set",
+      host_tier: "Tốt - Chuyên nghiệp",
+      host_tier_id: 7,
+      host_elo: 2050,
+      host_photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+      ai_compatibility: 92,
+      ai_prediction: "Trận so tài đỉnh cao giữa các tay vợt Tốt - Chuyên nghiệp (Cấp 7). Tốc độ cầu > 300km/h.",
+      ai_handicap: "Đồng banh (0 điểm)",
       category: "singles",
       is_ai_recommended: false,
       players: [
-        { name: "Vũ Quang Huy", elo: 1920, avatar: "H", role: "Host", style: "Bán chuyên đỉnh cao", team: "A" }
+        { name: "Vũ Quang Huy", skill_tier: "Tốt - Chuyên nghiệp", tier_id: 7, elo: 2050, avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80", role: "Host", style: "Bán chuyên đỉnh cao", team: "A" }
       ],
       chat_messages: [
-        { sender: "Vũ Quang Huy", text: "Tìm đối thủ solo đơn nam cọ xát trình độ cao tối nay!", time: "16:20" }
+        { sender: "Vũ Quang Huy", text: "Tìm đối thủ solo đơn nam cùng hạng Chuyên nghiệp cọ xát tối nay!", time: "16:20" }
+      ]
+    },
+    {
+      id: 709,
+      room_name: "Giao Lưu Nhập Môn Cấp [Yếu - Tân thủ]",
+      facility_id: 101,
+      facility_name: "CLB Cầu Lông Catchy Badminton Arena",
+      district: "Hoàng Mai, Hà Nội",
+      match_date: "Hôm nay, 22/09/2026",
+      match_time: "17:00 - 19:00",
+      required_tier: "Yếu - Tân thủ",
+      required_tier_id: 1,
+      required_elo_min: 0,
+      required_elo_max: 950,
+      match_type: "Đôi Nam/Nữ",
+      court_number: "Sân 04 (Thảm Enlio)",
+      price_per_slot: "35.000đ",
+      current_players: 2,
+      max_players: 4,
+      status: "OPEN",
+      host_name: "Trần Bảo Nam",
+      host_tier: "Yếu - Tân thủ",
+      host_tier_id: 1,
+      host_elo: 800,
+      host_photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
+      ai_compatibility: 98,
+      ai_prediction: "Phòng ghép dành riêng cho các bạn Yếu - Tân thủ mới làm quen cầu lông, không áp lực điểm số.",
+      ai_handicap: "Đồng banh (0 điểm)",
+      category: "doubles",
+      is_ai_recommended: true,
+      players: [
+        { name: "Trần Bảo Nam", skill_tier: "Yếu - Tân thủ", tier_id: 1, elo: 800, avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80", role: "Host", style: "Mới chơi", team: "A" },
+        { name: "Lê Thu Hà", skill_tier: "Yếu - Tân thủ", tier_id: 1, elo: 820, avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", photo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80", role: "Member", style: "Tập giao cầu", team: "B" }
+      ],
+      chat_messages: [
+        { sender: "Trần Bảo Nam", text: "Chào mọi người, tụi mình mới tập chơi, hoan nghênh các bạn cùng cấp Tân thủ vào rèn luyện!", time: "15:30" }
       ]
     }
   ],
