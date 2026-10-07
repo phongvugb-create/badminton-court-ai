@@ -1,5 +1,7 @@
 .env
 .env.local
+.next/
+tsconfig.tsbuildinfo
 .vscode/
 .idea/
 *.log
