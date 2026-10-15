@@ -8,16 +8,20 @@ except ImportError:
     _has_jose = False
 
 try:
+    # pyrefly: ignore [missing-import]
     from passlib.context import CryptContext
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 except ImportError:
     pwd_context = None
 
+# pyrefly: ignore [missing-import]
 from fastapi import Depends, HTTPException, status
+# pyrefly: ignore [missing-import]
 from fastapi.security import OAuth2PasswordBearer
 from app.config import settings
 
 try:
+    # pyrefly: ignore [missing-import]
     import bcrypt
     _use_direct_bcrypt = True
 except ImportError:

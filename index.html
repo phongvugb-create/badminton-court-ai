@@ -713,6 +713,34 @@
           </div>
         </section>
 
+        <!-- Payment Result Page -->
+        <section id="view-ui-payment-result" class="screen-view">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title"><i class="fa-solid fa-check-circle text-primary"></i> Kết Quả Thanh Toán</h1>
+                    <p class="page-subtitle">Đang kiểm tra trạng thái thanh toán...</p>
+                </div>
+            </div>
+
+            <div class="glass-card" style="text-align: center; padding: 3rem 1.5rem;">
+                <div id="payment-result-icon" style="width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content-center; margin: 0 auto 1.5rem; font-size: 3rem;">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                </div>
+                <h2 id="payment-result-title" style="margin: 0 0 1rem; font-size: 1.5rem; color: #0f172a;">Đang xử lý...</h2>
+                <p id="payment-result-message" style="color: #64748b; font-size: 1.1rem; max-width: 400px; margin: 0 auto 2rem; line-height: 1.6;">
+                    Vui lòng chờ mientras chúng tôi xác thực thanh toán với hệ thống...
+                </p>
+                <div id="payment-result-actions" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button id="btn-check-again" class="btn btn-outline-primary" style="display: none; padding: 0.75rem 1.5rem; font-weight: 600;">
+                        <i class="fa-solid fa-sync"></i> Kiểm tra lại
+                    </button>
+                    <button id="btn-return-booking" class="btn btn-secondary" style="padding: 0.75rem 1.5rem; font-weight: 600;">
+                        <i class="fa-solid fa-arrow-left"></i> Quay lại đặt sân
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <!-- AI MATCHMAKING & CÂN BẰNG CẤP BẬC (UC006) - KHÔNG DÙNG ĐIỂM SỐ -->
         <section id="view-ui-06" class="screen-view">
           

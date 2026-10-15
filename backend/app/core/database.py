@@ -1,5 +1,4 @@
-# pyrefly: ignore [missing-import]
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 # pyrefly: ignore [missing-import]
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.config import settings
@@ -16,23 +15,52 @@ elif db_url.startswith("postgresql://"):
 
 engine_kwargs = {"echo": False, "future": True}
 if "sqlite" in db_url:
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
+    engine_kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
 else:
     engine_kwargs["pool_pre_ping"] = True
 
-try:
-    engine = create_async_engine(db_url, **engine_kwargs)
-except Exception as e:
-    logger.warning(f"Could not connect to database {db_url}: {e}. Fallback to sqlite async.")
+import socket
+from urllib.parse import urlparse
+
+
+def is_db_reachable(url_str: str) -> bool:
+    if "sqlite" in url_str:
+        return True
+    try:
+        parsed = urlparse(url_str.replace("postgresql+asyncpg://", "http://").replace("postgresql://", "http://"))
+        host = parsed.hostname or "127.0.0.1"
+        port = parsed.port or 5432
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        s.connect((host, port))
+        s.close()
+        return True
+    except Exception:
+        return False
+
+
+if "sqlite" in db_url or is_db_reachable(db_url):
+    try:
+        engine = create_async_engine(db_url, **engine_kwargs)
+    except Exception as e:
+        logger.warning(f"Could not initialize database engine for {db_url}: {e}. Fallback to sqlite async.")
+        engine = create_async_engine(
+            "sqlite+aiosqlite:///./badminton.db",
+            echo=False,
+            future=True,
+            connect_args={"check_same_thread": False, "timeout": 30}
+        )
+else:
+    logger.info(f"Target PostgreSQL at {db_url} is unreachable. Fallback to sqlite async active.")
     engine = create_async_engine(
         "sqlite+aiosqlite:///./badminton.db",
         echo=False,
         future=True,
-        connect_args={"check_same_thread": False}
+        connect_args={"check_same_thread": False, "timeout": 30}
     )
 
-AsyncSessionLocal = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
+AsyncSessionLocal = async_sessionmaker(
+    engine, expire_on_commit=False
 )
 
 Base = declarative_base()

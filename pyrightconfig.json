@@ -1,0 +1,24 @@
+{
+  "include": [
+    "backend/**",
+    "test_*.py",
+    "migrations/**"
+  ],
+  "extraPaths": [
+    "backend",
+    "."
+  ],
+  "exclude": [
+    "app",
+    "node_modules",
+    ".next",
+    "types",
+    "components",
+    "lib",
+    "supabase"
+  ],
+  "typeCheckingMode": "off",
+  "useLibraryCodeForTypes": true,
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none"
+}

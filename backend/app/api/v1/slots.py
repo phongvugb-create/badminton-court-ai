@@ -1,13 +1,22 @@
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Depends, HTTPException, Query
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
+# pyrefly: ignore [missing-import]
 from sqlalchemy.future import select
 from typing import List, Optional
 from app.core.database import get_db
 from app.core.redis import acquire_slot_lock, release_slot_lock, get_slot_lock_holder
 from app.models.all_models import TimeSlot, SlotPricing, Court, User
-from app.schemas.all_schemas import TimeSlotResponse, SlotHoldRequest
+from app.schemas.all_schemas import (
+    TimeSlotResponse,
+    SlotHoldRequest,
+    SlotHoldConfirmRequest,
+    SlotHoldConfirmResponse
+)
 from app.api.v1.auth import get_current_user
 from app.ai.dynamic_pricing import calculate_dynamic_price
+from app.ai.tools.pending_hold_manager import execute_slot_hold
 
 router = APIRouter(prefix="/slots", tags=["Time Slots & AI Pricing"])
 
@@ -102,3 +111,30 @@ async def release_slot(
     """Releases the held slot immediately if user cancels"""
     released = await release_slot_lock(req.slot_id, current_user.id)
     return {"status": "released" if released else "not_found"}
+
+
+@router.post("/hold-confirm", response_model=SlotHoldConfirmResponse)
+async def confirm_hold_slot(
+    req: SlotHoldConfirmRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Explicit confirmation endpoint to execute slot hold using verified pending intent (Phase 7.2).
+    Enforces authentication, Anti-IDOR (intent ownership), TTL validity, and atomic Redis lock.
+    """
+    res = await execute_slot_hold(db=db, user_id=current_user.id, intent_id=req.intent_id)
+    if res["status"] == "hold_succeeded":
+        return SlotHoldConfirmResponse(
+            status="hold_succeeded",
+            message=res["message"],
+            data=res["data"]
+        )
+    elif res["status"] == "pending_intent_expired":
+        raise HTTPException(status_code=410, detail=res["message"])
+    elif res["status"] == "slot_unavailable":
+        raise HTTPException(status_code=409, detail=res["message"])
+    elif res["status"] == "availability_unverified":
+        raise HTTPException(status_code=503, detail=res["message"])
+    else:
+        raise HTTPException(status_code=400, detail=res["message"])

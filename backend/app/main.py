@@ -1,10 +1,12 @@
+# pyrefly: ignore [missing-import]
 from fastapi import FastAPI
+# pyrefly: ignore [missing-import]
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
 from app.core.database import engine, Base
 from app.core.redis import init_redis
-from app.api.v1 import auth, facilities, slots, bookings, matchmaking, ai
+from app.api.v1 import auth, facilities, slots, bookings, matchmaking, ai, payments
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +41,7 @@ app.include_router(slots.router, prefix=settings.API_V1_STR)
 app.include_router(bookings.router, prefix=settings.API_V1_STR)
 app.include_router(matchmaking.router, prefix=settings.API_V1_STR)
 app.include_router(ai.router, prefix=settings.API_V1_STR)
+app.include_router(payments.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

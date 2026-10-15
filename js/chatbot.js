@@ -12,6 +12,7 @@ class BadmintonAIChatbot {
     this.messages = [];
     this.storageKey = 'badminton_ai_chat_history_v1';
     this.apiEndpoint = '/api/chat'; // Secure server-side proxy
+    this.conversationId = 'conv_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
 
     this.init();
   }
@@ -221,6 +222,76 @@ class BadmintonAIChatbot {
       const isUser = msg.sender === 'user';
       const formattedText = isUser ? this.escapeHtml(msg.text) : this.formatMarkdown(msg.text);
 
+      let sourcesHtml = '';
+      if (!isUser && Array.isArray(msg.sources) && msg.sources.length > 0) {
+        const uniqueSources = [];
+        const seen = new Set();
+        for (const s of msg.sources) {
+          const label = `${s.filename || 'Tài liệu'}${s.section ? ' • ' + s.section : ''}${s.page_number ? ' (Trang ' + s.page_number + ')' : ''}`;
+          if (!seen.has(label)) {
+            seen.add(label);
+            uniqueSources.push({ filename: s.filename, section: s.section, page_number: s.page_number, evidence_match: s.evidence_match });
+          }
+        }
+        if (uniqueSources.length > 0) {
+          sourcesHtml = `
+            <div class="ai-sources-container" style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.15); font-size: 0.72rem; color: #94a3b8;">
+              <div style="font-weight: 600; margin-bottom: 3px; color: #38bdf8;">
+                <i class="fa-solid fa-book-bookmark" style="margin-right: 4px;"></i>Nguồn tham khảo:
+              </div>
+              <ul style="margin: 0; padding-left: 14px;">
+                ${uniqueSources.map(src => `<li><strong>${this.escapeHtml(src.filename || 'Tài liệu')}</strong>${src.section ? ' — ' + this.escapeHtml(src.section) : ''}${src.page_number ? ' (Trang ' + src.page_number + ')' : ''}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+      }
+
+      // Retrieval status badge (Phase 6)
+      let statusBadgeHtml = '';
+      if (!isUser && msg.retrieval_status) {
+        const badgeConfig = {
+          'supported': { icon: '🟢', label: 'RAG · Có bằng chứng', color: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.35)', text: '#10b981' },
+          'no_relevant_documents': { icon: '⚪', label: 'Không tìm thấy tài liệu', color: 'rgba(100,116,139,0.15)', border: 'rgba(100,116,139,0.3)', text: '#94a3b8' },
+          'insufficient_evidence': { icon: '🟡', label: 'Bằng chứng chưa đủ', color: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.35)', text: '#ca8a04' }
+        };
+        const cfg = badgeConfig[msg.retrieval_status];
+        if (cfg) {
+          statusBadgeHtml = `
+            <div style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:2px 7px;border-radius:8px;
+              background:${cfg.color};border:1px solid ${cfg.border};color:${cfg.text};font-size:0.65rem;font-weight:600;">
+              ${cfg.icon} ${cfg.label}
+            </div>
+          `;
+        }
+      }
+
+      // Action confirmation buttons (Phase 7.2 slot hold & Phase 7.3 booking confirmation)
+      let actionButtonsHtml = '';
+      if (!isUser && msg.action_type === 'slot_hold_preview') {
+        actionButtonsHtml = `
+          <div class="ai-hold-action-container" style="margin-top: 10px; display: flex; gap: 8px;">
+            <button class="ai-btn-confirm-hold" 
+                    id="btn-confirm-slot-hold"
+                    onclick="window.badmintonAIChatbot && window.badmintonAIChatbot.confirmHold('${this.escapeHtml(msg.pending_intent_id || '')}')"
+                    style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(16,185,129,0.3);">
+              <i class="fa-solid fa-check"></i> Xác nhận giữ sân (10 phút)
+            </button>
+          </div>
+        `;
+      } else if (!isUser && msg.action_type === 'booking_preview') {
+        actionButtonsHtml = `
+          <div class="ai-booking-action-container" style="margin-top: 10px; display: flex; gap: 8px;">
+            <button class="ai-btn-confirm-booking" 
+                    id="btn-confirm-booking"
+                    onclick="window.badmintonAIChatbot && window.badmintonAIChatbot.confirmBooking('${this.escapeHtml(msg.booking_intent_id || '')}')"
+                    style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,99,235,0.3);">
+              <i class="fa-solid fa-calendar-check"></i> Xác nhận đặt sân
+            </button>
+          </div>
+        `;
+      }
+
       return `
         <div class="ai-msg-row ${isUser ? 'user' : 'bot'}">
           ${!isUser ? `
@@ -230,6 +301,9 @@ class BadmintonAIChatbot {
           ` : ''}
           <div class="ai-msg-content">
             <div>${formattedText}</div>
+            ${statusBadgeHtml}
+            ${sourcesHtml}
+            ${actionButtonsHtml}
             <div class="ai-msg-time">${msg.time || ''}</div>
           </div>
         </div>
@@ -292,32 +366,63 @@ class BadmintonAIChatbot {
 
     // 4. Call Secure Server Endpoint
     try {
+      let replyText = "";
+      let sources = [];
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      const authToken = localStorage.getItem('access_token') || localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
       const response = await fetch(this.apiEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: headers,
+        credentials: 'include',
         body: JSON.stringify({
           message: text,
+          conversation_id: this.conversationId,
           context: siteContext,
           messages: this.messages
         })
       });
 
-      let replyText = "";
       if (response.ok) {
         const data = await response.json();
-        replyText = data.reply || "Tôi đã ghi nhận câu hỏi. Bạn có thể tham khảo thêm trên menu hoặc bản đồ sân nhé!";
+        if (data.conversation_id) {
+          this.conversationId = data.conversation_id;
+        }
+        replyText = data.answer || data.reply || "Tôi đã ghi nhận câu hỏi. Bạn có thể tham khảo thêm trên menu hoặc bản đồ sân nhé!";
+        sources = data.sources || [];
+        const retrieval_status = data.retrieval_status || null;
+        const action_type = data.action_type || null;
+        const pending_intent_id = data.pending_intent_id || null;
+        const booking_intent_id = data.booking_intent_id || null;
+        const status = data.status || null;
+
+        this.removeTypingIndicator();
+        this.messages.push({
+          sender: 'bot',
+          text: replyText,
+          sources: sources,
+          retrieval_status: retrieval_status,
+          action_type: action_type,
+          pending_intent_id: pending_intent_id,
+          booking_intent_id: booking_intent_id,
+          status: status,
+          time: this.getCurrentTimeString()
+        });
       } else {
         replyText = "🤖 Xin lỗi bạn, kết nối tới máy chủ AI đang bận. Bạn vui lòng thử lại sau giây lát hoặc xem trực tiếp thông tin sân trên bảng giá nhé!";
+        this.removeTypingIndicator();
+        this.messages.push({
+          sender: 'bot',
+          text: replyText,
+          time: this.getCurrentTimeString()
+        });
       }
 
-      this.removeTypingIndicator();
-      this.messages.push({
-        sender: 'bot',
-        text: replyText,
-        time: this.getCurrentTimeString()
-      });
       this.saveHistory();
       this.renderMessages();
 
@@ -327,7 +432,7 @@ class BadmintonAIChatbot {
 
       this.messages.push({
         sender: 'bot',
-        text: "⚡ **Phản Hồi Tức Thì**:\nHệ thống sẵn sàng hỗ trợ bạn tìm sân tại Hà Nội, đặt cọc giữ chỗ 10 phút và tư vấn ghép kèo thi đấu ELO! Hãy nhắn chi tiết hơn nhu cầu của bạn nhé!",
+        text: "⚠️ **Kết nối gián đoạn**:\nHiện không thể kết nối tới máy chủ Trợ lý AI. Bạn vui lòng thử lại sau giây lát hoặc xem thông tin sân trực tiếp trên website nhé!",
         time: this.getCurrentTimeString()
       });
       this.saveHistory();
@@ -336,6 +441,16 @@ class BadmintonAIChatbot {
       this.isProcessing = false;
       this.setSendButtonState(true);
     }
+  }
+
+  confirmHold(intentId) {
+    if (this.isProcessing) return;
+    this.sendMessage("Xác nhận");
+  }
+
+  confirmBooking(bookingIntentId) {
+    if (this.isProcessing) return;
+    this.sendMessage("Xác nhận đặt sân");
   }
 
   showTypingIndicator() {
@@ -376,6 +491,7 @@ class BadmintonAIChatbot {
 
   clearChat() {
     if (confirm("Bạn có muốn làm mới đoạn hội thoại với Trợ lý AI không?")) {
+      this.conversationId = 'conv_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
       this.messages = [
         {
           sender: 'bot',

@@ -1,13 +1,24 @@
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Depends, HTTPException
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
+# pyrefly: ignore [missing-import]
 from sqlalchemy.future import select
 import uuid
 from typing import List
 from app.core.database import get_db
 from app.core.redis import release_slot_lock, get_slot_lock_holder
 from app.models.all_models import Booking, TimeSlot, SlotPricing, Equipment, RentalItem, User
-from app.schemas.all_schemas import BookingCreate, BookingResponse
+from app.schemas.all_schemas import (
+    BookingCreate,
+    BookingResponse,
+    BookingPreviewRequest,
+    BookingPreviewResponse,
+    BookingConfirmRequest,
+    BookingConfirmResponse
+)
 from app.api.v1.auth import get_current_user
+from app.services.booking_service import create_booking_preview, execute_confirmed_booking
 
 router = APIRouter(prefix="/bookings", tags=["Bookings & Payments"])
 
@@ -100,3 +111,71 @@ async def get_my_bookings(
     )
     res = await db.execute(stmt)
     return res.scalars().all()
+
+
+@router.post("/preview", response_model=BookingPreviewResponse)
+async def preview_booking_endpoint(
+    req: BookingPreviewRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Step B: Hiển thị bản xem trước đặt sân chính thức và tạo booking confirmation intent (Phase 7.3).
+    KHÔNG tạo Booking record, KHÔNG thu tiền, KHÔNG đổi status slot.
+    """
+    res = await create_booking_preview(
+        db=db,
+        user_id=current_user.id,
+        slot_id=req.slot_id,
+        equipment_ids=req.equipment_ids
+    )
+    if res["status"] == "preview_created":
+        return BookingPreviewResponse(
+            status="preview_created",
+            message=res["message"],
+            data=res["data"]
+        )
+    elif res["status"] == "slot_not_found":
+        raise HTTPException(status_code=404, detail=res["message"])
+    elif res["status"] in ("slot_unavailable", "slot_not_held"):
+        raise HTTPException(status_code=409, detail=res["message"])
+    elif res["status"] == "availability_unverified":
+        raise HTTPException(status_code=503, detail=res["message"])
+    else:
+        raise HTTPException(status_code=400, detail=res["message"])
+
+
+@router.post("/confirm", response_model=BookingConfirmResponse)
+async def confirm_booking_endpoint(
+    req: BookingConfirmRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Step C, D, E, F: Xác nhận tạo booking chính thức từ booking intent đã xem trước (Phase 7.3).
+    Thực hiện trong DB transaction với row-level locking, kiểm tra quyền lock Redis và idempotency.
+    """
+    res = await execute_confirmed_booking(
+        db=db,
+        user_id=current_user.id,
+        booking_intent_id=req.booking_intent_id,
+        idempotency_key=req.idempotency_key
+    )
+    if res["status"] == "booking_succeeded":
+        return BookingConfirmResponse(
+            status="booking_succeeded",
+            is_idempotent=res.get("is_idempotent", False),
+            message=res["message"],
+            data=res["data"]
+        )
+    elif res["status"] == "booking_intent_expired":
+        raise HTTPException(status_code=410, detail=res["message"])
+    elif res["status"] in ("slot_unavailable", "already_consumed"):
+        raise HTTPException(status_code=409, detail=res["message"])
+    elif res["status"] == "permission_denied":
+        raise HTTPException(status_code=403, detail=res["message"])
+    elif res["status"] == "availability_unverified":
+        raise HTTPException(status_code=503, detail=res["message"])
+    else:
+        raise HTTPException(status_code=400, detail=res["message"])
+

@@ -6,9 +6,12 @@ services:
     env_file:
       - .env
     ports:
-      - "${PORT:-8085}:80"
-    volumes:
-      - ./:/usr/share/nginx/html:ro
+      - "${PORT:-8085}:8085"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8085/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
   # Python FastAPI Backend Container (RESTful API, 4 AI Engines & Swagger UI)
   badminton-ai-backend:
     build:
@@ -39,7 +42,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
       POSTGRES_DB: ${POSTGRES_DB:-badminton_ai_db}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always

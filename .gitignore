@@ -10,3 +10,7 @@ __pycache__/
 *.pyc
 node_modules/
 verify_syntax.py
+backups/
+*.db
+*.bak
+*.new

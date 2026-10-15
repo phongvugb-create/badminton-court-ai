@@ -1,24 +1,35 @@
-﻿import http.server
+import http.server
 import json
 import os
 import sys
 import re
+import secrets
 import urllib.request
 import urllib.error
+import urllib.parse
+import http.cookies
 
 # Ensure backend directory is in path if needed
 backend_dir = os.path.join(os.path.dirname(__file__), "backend")
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
+import asyncio
 try:
     from backend.app.ai import elo_engine
+    from backend.app.ai.chatbot_service import get_chatbot_service
+    from backend.app.core.security import decode_token, create_access_token, verify_password
 except ImportError:
     # pyrefly: ignore [missing-import]
     from app.ai import elo_engine
+    from app.ai.chatbot_service import get_chatbot_service
+    from app.core.security import decode_token, create_access_token, verify_password
 
 from db_engine import db_manager
-
+try:
+    from backend.app.config import settings
+except ImportError:
+    from app.config import settings
 PORT = int(os.environ.get("PORT", 8085))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "database.json")
 
@@ -31,7 +42,7 @@ Nhiệm vụ của bạn:
   + Cơ chế AI Dynamic Pricing (UC003): Tự động giảm giá 15% giờ hành chính (8h-14h) để kích cầu, phụ thu 25% khung giờ vàng (17h-21h) tối ưu doanh thu.
   + Giữ chỗ 10 phút (UC005): Khóa nguyên tử (Atomic Slot Lock) chống xung đột đặt trùng, cọc 50% qua VNPay/Chuyển khoản QR.
   + AI Matchmaking & Điểm ELO (UC006): Ghép kèo đấu công bằng, tìm bạn chơi theo trình độ ELO 1000 - 2000+.
-  + Dịch vụ & Dụng cụ: Cho thuê vợt tiêu chuẩn 20k-30k/buổi, thuê giày 20k, bán phụ kiện cầu/quấn cán, căng cước điện tử 10.5 - 11.5 kg.
+  + Dịch vụ & Dụng cụ: Cho thuê wife tiêu chuẩn 20k-30k/buổi, thuê giày 20k, bán phụ kiện cầu/quấn cán, căng cước điện tử 10.5 - 11.5 kg.
   + Tiện ích cơ sở vật chất: Đạt chuẩn BWF, thảm PVC Enlio VIP/Yonex Pro chống trơn, đèn LED chống chói 300+ Lux, máy lạnh/quạt công nghiệp, phòng tắm nóng lạnh miễn phí, bãi đỗ xe ô tô/xe máy rộng rãi 24/7.
   + Giờ hoạt động: 05:00 Sáng - 24:00 Đêm tất cả các ngày trong tuần (kể cả Thứ 7, CN, Lễ Tết).
   + Chính sách hoàn cọc (UC008): Hoàn 100% khi hủy trước 24 giờ thi đấu, hoàn 50% trước 12-24h.
@@ -49,7 +60,7 @@ DISTRICT_KEYWORDS = {
     "Hai Bà Trưng": ["hai bà trưng", "hai ba trung", "bách khoa", "lê thanh nghị", "minh khai", "xây dựng", "bạch đằng", "lương yên"],
     "Tây Hồ": ["tây hồ", "tay ho", "quảng an", "đặng thai mai", "lạc long quân", "ven hồ"],
     "Hà Đông": ["hà đông", "ha dong", "văn quán", "trần phú", "tô hiệu", "la khê", "văn khê", "dương nội", "nguyễn huệ"],
-    "Long Biên": ["long biên", "long bien", "cổ linh", "việt hưng", "ngô gia tự", "thạch bàn", "đoàn khuê", "thượng thanh", "ngọc lâm", "bồ đề"],
+    "Long Biên": ["long biên", "long bien", "cổ linh", "việt hưng", "ngô gia tự", "thạch bàn", "doàn khuê", "thượng thanh", "ngọc lâm", "bồ đề"],
     "Hoàn Kiếm": ["hoàn kiếm", "hoan kiem", "hồng hà", "chương dương"]
 }
 
@@ -86,7 +97,7 @@ def detect_districts(query: str):
 
 def get_gemini_api_key() -> str:
     key = os.environ.get("GEMINI_API_KEY", "")
-    if key and not key.startswith("YOUR_"):
+    if key and not key.startswith("YEAR_"):
         return key.strip()
     env_file = os.path.join(os.path.dirname(__file__), ".env")
     if os.path.exists(env_file):
@@ -96,7 +107,7 @@ def get_gemini_api_key() -> str:
                     line = line.strip()
                     if line.startswith("GEMINI_API_KEY="):
                         val = line.split("=", 1)[1].strip().strip('"').strip("'")
-                        if val and not val.startswith("YOUR_"):
+                        if val and not val.startswith("YEAR_"):
                             return val
         except Exception:
             pass
@@ -193,11 +204,11 @@ def get_smart_fallback(question: str, context: str = "") -> str:
         return (
             "🏸 **DỊCH VỤ DỤNG CỤ & TƯ VẤN CHỌN VỢT THI ĐẤU CHUYÊN NGHIỆP**:\n\n"
             "1. 🛒 **Dịch vụ tiện ích tại tất cả 48 cụm sân**:\n"
-            "   - **Thuê vợt cầu lông**: 20.000đ - 30.000đ/buổi (Vợt Yonex, Lining, Victor chính hãng căng sẵn 10.5kg).\n"
+            "   - **Thuê wife cầu lông**: 20.000đ - 30.000đ/buổi (Vợt Yonex, Lining, Victor chính hãng căng sẵn 10.5kg).\n"
             "   - **Thuê giày cầu lông**: 20.000đ/buổi (Đầy đủ size 38 - 44, đế kếp bám sân, khử khuẩn 100% sau mỗi ca).\n"
             "   - **Bán phụ kiện tại quầy**: Cầu Hải Yến, Thành Công (25k-30k/quả), quấn cán chống trượt, nước bù khoáng Pocari/Revive.\n"
             "   - **Căng cước điện tử**: Nhận căng cước Yonex BG65, BG65Ti, Nanogy 98 (lấy ngay sau 15 phút).\n\n"
-            "2. 🎯 **Tư vấn chọn vợt theo lối đánh**:\n"
+            "2. 🎯 **Tư vấn chọn wife theo lối đánh**:\n"
             "   - 🔥 **Công / Smash uy lực**: Vợt nặng đầu (>295mm), trọng lượng 3U/4U (*Yonex Astrox 88D Pro / 99 / 100ZZ, Lining Tectonic 7*).\n"
             "   - ⚡ **Thủ / Phản tạt nhanh**: Vợt nhẹ đầu (<285mm), 4U/5U (*Yonex Nanoflare 700 / 800 / 1000Z*).\n"
             "   - ⚖️ **Công thủ toàn diện**: Cân bằng 290 - 295mm (*Arcsaber 11 Pro, Lining Halbertec 8000*).\n"
@@ -211,7 +222,7 @@ def get_smart_fallback(question: str, context: str = "") -> str:
         return (
             "✨ **TIỆN ÍCH & TIÊU CHUẨN CƠ SỞ VẬT CHẤT CỤM SÂN**:\n\n"
             "Tất cả các cụm sân trong hệ thống BADMINTON.AI đều được thiết kế theo tiêu chuẩn thi đấu BWF:\n"
-            "- 🌿 **Mặt sàn thi đấu**: Thảm PVC chuyên dụng Enlio VIP / Yonex Pro dày 4.5mm - 5.0mm, chống trơn trượt và giảm chấn khớp gối tối đa.\n"
+            "- 🌿 **Mặt sàn thi đấu**: Thảm PVC chuyên dụng Enlio VIP / Yonex Pro dày 4.5mm - 5.0mm, chống trơn trượt và giảm chazan khớp gối tối đa.\n"
             "- 💡 **Hệ thống ánh sáng**: Dàn đèn LED chuyên dụng 300+ Lux bố trí dọc 2 biên, chống chói mắt tuyệt đối khi ngước nhìn cầu.\n"
             "- ❄️ **Không gian & Làm mát**: Trần cao 8m - 11m thông thoáng, trang bị quạt công nghiệp và điều hòa/máy lạnh công suất lớn.\n"
             "- 🚿 **Phòng thay đồ & Tắm**: Phòng thay đồ riêng biệt, phòng tắm nóng lạnh phục vụ **miễn phí 100%** cho vận động viên.\n"
@@ -250,7 +261,7 @@ def get_smart_fallback(question: str, context: str = "") -> str:
         return (
             "🏸 **HƯỚNG DẪN DÀNH CHO NGƯỜI MỚI BẮT ĐẦU CHƠI CẦU LÔNG**:\n\n"
             "1. 👟 **Trang bị bắt buộc**: Mang giày cầu lông chuyên dụng bám sân để chống trơn trượt và bảo vệ cổ chân.\n"
-            "2. 🏸 **Chọn vợt cho người mới**: Nên chọn vợt nhẹ 4U hoặc 5U, thân dẻo (Medium/Flexible) để dễ phát lực và không bị mỏi cổ tay.\n"
+            "2. 🏸 **Chọn wife cho người mới**: Nên chọn wife nhẹ 4U hoặc 5U, thân dẻo (Medium/Flexible) để dễ phát lực và không bị mỏi cổ tay.\n"
             "3. 📜 **Luật thi đấu BWF cơ bản**:\n"
             "   - Trận đấu gồm 3 set, ai thắng 2 set trước sẽ thắng chung cuộc.\n"
             "   - Mỗi set đánh đến 21 điểm (tính điểm trực tiếp ở mỗi pha cầu). Hòa 20-20 thì cách biệt 2 điểm sẽ thắng (tối đa đến 30 điểm).\n"
@@ -307,7 +318,7 @@ def get_smart_fallback(question: str, context: str = "") -> str:
                 title_parts.append(f"khu vực **{', '.join(detected_districts)}**")
             if price_threshold:
                 title_parts.append(f"mức giá dưới **{price_threshold:,.0f}đ/h**")
-            
+
             title_desc = " tại " + " & ".join(title_parts) if title_parts else " phù hợp nhất tại Hà Nội"
 
             lines = [f"🏸 **Gợi Ý Sân Cầu Lông{title_desc}** (Tìm thấy {len(matched_facs)} sân):\n"]
@@ -338,7 +349,7 @@ def get_smart_fallback(question: str, context: str = "") -> str:
         "- 📍 **Tìm sân theo Quận / Khu vực**: Cầu Giấy, Hoàng Mai, Đống Đa, Thanh Xuân, Ba Đình...\n"
         "- 💰 **Bảng giá & Sân giá rẻ**: Tra cứu giá giờ vàng (+25%), giờ hành chính (-15%) hoặc sân dưới 100k.\n"
         "- 🏆 **AI Ghép Đội & Kèo ELO**: Tìm phòng ghép và đồng đội cùng trình độ 1000 - 2000+.\n"
-        "- 🛒 **Dịch vụ tiện ích**: Thuê vợt 20k/buổi, thuê giày, mua phụ kiện cầu và căng cước tại chỗ.\n"
+        "- 🛒 **Dịch vụ tiện ích**: Thuê wife 20k/buổi, thuê giày, mua phụ kiện cầu và căng cước tại chỗ.\n"
         "- 📋 **Chính sách hoàn cọc 100% & Hotline hỗ trợ 24/7**.\n\n"
         "Bạn muốn tìm hiểu thông tin gì ạ? Hãy nhắn câu hỏi cho tôi nhé! ✨🏸"
     )
@@ -440,11 +451,115 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
         except Exception:
             pass
 
+    def _get_allowed_origin(self):
+        """Return the same-origin echo for CORS, or None for non-browser requests."""
+        origin = self.headers.get("Origin", "")
+        # Only echo back origins that match our own host (same-site)
+        host = self.headers.get("Host", "")
+        if not origin:
+            return None
+        # Allow localhost and same host
+        allowed = [f"http://localhost:{PORT}", f"http://127.0.0.1:{PORT}",
+                   f"https://localhost:{PORT}", f"https://127.0.0.1:{PORT}"]
+        # Also allow the deployment host if set
+        deploy_host = os.environ.get("ALLOWED_ORIGIN", "")
+        if deploy_host:
+            allowed.append(deploy_host.rstrip("/"))
+        if origin in allowed or (host and (f"http://{host}" == origin or f"https://{host}" == origin)):
+            return origin
+        return None
+
+    def _check_csrf_origin(self):
+        """For state-mutating cookie-authenticated requests, verify Origin or Referer.
+        Returns True if safe, False if CSRF suspected."""
+        origin = self.headers.get("Origin", "")
+        referer = self.headers.get("Referer", "")
+        host = self.headers.get("Host", "")
+        # If no Origin/Referer present and not a same-origin API call, allow
+        # (non-browser clients, curl, etc. — they can't carry HttpOnly cookies anyway)
+        if not origin and not referer:
+            return True
+        check_str = origin or referer
+        if host and host in check_str:
+            return True
+        # Allow localhost in dev
+        for lh in ["localhost", "127.0.0.1"]:
+            if lh in check_str:
+                return True
+        # Allow configured deploy origin
+        deploy_host = os.environ.get("ALLOWED_ORIGIN", "")
+        if deploy_host and deploy_host.rstrip("/") in check_str:
+            return True
+        return False
+
+    def _parse_auth_cookie(self):
+        """Parse the HttpOnly auth_token cookie from request headers.
+        Returns the raw JWT string or None."""
+        cookie_header = self.headers.get("Cookie", "")
+        if not cookie_header:
+            return None
+        try:
+            cookie = http.cookies.SimpleCookie(cookie_header)
+            if "auth_token" in cookie:
+                return cookie["auth_token"].value
+        except Exception:
+            pass
+        return None
+
+    def _authenticate_request(self):
+        """Try cookie first, then Authorization Bearer header.
+        Returns decoded payload dict or None."""
+        # 1. Prefer HttpOnly cookie (most secure)
+        token = self._parse_auth_cookie()
+        if token:
+            payload = decode_token(token)
+            if payload:
+                return payload
+        # 2. Fall back to Authorization header (for backward-compat API clients)
+        auth_header = self.headers.get("Authorization", "")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+            payload = decode_token(token)
+            if payload:
+                return payload
+        return None
+
+    def _build_auth_cookie(self, token: str, max_age: int = 60 * 60 * 24 * 7) -> str:
+        """Build a Set-Cookie header value for the auth token.
+        Always sets Secure in production (ENVIRONMENT in production/prod or HTTPS enabled)."""
+        env = os.environ.get("ENVIRONMENT", "").strip().lower()
+        is_https = os.environ.get("HTTPS", "").lower() in ("1", "true", "yes", "on") or env in ("production", "prod")
+        secure_flag = "; Secure" if is_https else ""
+        # Use Lax for MoMo redirect (GET-based redirect must carry cookie)
+        return (
+            f"auth_token={token}; Path=/; HttpOnly; SameSite=Lax"
+            f"{secure_flag}; Max-Age={max_age}"
+        )
+
+    def _build_clear_cookie(self) -> str:
+        """Build a Set-Cookie that immediately expires the auth cookie.
+        Preserves identical Path, HttpOnly, SameSite, and Secure flags to guarantee removal."""
+        env = os.environ.get("ENVIRONMENT", "").strip().lower()
+        is_https = os.environ.get("HTTPS", "").lower() in ("1", "true", "yes", "on") or env in ("production", "prod")
+        secure_flag = "; Secure" if is_https else ""
+        return (
+            f"auth_token=; Path=/; HttpOnly; SameSite=Lax"
+            f"{secure_flag}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        )
+
     def end_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
+        allowed_origin = self._get_allowed_origin()
+        if allowed_origin:
+            self.send_header("Access-Control-Allow-Origin", allowed_origin)
+            self.send_header("Access-Control-Allow-Credentials", "true")
+        else:
+            # Non-browser or cross-origin: still need CORS for public API assets
+            self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Cache-Control")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Cache-Control, Authorization")
         self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -452,6 +567,17 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if self.path == "/health" or self.path == "/api/health":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "status": "healthy",
+                "service": "badminton-ai-web",
+                "version": "1.0.0"
+            }).encode("utf-8"))
+            return
+
         if self.path == "/api/database":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -466,7 +592,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(db_manager.get_status(), ensure_ascii=False, indent=2).encode("utf-8"))
             return
-        
+
         if self.path == "/api/sqlite/download":
             db_path = os.path.join(os.path.dirname(__file__), "badminton.db")
             if os.path.exists(db_path):
@@ -646,40 +772,307 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(anomaly_report, ensure_ascii=False).encode("utf-8"))
             return
 
-        return super().do_GET()
+        # NEW PAYMENT STATUS ENDPOINT
+        if self.path.startswith('/api/payment/status'):
+            # Parse query parameters
+            parsed_url = urllib.parse.urlparse(self.path)
+            query_params = urllib.parse.parse_qs(parsed_url.query)
+            booking_code_list = query_params.get('booking_code')
+            if not booking_code_list or not booking_code_list[0]:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Missing booking_code parameter"}).encode("utf-8"))
+                return
+            booking_code = booking_code_list[0]
+
+            # Authenticate user — cookie first, then Bearer fallback
+            payload = self._authenticate_request()
+            user_info = None
+            if payload:
+                user_info = {"id": payload.get("sub"), "role": payload.get("role")}
+            if not user_info:
+                self.send_response(401)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Xác thực thất bại. Vui lòng đăng nhập lại."}).encode("utf-8"))
+                return
+            user_id = user_info["id"]
+
+            # Load database
+            db_data = db_manager.load_data()
+            if not db_data:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Database not available"}).encode("utf-8"))
+                return
+
+            # Find user by ID to get phone
+            user = None
+            for u in db_data.get("users", []):
+                if u.get("id") == user_id:
+                    user = u
+                    break
+            if not user:
+                self.send_response(401)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "User not found"}).encode("utf-8"))
+                return
+            user_phone = user.get("phone")
+
+            # Find booking by booking_code
+            booking = None
+            for b in db_data.get("booking_orders", []):
+                if b.get("booking_code") == booking_code:
+                    booking = b
+                    break
+            if not booking:
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Booking not found"}).encode("utf-8"))
+                return
+
+            # Anti-IDOR: check that the booking belongs to the user
+            if booking.get("user_phone") != user_phone:
+                self.send_response(403)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Forbidden: booking does not belong to user"}).encode("utf-8"))
+                return
+
+            # Determine payment status
+            order_status = booking.get("order_status", "")
+            deposit_status = booking.get("deposit_status", "")
+
+            # We'll define success if order_status is "Đã Xác Nhận" and deposit_status indicates paid
+            # For simplicity, we'll consider deposit_status containing "Đã Cọc" as paid.
+            if "Đã Xác Nhận" in order_status and ("Đã Cọc" in deposit_status or "paid" in deposit_status.lower()):
+                payment_status = "success"
+                message = "Thanh toán thành công! Đang chuyển bạn đến trang vé QR..."
+            elif "Chờ Xác Nhận" in order_status or "Chờ Cọc" in deposit_status:
+                payment_status = "pending"
+                message = "Thanh toán vẫn đang xử lý. Vui lòng chờ trong giây lát..."
+            else:
+                payment_status = "failed"
+                message = "Thanh toán không thành công. Vui lòng thử lại hoặc chọn phương thức thanh toán khác."
+
+            # Prepare response
+            response = {
+                "payment_status": payment_status,
+                "message": message,
+                "booking_code": booking_code,
+                # We can also include other info if needed by the frontend
+                "order_status": order_status,
+                "deposit_status": deposit_status
+            }
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode("utf-8"))
+            return
+
+        # Handle client-side routing for single-page application
+        # If it's an API request that wasn't handled above, return 404
+        if self.path.startswith('/api/'):
+            self.send_response(404)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"detail": "API endpoint not found"}).encode("utf-8"))
+            return
+
+        # For non-API requests, check if the requested file exists
+        path = urllib.parse.urlparse(self.path).path
+        # Remove leading slash and prevent directory traversal
+        path = path.lstrip('/')
+        if '..' in path or path.startswith('/'):
+            # Prevent directory traversal attacks
+            self.send_response(403)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"Forbidden")
+            return
+
+        # Check if file exists
+        file_path = os.path.join(os.getcwd(), path)
+        if os.path.isfile(file_path) and not os.path.isdir(file_path):
+            # File exists, serve it normally
+            return super().do_GET()
+        else:
+            # File doesn't exist, serve index.html for client-side routing
+            self.path = '/index.html'
+            return super().do_GET()
 
     def do_POST(self):
+        # Enforce CSRF protection for state-mutating requests when client presents auth cookie
+        if self._parse_auth_cookie() and not self._check_csrf_origin():
+            self.send_response(403)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"detail": "CSRF verification failed: Origin/Referer disallowed"}).encode("utf-8"))
+            return
+
+        if self.path == "/api/login":
+            content_length = int(self.headers.get("Content-Length", 0))
+            post_data = self.rfile.read(content_length)
+            try:
+                incoming = json.loads(post_data.decode("utf-8"))
+            except Exception:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Invalid JSON"}).encode("utf-8"))
+                return
+            phone = incoming.get("phone")
+            password = incoming.get("password")
+            if not phone or not password:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Missing phone or password"}).encode("utf-8"))
+                return
+            db_data = db_manager.load_data()
+            if not db_data:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Database not available"}).encode("utf-8"))
+                return
+            users = db_data.get("users", [])
+            user = None
+            for u in users:
+                if u.get("phone") == phone:
+                    # Verify password
+                    if verify_password(password, u.get("password", "")):
+                        user = u
+                        break
+            if not user:
+                self.send_response(401)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Invalid phone or password"}).encode("utf-8"))
+                return
+            # Create access token
+            access_token = create_access_token(
+                subject=user.get("id"),
+                role=user.get("role")
+            )
+            # Issue HttpOnly cookie — JS never receives the raw token
+            cookie_header = self._build_auth_cookie(access_token)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Set-Cookie", cookie_header)
+            self.end_headers()
+            # Return ONLY user info — no access_token in JSON body
+            self.wfile.write(json.dumps({
+                "user": {
+                    "id": user.get("id"),
+                    "name": user.get("name"),
+                    "phone": user.get("phone"),
+                    "role": user.get("role")
+                }
+            }, ensure_ascii=False).encode("utf-8"))
+        # =========================================================================
+        # LOGOUT ENDPOINT — expires the HttpOnly cookie server-side
+        # =========================================================================
+        if self.path == "/api/logout":
+            clear_cookie = self._build_clear_cookie()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Set-Cookie", clear_cookie)
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "success": True,
+                "message": "Đã đăng xuất. Cookie xác thực đã được xóa phía server.",
+                "note": "JWT stateless: token vẫn hợp lệ nếu bị đánh cắp trước khi hết hạn. Triển khai token denylist nếu cần revocation thực sự."
+            }, ensure_ascii=False).encode("utf-8"))
+            return
+
         # AI CHATBOT PROXY ENDPOINT (Secures GEMINI_API_KEY on Server)
         if self.path == "/api/chat" or self.path == "/api/v1/ai/chat":
             content_length = int(self.headers.get("Content-Length", 0))
             post_data = self.rfile.read(content_length)
+
+            # Check if explicit credentials were provided (Cookie or Bearer)
+            cookie_token = self._parse_auth_cookie()
+            auth_header = self.headers.get("Authorization", "")
+            bearer_token = auth_header.split(" ", 1)[1].strip() if (auth_header and auth_header.startswith("Bearer ")) else None
+
+            # Authenticate — cookie first, Bearer fallback
+            payload_chat = self._authenticate_request()
+            if (cookie_token or bearer_token) and not payload_chat:
+                self.send_response(401)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "detail": "Token không hợp lệ hoặc đã hết hạn"
+                }, ensure_ascii=False).encode("utf-8"))
+                return
+
+            user_info = None
+            if payload_chat:
+                user_info = {"id": payload_chat.get("sub"), "role": payload_chat.get("role")}
             user_msg = ""
             context = ""
             try:
                 incoming = json.loads(post_data.decode("utf-8"))
                 user_msg = incoming.get("message", "")
+                conversation_id = incoming.get("conversation_id", None)
                 messages = incoming.get("messages", [])
                 context = incoming.get("context", "")
-                
-                reply = ask_gemini(user_msg, context=context, messages=messages)
-                
+
+                chatbot_svc = get_chatbot_service()
+                result = asyncio.run(chatbot_svc.handle_message(
+                    message=user_msg,
+                    conversation_id=conversation_id,
+                    context=context,
+                    history=messages,
+                    user_info=user_info
+                ))
+
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
                 self.wfile.write(json.dumps({
                     "success": True,
-                    "reply": reply
+                    "answer": result["answer"],
+                    "reply": result["reply"],
+                    "conversation_id": result["conversation_id"],
+                    "message_id": result["message_id"],
+                    "user_id": result.get("user_id"),
+                    "status": result["status"],
+                    "retrieval_status": result.get("retrieval_status"),
+                    "sources": result.get("sources", [])
                 }, ensure_ascii=False).encode("utf-8"))
             except Exception as e:
-                fallback_reply = get_smart_fallback(user_msg, context)
+                err_msg = str(e)
+                if "key=" in err_msg.lower():
+                    err_msg = re.sub(r'key=[^&\s]+', 'key=***', err_msg, flags=re.IGNORECASE)
+                fallback_reply = (
+                    "⚠️ **Thông báo từ Trợ lý AI BADMINTON.AI**:\n\n"
+                    "Hiện tại hệ thống AI đang gặp gián đoạn tạm thời khi kết nối với mô hình ngôn ngữ "
+                    "nên chưa thể truy xuất dữ liệu xác thực thời gian thực cho câu hỏi của bạn.\n\n"
+                    "👉 Để đảm bảo thông tin chính xác nhất, bạn vui lòng:\n"
+                    "- Tra cứu trực tiếp danh sách sân, bảng giá và lịch trống tại giao diện chính của website.\n"
+                    "- Hoặc liên hệ Hotline CSKH: **1900 6868** (24/7) để được giải đáp tức thì.\n\n"
+                    "Rất xin lỗi bạn vì sự bất tiện này! 🏸"
+                )
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
                 self.wfile.write(json.dumps({
                     "success": True,
+                    "answer": fallback_reply,
                     "reply": fallback_reply,
+                    "conversation_id": incoming.get("conversation_id") if 'incoming' in locals() else None,
+                    "message_id": "msg_fallback",
+                    "user_id": user_info.get("id") if user_info else None,
+                    "status": "fallback",
                     "fallback": True,
-                    "error": str(e)
+                    "error": err_msg
                 }, ensure_ascii=False).encode("utf-8"))
             return
 
@@ -698,7 +1091,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                         pwd = u.get("password")
                         if not pwd or str(pwd).strip() in ["", "undefined", "null"]:
                             pwd = "02092006" if u.get("phone") == "0123456789" else "123456"
-                        
+
                         user_copy = {**u, "password": str(pwd)}
                         if "elo_rating" not in user_copy or user_copy["elo_rating"] is None or str(user_copy["elo_rating"]) == "undefined":
                             user_copy["elo_rating"] = 1200 if user_copy.get("role") == "CUSTOMER" else "N/A"
@@ -751,13 +1144,13 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 req = json.loads(post_data.decode("utf-8"))
             except Exception:
-                pass
-            
+                    pass
+
             user_elo = req.get("player_elo", 1450)
             wait_time = req.get("wait_time_seconds", 0)
             dynamic_range = elo_engine.get_dynamic_elo_range(wait_time)
             effective_delta = max(req.get("max_elo_delta", 100), dynamic_range)
-            
+
             users = db_data.get("users", [])
             candidates = []
             cand_dicts = []
@@ -786,76 +1179,5 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     score_res = elo_engine.calculate_match_score(player_profile, cand_data)
                     candidates.append(score_res)
                     cand_dicts.append(score_res)
-            
+
             candidates.sort(key=lambda x: x["match_score"], reverse=True)
-            cand_dicts.sort(key=lambda x: x["match_score"], reverse=True)
-            ai_recom = elo_engine.generate_ai_match_recommendation(player_profile, cand_dicts)
-            
-            res_payload = {
-                "player_elo": user_elo,
-                "player_tier": elo_engine.get_tier_for_elo(user_elo)["display"],
-                "dynamic_elo_range": effective_delta,
-                "wait_time_seconds": wait_time,
-                "total_candidates": len(candidates),
-                "candidates": candidates[:10],
-                "ai_recommendation": ai_recom
-            }
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps(res_payload, ensure_ascii=False).encode("utf-8"))
-            return
-
-        if "/matchmaking/matches/submit-result" in self.path:
-            content_length = int(self.headers.get("Content-Length", 0))
-            post_data = self.rfile.read(content_length)
-            incoming = json.loads(post_data.decode("utf-8"))
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                "status": "PENDING_CONFIRMATION",
-                "message": f"Đã ghi nhận kết quả: {incoming.get('score_submission')}. Đang gửi thông báo cho đối thủ xác nhận để cập nhật ELO!",
-                "match_id": incoming.get("match_id", 103)
-            }, ensure_ascii=False).encode("utf-8"))
-            return
-
-        if "/matchmaking/matches/confirm-result" in self.path:
-            content_length = int(self.headers.get("Content-Length", 0))
-            post_data = self.rfile.read(content_length)
-            incoming = json.loads(post_data.decode("utf-8"))
-            is_agreed = incoming.get("confirm_agreed", True)
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            if is_agreed:
-                self.wfile.write(json.dumps({
-                    "status": "CONFIRMED",
-                    "message": "Hai bên đã thống nhất kết quả trận đấu! Điểm ELO của cả 2 đấu thủ đã được cập nhật thành công.",
-                    "elo_updated": True
-                }, ensure_ascii=False).encode("utf-8"))
-            else:
-                self.wfile.write(json.dumps({
-                    "status": "DISPUTED",
-                    "message": "⚠️ Đã ghi nhận tranh chấp tỷ số! Điểm ELO tạm thời đóng băng, hồ sơ chuyển trọng tài giải quyết.",
-                    "dispute_note": incoming.get("dispute_note", "Không đồng ý kết quả")
-                }, ensure_ascii=False).encode("utf-8"))
-            return
-
-        self.send_response(404)
-        self.end_headers()
-
-if __name__ == "__main__":
-    os.chdir(os.path.dirname(__file__))
-    # Initialize unified database layer (PostgreSQL on Render or local SQLite)
-    db_manager.initialize()
-    status = db_manager.get_status()
-    print(f"📊 Database Engine active: {status['active_driver']} ({status['database_type']}) - {status['users_count']} users, {status['facilities_count']} facilities")
-
-    http.server.ThreadingHTTPServer.allow_reuse_address = True
-    try:
-        with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), BadmintonServerHandler) as httpd:
-            print(f"🏸 Badminton AI Threading Server running on http://localhost:{PORT}")
-            httpd.serve_forever()
-    except Exception as e:
-        print(f"Failed to start server on port {PORT}: {e}")

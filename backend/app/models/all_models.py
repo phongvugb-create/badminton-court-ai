@@ -1,8 +1,53 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, Text, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, Text, Enum, Index
+from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 import enum
+import json
+
+try:
+    from pgvector.sqlalchemy import Vector
+    _HAS_PGVECTOR = True
+except ImportError:
+    _HAS_PGVECTOR = False
+
+class VectorType(TypeDecorator):
+    """
+    Dialect-aware Vector column:
+    - On PostgreSQL: maps to native pgvector VECTOR(dim) if pgvector is installed.
+    - On SQLite: maps to TEXT with JSON serialization of float vectors.
+    """
+    impl = Text
+    cache_ok = True
+    comparator_factory = Vector.comparator_factory if _HAS_PGVECTOR else None
+
+    def __init__(self, dim: int = 768, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dim = dim
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql" and _HAS_PGVECTOR:
+            return dialect.type_descriptor(Vector(self.dim))
+        return dialect.type_descriptor(Text())
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if dialect.name == "postgresql" and _HAS_PGVECTOR:
+            return value
+        return json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            try:
+                if value.startswith("[") and value.endswith("]"):
+                    return json.loads(value)
+            except Exception:
+                pass
+        return value
 
 class UserRole(str, enum.Enum):
     CUSTOMER = "CUSTOMER"
@@ -23,6 +68,14 @@ class PaymentStatus(str, enum.Enum):
     REFUNDED = "REFUNDED"
     CANCELLED = "CANCELLED"
 
+class TransactionStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
+    REQUIRES_RECONCILIATION = "REQUIRES_RECONCILIATION"
+
 class RoomStatus(str, enum.Enum):
     OPEN = "OPEN"
     FULL = "FULL"
@@ -33,7 +86,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String(255), nullable=False)
+    full_name = Column("name", String(255), nullable=False)
     phone = Column(String(20), unique=True, index=True, nullable=False)
     email = Column(String(255), nullable=True)
     password_hash = Column(String(255), nullable=False)
@@ -42,9 +95,20 @@ class User(Base):
     is_approved = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    @property
+    def name(self):
+        return self.full_name
+
+    @name.setter
+    def name(self, value):
+        self.full_name = value
+
     facilities = relationship("Facility", back_populates="owner")
     bookings = relationship("Booking", back_populates="user")
+    payments = relationship("Payment", back_populates="user")
     hosted_rooms = relationship("MatchmakingRoom", back_populates="host")
+    conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="owner")
 
 # 2. FACILITIES
 class Facility(Base):
@@ -120,11 +184,34 @@ class Booking(Base):
     deposit_amount = Column(Float, nullable=False)
     payment_status = Column(String(50), default="PENDING") # PENDING, DEPOSITED, PAID
     qr_checkin_code = Column(String(100), unique=True, index=True)
+    idempotency_key = Column(String(100), unique=True, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="bookings")
     slot = relationship("TimeSlot", back_populates="bookings")
     rental_items = relationship("RentalItem", back_populates="booking", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="booking", cascade="all, delete-orphan")
+
+# 6.1. PAYMENTS (Phase 7.4A)
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    booking_id = Column(Integer, ForeignKey("bookings.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    provider = Column(String(50), nullable=False) # SANDBOX, VNPAY, MOMO, ZALOPAY
+    transaction_id = Column(String(100), unique=True, index=True, nullable=False)
+    amount = Column(Float, nullable=False)
+    currency = Column(String(10), default="VND")
+    payment_type = Column(String(50), default="DEPOSIT") # DEPOSIT, FULL
+    status = Column(String(50), default="PENDING", index=True) # PENDING, SUCCESS, FAILED, EXPIRED, CANCELLED, REQUIRES_RECONCILIATION
+    idempotency_key = Column(String(100), unique=True, index=True, nullable=True)
+    provider_response = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    booking = relationship("Booking", back_populates="payments")
+    user = relationship("User", back_populates="payments")
 
 # 7. EQUIPMENT
 class Equipment(Base):
@@ -268,4 +355,90 @@ class MatchmakingQueue(Base):
     current_range = Column(Integer, default=50) # 50 -> 100 -> 150 -> 200
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
     status = Column(String(50), default="WAITING") # WAITING, MATCHED, CANCELLED
+
+
+# 16. CONVERSATIONS (Quản lý cuộc hội thoại AI)
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id = Column(String(64), primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(255), default="Cuộc trò chuyện mới")
+    status = Column(String(50), default="ACTIVE") # ACTIVE, ARCHIVED
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", back_populates="conversations")
+    messages = relationship("ChatMessage", back_populates="conversation", cascade="all, delete-orphan", order_by="ChatMessage.created_at")
+
+
+# 17. CHAT_MESSAGES (Lưu trữ tin nhắn người dùng và trợ lý)
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(String(64), primary_key=True, index=True)
+    conversation_id = Column(String(64), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(20), nullable=False) # user, assistant
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    conversation = relationship("Conversation", back_populates="messages")
+
+    __table_args__ = (
+        Index("ix_chat_messages_conv_created", "conversation_id", "created_at"),
+    )
+
+
+# 18. DOCUMENTS (Quản lý tài liệu tri thức tĩnh phục vụ RAG)
+class Document(Base):
+    __tablename__ = "documents"
+
+    id = Column(String(64), primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    filename = Column(String(255), nullable=False)
+    source_type = Column(String(50), default="policy", nullable=False) # policy, manual, faq, srs, file_upload
+    mime_type = Column(String(100), default="text/plain", nullable=False)
+    storage_path = Column(String(500), nullable=True)
+    checksum = Column(String(64), nullable=False, index=True)
+    version = Column(Integer, default=1)
+    status = Column(String(32), default="PENDING", index=True) # PENDING, PROCESSING, READY, FAILED
+    error_message = Column(Text, nullable=True)
+    total_chunks = Column(Integer, default=0)
+    access_scope = Column(String(50), default="public") # public, internal, admin
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    owner = relationship("User", back_populates="documents")
+    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan", order_by="DocumentChunk.chunk_index")
+
+
+# 19. DOCUMENT_CHUNKS (Lưu trữ các phân đoạn văn bản phục vụ RAG)
+class DocumentChunk(Base):
+    __tablename__ = "document_chunks"
+
+    id = Column(String(64), primary_key=True, index=True)
+    document_id = Column(String(64), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False)
+    text = Column(Text, nullable=False)
+    page_number = Column(Integer, nullable=True)
+    section = Column(String(255), nullable=True)
+    meta_info = Column(Text, nullable=True) # JSON string chứa metadata mở rộng
+    token_estimate = Column(Integer, default=0)
+
+    # Cột Vector nhúng & Metadata phục vụ RAG Retrieval (Phase 4 & Phase 4.1)
+    embedding = Column(VectorType(dim=768), nullable=True)
+    embedding_model = Column(String(64), nullable=True) # e.g. gemini-embedding-2 / text-embedding-004
+    embedding_dimension = Column(Integer, nullable=True) # e.g. 768
+    embedding_version = Column(String(32), nullable=True) # e.g. v1
+    embedded_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    document = relationship("Document", back_populates="chunks")
+
+    __table_args__ = (
+        Index("ix_document_chunks_doc_idx", "document_id", "chunk_index"),
+        Index("ix_document_chunks_embedded", "document_id", "embedding_model"),
+    )
 

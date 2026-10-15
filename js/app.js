@@ -32,29 +32,42 @@ class BadmintonAIApp {
     this.isDBJSONView = false;
   }
 
-  init() {
-    this.initSplashScreen();
-    this.updateTopDateDisplay();
-    this.updateHeaderUserUI();
-    this.renderSidebarNav();
-    this.navigateTo(this.currentView);
-    this.renderCustomerFacilities();
-    this.renderSlotMatrix();
-    this.renderEquipmentRentalList();
-    this.renderBookingOrdersList();
-    this.renderMatchmakingRooms();
-    this.renderOwnerCourts();
-    this.renderOwnerEquipments();
-    this.renderOwnerStaff();
-    this.renderHeatmap();
-    this.renderAdminApprovals();
-    this.renderAdminUsers();
-    this.renderAdminOverviewFacilities();
-    this.renderOwnerDashboardOrders();
-    this.initLeafletMap();
-    this.updatePendingMatchesUI();
-    this.startRealtimeSyncLoop();
-  }
+    init() {
+        // Auth token is now an HttpOnly cookie set by the backend.
+        // JS cannot and should not read it — auth state is tracked via currentUser.
+        // On page reload, if currentUser is missing, the user must re-authenticate
+        // OR we call /api/auth/me (future endpoint) to restore session from cookie.
+        // For now: session is in-memory only; cookie persists the token server-side.
+        
+        this.initSplashScreen();
+     this.updateTopDateDisplay();
+     this.updateHeaderUserUI();
+     this.renderSidebarNav();
+     
+     // Handle direct URL navigation to payment result page
+     const urlParams = new URLSearchParams(window.location.search);
+     if (urlParams.get('orderId') && (urlParams.get('resultCode') || urlParams.get('paymentStatus'))) {
+       this.currentView = 'ui-payment-result';
+     }
+     
+     this.navigateTo(this.currentView);
+     this.renderCustomerFacilities();
+     this.renderSlotMatrix();
+     this.renderEquipmentRentalList();
+     this.renderBookingOrdersList();
+     this.renderMatchmakingRooms();
+     this.renderOwnerCourts();
+     this.renderOwnerEquipments();
+     this.renderOwnerStaff();
+     this.renderHeatmap();
+     this.renderAdminApprovals();
+     this.renderAdminUsers();
+     this.renderAdminOverviewFacilities();
+     this.renderOwnerDashboardOrders();
+     this.initLeafletMap();
+     this.updatePendingMatchesUI();
+     this.startRealtimeSyncLoop();
+   }
 
   copyToClipboard(text, label = "Thông tin") {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1186,10 +1199,17 @@ class BadmintonAIApp {
     return true;
   }
 
-  logout() {
-    this.currentUser = null;
-    this.currentRole = 'CUSTOMER';
-    this.updateHeaderUserUI();
+   logout() {
+        this.currentUser = null;
+        this.authToken = null;
+        this.currentRole = 'CUSTOMER';
+        // Call backend to expire the HttpOnly cookie server-side
+        fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        }).catch(err => console.warn('Logout API error (non-fatal):', err));
+        this.updateHeaderUserUI();
 
     document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.getElementById('role-btn-customer');
@@ -1384,6 +1404,7 @@ class BadmintonAIApp {
     if (screenId === 'ui-17') this.renderAdminOverviewFacilities();
     if (screenId === 'ui-18') this.renderAdminApprovals();
     if (screenId === 'ui-19') this.renderAdminUsers();
+    if (screenId === 'ui-payment-result') this.handlePaymentResult();
     if (screenId === 'ui-20') this.renderDatabaseInspector();
 
     // Auto close mobile sidebar after navigation
@@ -2043,9 +2064,179 @@ class BadmintonAIApp {
     this.navigateTo('ui-05');
   }
 
-  simulatePaymentSuccess() {
-    this.processPaymentConfirmation();
-  }
+    simulatePaymentSuccess() {
+        this.processPaymentConfirmation();
+    }
+
+    handlePaymentResult() {
+        // Show loading state
+        this.updatePaymentResultUI('loading');
+        
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('orderId');
+        const resultCode = urlParams.get('resultCode');
+        const requestId = urlParams.get('requestId');
+        
+        // Validate parameters
+        if (!orderId) {
+            this.updatePaymentResultUI('error', 'Không tìm thấy mã đơn hàng trong URL');
+            return;
+        }
+        
+        // Check if user is logged in (required for payment status check)
+        if (!this.currentUser) {
+            this.updatePaymentResultUI('error', 'Bạn cần đăng nhập để kiểm tra trạng thái thanh toán');
+            return;
+        }
+        
+        // Check payment status with backend (using mock data for simulation)
+        this.checkPaymentStatus(orderId);
+        
+        // Set up event listeners for buttons
+        const checkAgainBtn = document.getElementById('btn-check-again');
+        const returnBookingBtn = document.getElementById('btn-return-booking');
+        
+        if (checkAgainBtn) {
+            checkAgainBtn.onclick = () => {
+                this.updatePaymentResultUI('loading');
+                this.checkPaymentStatus(orderId);
+            };
+        }
+        
+        if (returnBookingBtn) {
+            returnBookingBtn.onclick = () => {
+                this.navigateTo('ui-02'); // Go back to facility search
+            };
+        }
+    }
+    
+     checkPaymentStatus(orderId) {
+         try {
+             // Check if user is logged in
+             if (!this.currentUser) {
+                 this.updatePaymentResultUI('error', 'Bạn cần đăng nhập để kiểm tra trạng thái thanh toán');
+                 return;
+             }
+
+             // Prepare the URL
+             const url = new URL('/api/payment/status', window.location.origin);
+             url.searchParams.set('booking_code', orderId);
+
+             // Make the API call — cookie is sent automatically by browser
+             fetch(url, {
+                 method: 'GET',
+                 credentials: 'include',
+                 headers: {
+                     'Content-Type': 'application/json'
+                 }
+             })
+             .then(response => {
+                 if (!response.ok) {
+                     // Try to get error message from response body
+                     return response.json().then(errData => {
+                         throw new Error(errData.detail || `HTTP error! status: ${response.status}`);
+                     });
+                 }
+                 return response.json();
+             })
+             .then(data => {
+                 // Handle the response from the backend
+                 const { payment_status, message } = data;
+                 switch (payment_status) {
+                     case 'success':
+                         this.updatePaymentResultUI('success', message);
+                         // Navigate to ticket page after a short delay
+                         setTimeout(() => {
+                             this.navigateTo('ui-05');
+                         }, 1500);
+                         break;
+                     case 'pending':
+                         this.updatePaymentResultUI('pending', message);
+                         // Set up polling to check again after a few seconds
+                         setTimeout(() => {
+                             this.checkPaymentStatus(orderId);
+                         }, 5000);
+                         break;
+                     case 'failed':
+                         this.updatePaymentResultUI('failed', message);
+                         break;
+                     default:
+                         this.updatePaymentResultUI('error', 'Không thể xác định trạng thái thanh toán');
+                 }
+             })
+             .catch(error => {
+                 console.error('Error checking payment status:', error);
+                 this.updatePaymentResultUI('error', 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet và thử lại.');
+             });
+         } catch (error) {
+             console.error('Error in checkPaymentStatus:', error);
+             this.updatePaymentResultUI('error', 'Đã xảy ra lỗi. Vui lòng thử lại.');
+         }
+     }
+    
+    updatePaymentResultUI(state, message = '') {
+        const iconEl = document.getElementById('payment-result-icon');
+        const titleEl = document.getElementById('payment-result-title');
+        const messageEl = document.getElementById('payment-result-message');
+        const checkAgainBtn = document.getElementById('btn-check-again');
+        const returnBookingBtn = document.getElementById('btn-return-booking');
+        
+        // Reset UI
+        iconEl.className = '';
+        titleEl.textContent = '';
+        messageEl.textContent = message;
+        checkAgainBtn.style.display = 'none';
+        
+        switch (state) {
+            case 'loading':
+                iconEl.innerHTML = '<i class="fa-solid fa-hourglass-half"></i>';
+                iconEl.style.background = '#f0fdf4';
+                iconEl.style.color = '#167946';
+                titleEl.textContent = 'Đang xử lý...';
+                messageEl.textContent = 'Vui lòng chờ mientras chúng tôi xác thực thanh toán với hệ thống...';
+                break;
+                
+            case 'success':
+                iconEl.innerHTML = '<i class="fa-solid fa-check-circle"></i>';
+                iconEl.style.background = '#f0fdf4';
+                iconEl.style.color = '#16a34a';
+                titleEl.textContent = 'Thanh toán thành công!';
+                messageEl.textContent = message || 'Đã xác nhận thanh toán. Vé QR điện tử của bạn đã sẵn sàng.';
+                // Auto-redirect to ticket page after 2 seconds
+                setTimeout(() => {
+                    this.navigateTo('ui-05');
+                }, 2000);
+                break;
+                
+            case 'pending':
+                iconEl.innerHTML = '<i class="fa-solid fa-hourglass-half"></i>';
+                iconEl.style.background = '#fffbeb';
+                iconEl.style.color = '#d97706';
+                titleEl.textContent = 'Đang xử lý thanh toán...';
+                messageEl.textContent = message || 'Thanh toán vẫn đang được xử lý. Vui lòng chờ trong giây lát...';
+                checkAgainBtn.style.display = 'inline-block';
+                break;
+                
+            case 'failed':
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+                iconEl.style.background = '#fef2f2';
+                iconEl.style.color = '#dc2626';
+                titleEl.textContent = 'Thanh toán thất bại';
+                messageEl.textContent = message || 'Thanh toán không thành công. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.';
+                checkAgainBtn.style.display = 'inline-block';
+                break;
+                
+            case 'error':
+                iconEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                iconEl.style.background = '#fefce8';
+                iconEl.style.color = '#ca8a04';
+                titleEl.textContent = 'Lỗi';
+                messageEl.textContent = message || 'Đã xảy ra lỗi khi kiểm tra trạng thái thanh toán.';
+                checkAgainBtn.style.display = 'inline-block';
+                break;
+        }
+    }
 
   /* ------------------------------------------------------------------------
      5. UI 05: ELECTRONIC TICKET QR & ORDER HISTORY
@@ -7274,10 +7465,61 @@ class BadmintonAIApp {
       this.showToast('⚠️ Vui lòng nhập số điện thoại hoặc tên đăng nhập!', 'error');
       return;
     }
-    if (!password) {
-      this.showToast('⚠️ Vui lòng nhập mật khẩu tài khoản!', 'error');
-      return;
-    }
+        if (!password) {
+          this.showToast('⚠️ Vui lòng nhập mật khẩu tài khoản!', 'error');
+          return;
+        }
+
+        // Send login request to backend \u2014 credentials:include so browser accepts Set-Cookie
+        fetch('/api/login', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ phone, password })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.detail || 'Đăng nhập thất bại');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Login successful — backend issued HttpOnly cookie
+            // Do NOT store access_token in JS — it's in the HttpOnly cookie now
+            this.currentUser = data.user;
+            // Update role if needed
+            if (this.currentUser.role !== selectedRole) {
+                selectedRole = this.currentUser.role;
+                if (roleSelect) roleSelect.value = selectedRole;
+            }
+            // Switch role
+            const success = this.switchRole(selectedRole, this.currentUser);
+            if (success !== false) {
+                const roleNames = {
+                    'CUSTOMER': 'Khách Hàng',
+                    'OWNER': 'Chủ Sân',
+                    'STAFF': 'Thu Ngân Quầy',
+                    'ADMIN': 'Quản Trị Viên'
+                };
+                this.showToast(`🎉 Đăng nhập thành công vai trò ${roleNames[selectedRole] || selectedRole}! Xin chào ${this.currentUser.name}`, 'success');
+            } else {
+                this.showToast('⚠️ Đăng nhập thành công nhưng có lỗi khi chuyển vai trò.', 'warning');
+            }
+        })
+        .catch(error => {
+            console.error('Login error:', error);
+            this.showToast(`⛔ Đăng nhập thất bại: ${error.message}`, 'error');
+        });
+        
+        // Prevent fallback to mock data login
+        return;
+        
+        // Prevent fallback to mock data login
+        return;
 
     const cleanPhone = phone.replace(/[\s\-\.]/g, '');
 

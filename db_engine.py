@@ -226,6 +226,69 @@ POSTGRES_SCHEMAS = [
         data_content TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS conversations (
+        id VARCHAR(64) PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) DEFAULT 'Cuộc trò chuyện mới',
+        status VARCHAR(50) DEFAULT 'ACTIVE',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS ix_conversations_user_id ON conversations(user_id);
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS chat_messages (
+        id VARCHAR(64) PRIMARY KEY,
+        conversation_id VARCHAR(64) NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        role VARCHAR(20) NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS ix_chat_messages_conv_created ON chat_messages(conversation_id, created_at);
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS documents (
+        id VARCHAR(64) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        filename VARCHAR(255) NOT NULL,
+        source_type VARCHAR(50) DEFAULT 'policy' NOT NULL,
+        mime_type VARCHAR(100) DEFAULT 'text/plain' NOT NULL,
+        storage_path VARCHAR(500),
+        checksum VARCHAR(64) NOT NULL,
+        version INTEGER DEFAULT 1,
+        status VARCHAR(32) DEFAULT 'PENDING',
+        error_message TEXT,
+        total_chunks INTEGER DEFAULT 0,
+        access_scope VARCHAR(50) DEFAULT 'public',
+        owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS ix_documents_checksum ON documents(checksum);
+    CREATE INDEX IF NOT EXISTS ix_documents_status ON documents(status);
+    CREATE INDEX IF NOT EXISTS ix_documents_owner_id ON documents(owner_id);
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS document_chunks (
+        id VARCHAR(64) PRIMARY KEY,
+        document_id VARCHAR(64) NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+        chunk_index INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        page_number INTEGER,
+        section VARCHAR(255),
+        meta_info TEXT,
+        token_estimate INTEGER DEFAULT 0,
+        embedding vector(768),
+        embedding_model VARCHAR(64),
+        embedding_dimension INTEGER,
+        embedded_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS ix_document_chunks_document_id ON document_chunks(document_id);
+    CREATE INDEX IF NOT EXISTS ix_document_chunks_doc_idx ON document_chunks(document_id, chunk_index);
+    CREATE INDEX IF NOT EXISTS ix_document_chunks_embedded ON document_chunks(document_id, embedding_model);
     """
 ]
 
@@ -412,6 +475,73 @@ SQLITE_SCHEMAS = [
         data_content TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS conversations (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        title TEXT DEFAULT 'Cuộc trò chuyện mới',
+        status TEXT DEFAULT 'ACTIVE',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS ix_conversations_user_id ON conversations(user_id);
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS chat_messages (
+        id TEXT PRIMARY KEY,
+        conversation_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS ix_chat_messages_conv_created ON chat_messages(conversation_id, created_at);
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS documents (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        source_type TEXT DEFAULT 'policy' NOT NULL,
+        mime_type TEXT DEFAULT 'text/plain' NOT NULL,
+        storage_path TEXT,
+        checksum TEXT NOT NULL,
+        version INTEGER DEFAULT 1,
+        status TEXT DEFAULT 'PENDING',
+        error_message TEXT,
+        total_chunks INTEGER DEFAULT 0,
+        access_scope TEXT DEFAULT 'public',
+        owner_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(owner_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS ix_documents_checksum ON documents(checksum);
+    CREATE INDEX IF NOT EXISTS ix_documents_status ON documents(status);
+    CREATE INDEX IF NOT EXISTS ix_documents_owner_id ON documents(owner_id);
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS document_chunks (
+        id TEXT PRIMARY KEY,
+        document_id TEXT NOT NULL,
+        chunk_index INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        page_number INTEGER,
+        section TEXT,
+        meta_info TEXT,
+        token_estimate INTEGER DEFAULT 0,
+        embedding TEXT,
+        embedding_model TEXT,
+        embedding_dimension INTEGER,
+        embedded_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(document_id) REFERENCES documents(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS ix_document_chunks_document_id ON document_chunks(document_id);
+    CREATE INDEX IF NOT EXISTS ix_document_chunks_doc_idx ON document_chunks(document_id, chunk_index);
+    CREATE INDEX IF NOT EXISTS ix_document_chunks_embedded ON document_chunks(document_id, embedding_model);
     """
 ]
 
