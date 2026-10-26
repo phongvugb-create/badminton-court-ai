@@ -110,6 +110,17 @@ class User(Base):
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="owner")
 
+
+class LoginAttempt(Base):
+    """Persistent failed-login counter and temporary account lock state."""
+    __tablename__ = "login_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    login_key = Column(String(64), unique=True, nullable=False, index=True)
+    failed_attempts = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
 # 2. FACILITIES
 class Facility(Base):
     __tablename__ = "facilities"
@@ -269,7 +280,7 @@ class PlayerProfile(Base):
     gender = Column(String(20), default="Khác")
     birth_year = Column(Integer, nullable=True)
     preferred_area = Column(String(255), default="Cầu Giấy, Hà Nội")
-    skill_level = Column(String(100), default="Trung Bình Khá")
+    skill_level = Column(String(100), default="CHƯA CHỌN")
     current_elo = Column(Integer, default=1200)
     games_played = Column(Integer, default=0)
     wins = Column(Integer, default=0)

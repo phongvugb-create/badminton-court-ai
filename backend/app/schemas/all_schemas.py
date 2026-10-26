@@ -11,8 +11,8 @@ class UserRegister(BaseModel):
     role: str = "CUSTOMER"
 
 class UserLogin(BaseModel):
-    phone: str
-    password: str
+    phone: str = Field(min_length=1, max_length=32)
+    password: str = Field(min_length=1, max_length=128)
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -247,14 +247,15 @@ class ConversationDetailResponse(BaseModel):
 # RE-ARCHITECTED AI MATCHMAKING & ELO SCHEMAS
 # =============================================================================
 class PlayerProfileCreateOrUpdate(BaseModel):
-    gender: Optional[str] = "Khác"
+    gender: Optional[str] = None
     birth_year: Optional[int] = None
-    preferred_area: Optional[str] = "Cầu Giấy, Hà Nội"
-    skill_level: Optional[str] = "Trung Bình Khá"
-    current_elo: Optional[int] = 1200
-    available_time: Optional[str] = "18:00 - 21:00"
+    preferred_area: Optional[str] = None
+    skill_level: Optional[str] = None
+    selected_tier: Optional[int] = Field(default=None, ge=1, le=7)
+    available_time: Optional[str] = None
     preferred_court: Optional[str] = None
-    play_style: Optional[str] = "Công thủ toàn diện"
+    play_style: Optional[str] = None
+    is_searching: Optional[bool] = None
 
 class PlayerProfileResponse(BaseModel):
     id: int
@@ -286,19 +287,15 @@ class MatchFindRequest(BaseModel):
     preferred_date: str = "Hôm nay"
     preferred_time: str = "18:00 - 20:00"
     preferred_area: str = "Cầu Giấy"
-    max_elo_delta: Optional[int] = 100
-    wait_time_seconds: Optional[int] = 0
+    max_elo_delta: Optional[int] = Field(default=100, ge=0, le=200)
+    wait_time_seconds: Optional[int] = Field(default=0, ge=0, le=86400)
 
 class MatchCandidate(BaseModel):
     candidate_id: int
     candidate_name: str
-    candidate_elo: int
     candidate_tier: str
-    elo_diff: int
     match_score: float
     sub_scores: dict
-    win_probability_a: float
-    win_probability_b: float
     is_recommended: bool
 
 class MatchFindResponse(BaseModel):
@@ -309,6 +306,7 @@ class MatchFindResponse(BaseModel):
     total_candidates: int
     candidates: List[MatchCandidate]
     ai_recommendation: dict
+    matching_tier: Optional[str] = None
 
 class MatchResultSubmitRequest(BaseModel):
     match_id: int

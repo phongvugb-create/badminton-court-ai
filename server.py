@@ -19,11 +19,13 @@ try:
     from backend.app.ai import elo_engine
     from backend.app.ai.chatbot_service import get_chatbot_service
     from backend.app.core.security import decode_token, create_access_token, verify_password
+    from backend.app.core.login_lockout import clear_failed_logins, record_failed_login, remaining_lock_seconds
 except ImportError:
     # pyrefly: ignore [missing-import]
     from app.ai import elo_engine
     from app.ai.chatbot_service import get_chatbot_service
     from app.core.security import decode_token, create_access_token, verify_password
+    from app.core.login_lockout import clear_failed_logins, record_failed_login, remaining_lock_seconds
 
 from db_engine import db_manager
 try:
@@ -928,11 +930,33 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                 return
             phone = incoming.get("phone")
             password = incoming.get("password")
-            if not phone or not password:
+            if not isinstance(phone, str) or not isinstance(password, str) or not phone.strip() or not password:
                 self.send_response(400)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
                 self.wfile.write(json.dumps({"detail": "Missing phone or password"}).encode("utf-8"))
+                return
+            phone = phone.strip()
+            if len(phone) > 32 or len(password) > 128:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Invalid phone or password format"}).encode("utf-8"))
+                return
+            try:
+                remaining = asyncio.run(remaining_lock_seconds(phone))
+            except Exception:
+                self.send_response(503)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": "Login protection is temporarily unavailable"}).encode("utf-8"))
+                return
+            if remaining:
+                self.send_response(429)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Retry-After", str(remaining))
+                self.end_headers()
+                self.wfile.write(json.dumps({"detail": f"Tài khoản tạm khóa. Vui lòng thử lại sau {remaining} giây."}, ensure_ascii=False).encode("utf-8"))
                 return
             db_data = db_manager.load_data()
             if not db_data:
@@ -950,10 +974,29 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                         user = u
                         break
             if not user:
-                self.send_response(401)
+                try:
+                    remaining = asyncio.run(record_failed_login(phone))
+                except Exception:
+                    self.send_response(503)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"detail": "Login protection is temporarily unavailable"}).encode("utf-8"))
+                    return
+                self.send_response(429 if remaining else 401)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                if remaining:
+                    self.send_header("Retry-After", str(remaining))
+                self.end_headers()
+                detail = "Bạn đã nhập sai mật khẩu 5 lần. Tài khoản tạm khóa trong 5 phút." if remaining else "Invalid phone or password"
+                self.wfile.write(json.dumps({"detail": detail}, ensure_ascii=False).encode("utf-8"))
+                return
+            try:
+                asyncio.run(clear_failed_logins(phone))
+            except Exception:
+                self.send_response(503)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
-                self.wfile.write(json.dumps({"detail": "Invalid phone or password"}).encode("utf-8"))
+                self.wfile.write(json.dumps({"detail": "Login protection is temporarily unavailable"}).encode("utf-8"))
                 return
             # Create access token
             access_token = create_access_token(

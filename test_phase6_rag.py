@@ -184,6 +184,7 @@ async def _build_fixture_db() -> tuple:
 
     async with session_factory() as db:
         for fc in fixture_chunks:
+            # pyrefly: ignore [bad-argument-type]
             vec = await mock_provider.embed_text(fc["chunk_text"])
             vec_json = json.dumps(vec)  # store as JSON for SQLite VectorType
 

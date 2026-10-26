@@ -187,10 +187,14 @@ class TestPhase51EvaluationDatasetAndEvidence(unittest.TestCase):
                 evidence_verified_count = 0
 
                 for item in self.POSITIVE_QUERIES:
+                    # pyrefly: ignore [bad-argument-type]
                     res = await self.retriever.retrieve(
+                        # pyrefly: ignore [bad-argument-type]
                         db=session,
+                        # pyrefly: ignore [bad-argument-type]
                         query=item["query"],
                         top_k=5,
+                        # pyrefly: ignore [bad-argument-type]
                         similarity_threshold=0.58
                     )
                     self.assertGreater(
@@ -204,6 +208,7 @@ class TestPhase51EvaluationDatasetAndEvidence(unittest.TestCase):
 
                     # Check section match
                     sec = (top1.section or "").lower()
+                    # pyrefly: ignore [missing-attribute]
                     exp_sec = item["expected_section"].lower()
                     is_sec_match = exp_sec in sec
 

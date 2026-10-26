@@ -18,11 +18,11 @@ from app.schemas.all_schemas import (
 )
 from app.api.v1.auth import get_current_user
 from app.ai.elo_engine import (
-    DEFAULT_ELO_TIERS, get_tier_for_elo, calculate_expected_score,
+    DEFAULT_ELO_TIERS, get_tier_for_elo, get_tier_by_name, calculate_expected_score,
     update_elo, calculate_team_elo, update_doubles_elo,
-    get_dynamic_elo_range, calculate_match_score,
+    calculate_match_score,
     detect_match_anomalies, calculate_rating_confidence,
-    generate_ai_match_recommendation, get_dynamic_k_factor
+    get_dynamic_k_factor
 )
 
 router = APIRouter(prefix="/matchmaking", tags=["AI Matchmaking & ELO Engine"])
@@ -40,8 +40,10 @@ async def get_elo_tiers():
 # 2. PLAYER PROFILE & RATING CONFIDENCE
 # =============================================================================
 @router.get("/profile/{user_id}", response_model=PlayerProfileResponse)
-async def get_player_profile(user_id: int, db: AsyncSession = Depends(get_db)):
+async def get_player_profile(user_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Retrieves or auto-initializes the player profile for a given user."""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Bạn chỉ có thể xem hồ sơ thi đấu của mình.")
     stmt = select(PlayerProfile).where(PlayerProfile.user_id == user_id)
     res = await db.execute(stmt)
     profile = res.scalar_one_or_none()
@@ -57,22 +59,22 @@ async def get_player_profile(user_id: int, db: AsyncSession = Depends(get_db)):
             user_id=user.id,
             gender="Khác",
             preferred_area="Cầu Giấy, Hà Nội",
-            skill_level="Trung Bình Khá",
+            skill_level="CHƯA CHỌN",
             current_elo=user.elo_rating or 1200,
-            games_played=6,
-            wins=4,
-            losses=2,
-            rating_confidence=calculate_rating_confidence(6),
+            games_played=0,
+            wins=0,
+            losses=0,
+            rating_confidence=calculate_rating_confidence(0),
             is_searching=False,
             available_time="18:00 - 21:00",
             play_style="Công thủ toàn diện",
-            streak="+2W"
+            streak="0"
         )
         db.add(profile)
         await db.commit()
         await db.refresh(profile)
 
-    tier = get_tier_for_elo(profile.current_elo)
+    tier = get_tier_by_name(profile.skill_level) if profile.skill_level != "CHƯA CHỌN" else None
     win_rate = round((profile.wins / max(1, profile.games_played)) * 100, 1)
 
     conf_text = "Tân thủ (Thử việc)"
@@ -89,7 +91,7 @@ async def get_player_profile(user_id: int, db: AsyncSession = Depends(get_db)):
         birth_year=profile.birth_year,
         preferred_area=profile.preferred_area,
         skill_level=profile.skill_level,
-        tier_display=tier["display"],
+        tier_display=tier["display"] if tier else None,
         current_elo=profile.current_elo,
         games_played=profile.games_played,
         wins=profile.wins,
@@ -122,21 +124,33 @@ async def update_my_profile(
     if req.gender: profile.gender = req.gender
     if req.birth_year: profile.birth_year = req.birth_year
     if req.preferred_area: profile.preferred_area = req.preferred_area
-    if req.skill_level: profile.skill_level = req.skill_level
+    if req.selected_tier is not None:
+        profile.skill_level = DEFAULT_ELO_TIERS[req.selected_tier - 1]["name"]
+    elif req.skill_level:
+        valid_names = {
+            value.strip().lower()
+            for tier in DEFAULT_ELO_TIERS
+            for value in (tier["name"], tier["level"], tier["sub"])
+            if value
+        }
+        if req.skill_level.strip().lower() not in valid_names:
+            raise HTTPException(status_code=422, detail="Vui lòng chọn một trong 7 hạng thi đấu có sẵn.")
+        profile.skill_level = get_tier_by_name(req.skill_level)["name"]
     if req.available_time: profile.available_time = req.available_time
     if req.preferred_court: profile.preferred_court = req.preferred_court
     if req.play_style: profile.play_style = req.play_style
-    if req.current_elo:
-        profile.current_elo = req.current_elo
-        current_user.elo_rating = req.current_elo
+    if req.is_searching is not None: profile.is_searching = req.is_searching
+    if profile.is_searching and profile.skill_level == "CHƯA CHỌN":
+        raise HTTPException(status_code=422, detail="Hãy chọn hạng thi đấu trước khi bật tìm trận.")
+    # Match rank is user-selected; match outcomes do not change it.
 
     await db.commit()
     await db.refresh(profile)
-    return await get_player_profile(current_user.id, db)
+    return await get_player_profile(current_user.id, current_user=current_user, db=db)
 
 
 # =============================================================================
-# 3. MATCHMAKING ENGINE WITH DYNAMIC RANGE & MULTI-CRITERIA SCORE
+# 3. SAME-TIER PLAYER DISCOVERY
 # =============================================================================
 @router.post("/find", response_model=MatchFindResponse)
 async def find_matches(
@@ -145,23 +159,39 @@ async def find_matches(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Finds optimal opponents or rooms:
-    1. Evaluates wait time -> calculates Dynamic ELO Range (±50, ±100, ±150, ±200).
-    2. Gathers available candidates in the database.
-    3. Calculates holistic MatchScore (ELO 50%, Time 20%, Location 15%, Skill 10%, History 5%).
-    4. Ranks candidates and generates explainable AI Recommendation.
+    Finds players who selected the same skill tier and opted into matchmaking.
+    Preferences can order candidates, but ELO gaps never exclude same-tier players.
     """
-    user_elo = current_user.elo_rating or 1200
-    user_tier = get_tier_for_elo(user_elo)
+    profile_res = await db.execute(select(PlayerProfile).where(PlayerProfile.user_id == current_user.id))
+    player_profile = profile_res.scalar_one_or_none()
+    if not player_profile:
+        player_profile = PlayerProfile(
+            user_id=current_user.id,
+            skill_level="CHƯA CHỌN",
+            current_elo=current_user.elo_rating or 1200,
+            games_played=0,
+            wins=0,
+            losses=0,
+            rating_confidence=calculate_rating_confidence(0),
+            is_searching=False,
+        )
+        db.add(player_profile)
+        await db.flush()
 
-    # Dynamic ELO Range expansion based on wait time
-    dynamic_range = get_dynamic_elo_range(req.wait_time_seconds or 0)
-    effective_max_delta = max(req.max_elo_delta or 100, dynamic_range)
+    if player_profile.skill_level == "CHƯA CHỌN":
+        raise HTTPException(status_code=409, detail="Hãy chọn hạng thi đấu trong hồ sơ trước khi tìm người chơi.")
+
+    user_elo = current_user.elo_rating or 1200
+    user_tier = get_tier_by_name(player_profile.skill_level)
 
     # Search existing users or matchmaking rooms
-    stmt = select(User).where(User.id != current_user.id, User.role == "CUSTOMER")
+    stmt = (
+        select(User, PlayerProfile)
+        .join(PlayerProfile, PlayerProfile.user_id == User.id)
+        .where(User.id != current_user.id, User.role == "CUSTOMER", PlayerProfile.is_searching.is_(True))
+    )
     res = await db.execute(stmt)
-    other_users = res.scalars().all()
+    other_players = res.all()
 
     player_data = {
         "id": current_user.id,
@@ -173,54 +203,58 @@ async def find_matches(
     }
 
     scored_candidates: List[MatchCandidate] = []
-    candidates_dict_for_ai = []
 
-    for u in other_users:
+    for u, candidate_profile in other_players:
+        if candidate_profile.skill_level == "CHƯA CHỌN":
+            continue
         u_elo = u.elo_rating or 1200
-        diff = abs(user_elo - u_elo)
-
-        # Filter by dynamic range
-        if diff <= effective_max_delta:
+        candidate_tier = get_tier_by_name(candidate_profile.skill_level)
+        # Skill rank is selected by the player; ELO is used only to order
+        # people within that rank, never to exclude a same-rank player.
+        if candidate_tier["tier"] == user_tier["tier"]:
             cand_data = {
                 "id": u.id,
                 "name": u.full_name,
                 "elo": u_elo,
-                "preferred_time": req.preferred_time,
-                "preferred_area": req.preferred_area,
+                "preferred_time": candidate_profile.available_time,
+                "preferred_area": candidate_profile.preferred_area,
                 "match_type": req.match_type,
-                "distance_km": 2.5
             }
             res_score = calculate_match_score(player_data, cand_data)
             candidate_item = MatchCandidate(
                 candidate_id=u.id,
                 candidate_name=u.full_name,
-                candidate_elo=u_elo,
-                candidate_tier=res_score["candidate_tier"],
-                elo_diff=res_score["elo_diff"],
+                candidate_tier=candidate_tier["display"],
                 match_score=res_score["match_score"],
                 sub_scores=res_score["sub_scores"],
-                win_probability_a=res_score["win_probability_a"],
-                win_probability_b=res_score["win_probability_b"],
                 is_recommended=res_score["is_recommended"]
             )
             scored_candidates.append(candidate_item)
-            candidates_dict_for_ai.append(res_score)
 
     # Sort descending by match_score
     scored_candidates.sort(key=lambda x: x.match_score, reverse=True)
-    candidates_dict_for_ai.sort(key=lambda x: x["match_score"], reverse=True)
 
-    # AI Recommendation layer generates transparent explanation
-    ai_recom = generate_ai_match_recommendation(player_data, candidates_dict_for_ai)
+    best_match = scored_candidates[0] if scored_candidates else None
+    ai_recom = {
+        "summary": (
+            f"Tìm thấy {len(scored_candidates)} người chơi đang tìm trận cùng hạng {user_tier['display']}."
+            if scored_candidates else
+            f"Chưa có người chơi nào đang tìm trận cùng hạng {user_tier['display']}."
+        ),
+        "suggestion": "Bạn có thể giữ trạng thái tìm trận để người cùng hạng tìm thấy bạn." if not best_match else "Chọn một người chơi cùng hạng để kết nối và sắp xếp trận đấu.",
+        "best_match_id": best_match.candidate_id if best_match else None,
+        "best_match_name": best_match.candidate_name if best_match else None,
+    }
 
     return MatchFindResponse(
         player_elo=user_elo,
         player_tier=user_tier["display"],
-        dynamic_elo_range=effective_max_delta,
+        dynamic_elo_range=0,
         wait_time_seconds=req.wait_time_seconds or 0,
         total_candidates=len(scored_candidates),
         candidates=scored_candidates[:10],
-        ai_recommendation=ai_recom
+        ai_recommendation=ai_recom,
+        matching_tier=user_tier["display"]
     )
 
 
@@ -267,7 +301,7 @@ async def simulate_matchup(elo_a: int = 1500, elo_b: int = 1510):
 
 
 # =============================================================================
-# 5. TWO-WAY RESULT CONFIRMATION & DISPUTE WORKFLOW
+# 5. MATCH RESULT ENDPOINTS (NOT USED)
 # =============================================================================
 @router.post("/matches/submit-result")
 async def submit_match_result(
@@ -275,34 +309,12 @@ async def submit_match_result(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Step 1: Player A inputs the match result.
-    Match transitions to PENDING_CONFIRMATION waiting for Player B.
-    """
-    stmt = select(Match).where(Match.id == req.match_id)
-    res = await db.execute(stmt)
-    match = res.scalar_one_or_none()
-    if not match:
-        raise HTTPException(status_code=404, detail="Không tìm thấy trận đấu!")
+    """Matchmaking connects players; the system does not collect match results."""
+    raise HTTPException(
+        status_code=410,
+        detail="Hệ thống chỉ kết nối người chơi cùng hạng; không thu thập hoặc cập nhật kết quả trận đấu."
+    )
 
-    match.status = "PENDING_CONFIRMATION"
-    match.final_score = req.score_submission
-    
-    # Record player submission
-    stmt_mp = select(MatchPlayer).where(MatchPlayer.match_id == req.match_id, MatchPlayer.player_id == current_user.id)
-    res_mp = await db.execute(stmt_mp)
-    mp = res_mp.scalar_one_or_none()
-    if mp:
-        mp.score_claimed = req.score_submission
-        mp.confirmation_status = "CONFIRMED"
-        mp.submitted_at = datetime.now()
-
-    await db.commit()
-    return {
-        "status": "PENDING_CONFIRMATION",
-        "message": "Đã ghi nhận kết quả từ bạn. Đang gửi yêu cầu xác nhận tới đối thủ để hoàn tất cập nhật ELO!",
-        "match_id": req.match_id
-    }
 
 @router.post("/matches/confirm-result")
 async def confirm_match_result(
@@ -310,73 +322,21 @@ async def confirm_match_result(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Step 2: Player B confirms or disputes the result.
-    - If Agreed: Triggers ELO updates for both players, logs ELOHistory.
-    - If Disputed: Freezes ELO changes and flags match as DISPUTED.
-    """
-    stmt = select(Match).where(Match.id == req.match_id)
-    res = await db.execute(stmt)
-    match = res.scalar_one_or_none()
-    if not match:
-        raise HTTPException(status_code=404, detail="Không tìm thấy trận đấu!")
-
-    if not req.confirm_agreed:
-        match.status = "DISPUTED"
-        await db.commit()
-        return {
-            "status": "DISPUTED",
-            "message": "⚠️ Đã ghi nhận tranh chấp kết quả! Hệ thống tạm đóng băng biến động ELO và chuyển ban trọng tài xử lý.",
-            "dispute_note": req.dispute_note
-        }
-
-    # Mutual confirmation! Execute ELO Update
-    match.status = "CONFIRMED"
-
-    # Get players
-    stmt_players = select(MatchPlayer).where(MatchPlayer.match_id == req.match_id)
-    res_p = await db.execute(stmt_players)
-    players = res_p.scalars().all()
-
-    if len(players) >= 2:
-        p1, p2 = players[0], players[1]
-        score_p1 = 1.0 if p1.result == "WIN" else 0.0
-        new_elo1, new_elo2, delta1, delta2 = update_elo(p1.elo_before, p2.elo_before, score_p1)
-
-        p1.elo_after = new_elo1
-        p1.elo_change = delta1
-        p1.confirmation_status = "CONFIRMED"
-
-        p2.elo_after = new_elo2
-        p2.elo_change = delta2
-        p2.confirmation_status = "CONFIRMED"
-
-        # Log ELO Histories
-        db.add(ELOHistory(
-            player_id=p1.player_id, match_id=match.id,
-            old_elo=p1.elo_before, new_elo=new_elo1, elo_change=delta1,
-            reason=f"Trận đấu #{match.id} ({'Thắng' if delta1 > 0 else 'Thua'})"
-        ))
-        db.add(ELOHistory(
-            player_id=p2.player_id, match_id=match.id,
-            old_elo=p2.elo_before, new_elo=new_elo2, elo_change=delta2,
-            reason=f"Trận đấu #{match.id} ({'Thắng' if delta2 > 0 else 'Thua'})"
-        ))
-
-    await db.commit()
-    return {
-        "status": "CONFIRMED",
-        "message": "Hai bên đã thống nhất kết quả! Điểm ELO đã được cập nhật thành công.",
-        "match_id": req.match_id
-    }
+    """Result confirmation is disabled because match outcomes are not tracked."""
+    raise HTTPException(
+        status_code=410,
+        detail="Hệ thống chỉ kết nối người chơi cùng hạng; không thu thập hoặc cập nhật kết quả trận đấu."
+    )
 
 
 # =============================================================================
 # 6. ELO HISTORY & AUDIT LOGS
 # =============================================================================
 @router.get("/history/{user_id}", response_model=List[ELOHistoryItem])
-async def get_elo_history(user_id: int, db: AsyncSession = Depends(get_db)):
+async def get_elo_history(user_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Fetches full historical timeline of ELO changes for a player."""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Bạn chỉ có thể xem lịch sử ELO của mình.")
     stmt = (
         select(ELOHistory)
         .where(ELOHistory.player_id == user_id)
@@ -391,8 +351,10 @@ async def get_elo_history(user_id: int, db: AsyncSession = Depends(get_db)):
 # 7. ANTI-CHEAT & ABNORMAL MATCH RESULT CHECKER
 # =============================================================================
 @router.get("/anti-cheat/audit/{user_id}")
-async def audit_player_anti_cheat(user_id: int, db: AsyncSession = Depends(get_db)):
+async def audit_player_anti_cheat(user_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Audits player's recent matches for abnormal win-trading, rapid surges, or smurfing."""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Bạn chỉ có thể xem kiểm tra chống gian lận của mình.")
     stmt = (
         select(ELOHistory)
         .where(ELOHistory.player_id == user_id)
@@ -402,15 +364,26 @@ async def audit_player_anti_cheat(user_id: int, db: AsyncSession = Depends(get_d
     res = await db.execute(stmt)
     histories = res.scalars().all()
 
-    matches_data = [
-        {
-            "match_id": h.match_id,
-            "elo_delta": h.elo_change,
-            "result": "WIN" if h.elo_change > 0 else "LOSS",
-            "opponent_elo": 1400
-        }
-        for h in histories
-    ]
+    matches_data = []
+    for history in histories:
+        if not history.match_id:
+            continue
+        match_players_res = await db.execute(
+            select(MatchPlayer).where(MatchPlayer.match_id == history.match_id)
+        )
+        match_players = match_players_res.scalars().all()
+        own_player = next((p for p in match_players if p.player_id == user_id), None)
+        if not own_player:
+            continue
+        opponents = [p for p in match_players if p.team != own_player.team]
+        matches_data.append({
+            "match_id": history.match_id,
+            "opponent_id": ",".join(str(p.player_id) for p in opponents),
+            "elo_delta": history.elo_change,
+            "result": own_player.result,
+            "my_elo_before": history.old_elo,
+            "opponent_elo": round(sum(p.elo_before for p in opponents) / len(opponents)) if opponents else 0
+        })
 
     anomaly_report = detect_match_anomalies(user_id, matches_data)
     return anomaly_report
@@ -420,7 +393,12 @@ async def audit_player_anti_cheat(user_id: int, db: AsyncSession = Depends(get_d
 # 8. LEGACY / ROOM-BASED MATCHMAKING COMPATIBILITY
 # =============================================================================
 @router.get("/rooms", response_model=List[MatchmakingRoomResponse])
-async def list_rooms(db: AsyncSession = Depends(get_db)):
+async def list_rooms(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    profile_res = await db.execute(select(PlayerProfile).where(PlayerProfile.user_id == current_user.id))
+    profile = profile_res.scalar_one_or_none()
+    if not profile or profile.skill_level == "CHƯA CHỌN":
+        raise HTTPException(status_code=409, detail="Hãy chọn hạng thi đấu trước khi xem phòng.")
+    selected_tier = get_tier_by_name(profile.skill_level)["tier"]
     stmt = (
         select(MatchmakingRoom, Facility.name.label("facility_name"))
         .outerjoin(Facility, MatchmakingRoom.facility_id == Facility.id)
@@ -430,6 +408,8 @@ async def list_rooms(db: AsyncSession = Depends(get_db)):
     res = await db.execute(stmt)
     results = []
     for room, fac_name in res.all():
+        if get_tier_for_elo(room.target_elo)["tier"] != selected_tier:
+            continue
         data = MatchmakingRoomResponse.model_validate(room)
         data.facility_name = fac_name or "Cụm Sân Thi Đấu Tiêu Chuẩn"
         results.append(data)
@@ -441,11 +421,17 @@ async def create_room(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    profile_res = await db.execute(select(PlayerProfile).where(PlayerProfile.user_id == current_user.id))
+    profile = profile_res.scalar_one_or_none()
+    if not profile or profile.skill_level == "CHƯA CHỌN":
+        raise HTTPException(status_code=409, detail="Hãy chọn hạng thi đấu trước khi tạo phòng.")
+    tier = get_tier_by_name(profile.skill_level)
+    target_elo = tier["min_elo"] if tier["max_elo"] >= 9999 else (tier["min_elo"] + tier["max_elo"]) // 2
     room = MatchmakingRoom(
         host_user_id=current_user.id,
         facility_id=req.facility_id,
         title=req.title,
-        target_elo=req.target_elo or current_user.elo_rating,
+        target_elo=target_elo,
         current_players=1,
         max_players=req.max_players,
         play_date=req.play_date,

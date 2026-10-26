@@ -8,6 +8,7 @@ from sqlalchemy.future import select
 from app.core.database import get_db
 from app.core.security import get_password_hash, verify_password, create_access_token, decode_token, oauth2_scheme
 from app.models.all_models import User
+from app.core.login_lockout import clear_failed_logins, record_failed_login, remaining_lock_seconds
 from app.schemas.all_schemas import UserRegister, UserLogin, TokenResponse, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -63,12 +64,29 @@ async def register(req: UserRegister, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(req: UserLogin, db: AsyncSession = Depends(get_db)):
+    remaining = await remaining_lock_seconds(req.phone)
+    if remaining:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Tài khoản tạm khóa. Vui lòng thử lại sau {remaining} giây.",
+            headers={"Retry-After": str(remaining)}
+        )
+
     stmt = select(User).where(User.phone == req.phone)
     res = await db.execute(stmt)
     user = res.scalar_one_or_none()
 
     if not user or not verify_password(req.password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Số điện thoại hoặc mật khẩu không chính xác!")
+        remaining = await record_failed_login(req.phone)
+        if remaining:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Bạn đã nhập sai mật khẩu 5 lần. Tài khoản tạm khóa trong 5 phút.",
+                headers={"Retry-After": str(remaining)}
+            )
+        raise HTTPException(status_code=401, detail="Số điện thoại hoặc mật khẩu không chính xác!")
+
+    await clear_failed_logins(req.phone)
 
     token = create_access_token(subject=user.id, role=user.role)
     return {

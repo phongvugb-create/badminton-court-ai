@@ -125,6 +125,9 @@ def get_tier_by_name(name: str) -> Dict[str, Any]:
     """Finds tier by its Vietnamese name."""
     clean = name.strip().lower()
     for t in DEFAULT_ELO_TIERS:
+        if clean == t["name"].strip().lower():
+            return t
+    for t in DEFAULT_ELO_TIERS:
         if clean in t["name"].lower() or t["name"].lower() in clean:
             return t
     return DEFAULT_ELO_TIERS[3]
