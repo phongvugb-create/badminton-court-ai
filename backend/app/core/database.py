@@ -1,5 +1,4 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.config import settings
 import logging
