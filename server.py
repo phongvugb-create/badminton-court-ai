@@ -1224,3 +1224,38 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     cand_dicts.append(score_res)
 
             candidates.sort(key=lambda x: x["match_score"], reverse=True)
+            cand_dicts.sort(key=lambda x: x["match_score"], reverse=True)
+            ai_recom = elo_engine.generate_ai_match_recommendation(player_profile, cand_dicts)
+            response_payload = {
+                "player_elo": user_elo,
+                "player_tier": elo_engine.get_tier_for_elo(user_elo)["display"],
+                "dynamic_elo_range": effective_delta,
+                "wait_time_seconds": wait_time,
+                "total_candidates": len(candidates),
+                "candidates": candidates[:10],
+                "ai_recommendation": ai_recom
+            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(response_payload, ensure_ascii=False).encode("utf-8"))
+            return
+
+        self.send_response(404)
+        self.end_headers()
+
+
+if __name__ == "__main__":
+    os.chdir(os.path.dirname(__file__))
+    db_manager.initialize()
+    status = db_manager.get_status()
+    print(
+        f"📊 Database Engine active: {status['active_driver']} "
+        f"({status['database_type']}) - {status['users_count']} users, "
+        f"{status['facilities_count']} facilities"
+    )
+
+    http.server.ThreadingHTTPServer.allow_reuse_address = True
+    with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), BadmintonServerHandler) as httpd:
+        print(f"🏸 Badminton AI Threading Server running on port {PORT}")
+        httpd.serve_forever()
