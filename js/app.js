@@ -2999,6 +2999,7 @@ class BadmintonAIApp {
     const isGuest = !this.currentUser;
     const userTierVal = (!isGuest && (this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating)) || 5;
     const userTier = this.getSkillTierInfo(userTierVal);
+    const matchmakingTier = this.getMatchmakingTierInfo(userTierVal);
     const userName = !isGuest ? this.currentUser.name : "Khách (Chưa đăng nhập)";
 
     // Sync UI-06 profile card with actual logged-in user or guest state
@@ -3147,8 +3148,8 @@ class BadmintonAIApp {
         if (roomDay < today) return;
       }
 
-      const rTier = this.getSkillTierInfo(r.required_tier_id || r.required_tier || r.host_tier || r.required_elo_min || 5);
-      const tierDiff = Math.abs(userTier.tier - rTier.tier);
+      const rTier = this.getMatchmakingTierInfo(r.required_tier_id || r.required_tier || r.host_tier || r.required_elo_min || 5);
+      const tierDiff = Math.abs(matchmakingTier.tier - rTier.tier);
       if ((skillMatchingFilter === 'same' && tierDiff !== 0) ||
           (skillMatchingFilter === 'adjacent' && tierDiff > 1)) return;
 
@@ -3174,7 +3175,7 @@ class BadmintonAIApp {
       candidatePool.push({
         id: r.id,
         roomId: r.id,
-        name: r.room_name,
+        name: this.cleanMatchmakingRoomName(r.room_name),
         hostName: r.host_name,
         photo: r.host_photo || (r.players && r.players[0] && r.players[0].photo) || null,
         avatar: (r.players && r.players[0] && r.players[0].avatar) || 'R',
@@ -4402,7 +4403,7 @@ class BadmintonAIApp {
     const metaEl = document.getElementById('room-detail-meta');
     const statusBadge = document.getElementById('room-detail-status-badge');
 
-    if (titleEl) titleEl.textContent = this.activeRoom.room_name;
+    if (titleEl) titleEl.textContent = this.cleanMatchmakingRoomName(this.activeRoom.room_name);
     if (metaEl) {
       metaEl.innerHTML = `
         <i class="fa-solid fa-map-pin text-rose"></i> ${this.activeRoom.facility_name} | 
@@ -4842,6 +4843,7 @@ class BadmintonAIApp {
 
     const userTierVal = (this.currentUser && (this.currentUser.skill_tier_id || this.currentUser.skill_tier)) || 5;
     const userTier = this.getSkillTierInfo(userTierVal);
+    const matchmakingTier = this.getMatchmakingTierInfo(userTierVal);
     const userPhoto = (this.currentUser && (this.currentUser.photo || this.currentUser.avatar)) || '';
     const hasPhoto = userPhoto && (userPhoto.startsWith('data:image') || userPhoto.startsWith('http') || userPhoto.includes('/'));
 
@@ -4851,7 +4853,7 @@ class BadmintonAIApp {
           <i class="fa-solid fa-users-viewfinder text-primary"></i> Khởi Tạo Phòng Ghép Kèo AI Cân Bằng Cấp Bậc
         </h3>
         <p style="color: #64748b; font-size: 0.82rem; margin-bottom: 1rem;">
-          Hệ thống AI tự động xét kèo cùng hạng mức trình độ (7 cấp bậc chuẩn) để ghép các tay vợt cân sức vào thi đấu.
+          Hệ thống AI ghép kèo theo ba nhóm trình độ: Yếu, Trung bình và Khá.
         </p>
 
         <form onsubmit="app.handleCreateRoom(event)">
@@ -4890,31 +4892,23 @@ class BadmintonAIApp {
               <label class="form-label" style="margin: 0; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 6px;">
                 <i class="fa-solid fa-layer-group text-primary"></i> Cấp Bậc Trình Độ Yêu Cầu Ghép Kèo
               </label>
-              <span id="tier-selection-badge" style="font-size: 0.72rem; font-weight: 800; background: ${userTier.bg}; color: ${userTier.color}; padding: 3px 8px; border-radius: 6px;">
-                ${userTier.display}
+              <span id="tier-selection-badge" style="font-size: 0.72rem; font-weight: 800; background: ${matchmakingTier.bg}; color: ${matchmakingTier.color}; padding: 3px 8px; border-radius: 6px;">
+                ${matchmakingTier.display}
               </span>
             </div>
 
-            <!-- Dropdown chọn cấp bậc 1-7 -->
+            <!-- Chỉ hiển thị ba nhóm trình độ -->
             <select id="modal-tier-select" class="form-control" style="font-weight: 700; margin-bottom: 8px; font-size: 0.88rem;" onchange="app.onModalSkillTierChange(this.value)">
-              <option value="1">🟢 1 | Yếu - Tân thủ</option>
-              <option value="2">🔵 2 | Trung Bình Yếu - Cơ bản</option>
-              <option value="3">🟡 3 | Trung bình</option>
-              <option value="4">🟠 4 | Trung bình khá</option>
-              <option value="5" ${userTier.tier === 5 ? 'selected' : ''}>🔴 5 | Khá</option>
-              <option value="6">🟣 6 | Giỏi - Thành thạo</option>
-              <option value="7">👑 7 | Tốt - Chuyên nghiệp</option>
+              <option value="1" ${userTier.tier <= 2 ? 'selected' : ''}>🟢 Yếu</option>
+              <option value="3" ${userTier.tier >= 3 && userTier.tier <= 4 ? 'selected' : ''}>🟡 Trung bình</option>
+              <option value="5" ${userTier.tier >= 5 ? 'selected' : ''}>🔴 Khá</option>
             </select>
 
             <!-- 1-Click Fast Tier Buttons (Pills) -->
             <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;">
-              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(1)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #dcfce7; color: #16a34a; border: 1px solid #86efac; font-weight: 700;">1: Yếu</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(2)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #e0f2fe; color: #0284c7; border: 1px solid #7dd3fc; font-weight: 700;">2: TB Yếu</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(3)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fef9c3; color: #ca8a04; border: 1px solid #fde047; font-weight: 700;">3: Trung bình</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(4)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #ffedd5; color: #ea580c; border: 1px solid #fdba74; font-weight: 700;">4: TB Khá</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(5)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700;">5: Khá</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(6)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #f3e8ff; color: #9333ea; border: 1px solid #d8b4fe; font-weight: 700;">6: Giỏi</button>
-              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(7)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #e0e7ff; color: #4f46e5; border: 1px solid #a5b4fc; font-weight: 700;">7: Chuyên nghiệp</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(1)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #dcfce7; color: #16a34a; border: 1px solid #86efac; font-weight: 700;">Yếu</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(3)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fef9c3; color: #ca8a04; border: 1px solid #fde047; font-weight: 700;">Trung bình</button>
+              <button type="button" class="btn btn-xs" onclick="app.selectModalSkillTier(5)" style="font-size: 0.72rem; padding: 3px 7px; border-radius: 6px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700;">Khá</button>
             </div>
 
             <!-- Cơ chế AI Cân Kèo -->
@@ -5005,13 +4999,25 @@ class BadmintonAIApp {
   }
 
   onModalSkillTierChange(tierVal) {
-    const tier = this.getSkillTierInfo(parseInt(tierVal, 10));
+    const tier = this.getMatchmakingTierInfo(tierVal);
     const badge = document.getElementById('tier-selection-badge');
     if (badge) {
       badge.textContent = tier.display;
       badge.style.background = tier.bg;
       badge.style.color = tier.color;
     }
+  }
+
+  getMatchmakingTierInfo(value) {
+    const parsedTier = parseInt(value, 10);
+    const tier = this.getSkillTierInfo(Number.isNaN(parsedTier) ? value : parsedTier);
+    if (tier.tier <= 2) return { ...tier, tier: 1, name: 'Yếu', display: '🟢 Yếu', badgeText: 'Yếu' };
+    if (tier.tier <= 4) return { ...tier, tier: 3, name: 'Trung bình', display: '🟡 Trung bình', badgeText: 'Trung bình' };
+    return { ...tier, tier: 5, name: 'Khá', display: '🔴 Khá', badgeText: 'Khá' };
+  }
+
+  cleanMatchmakingRoomName(name) {
+    return String(name || '').replace(/\s*\(\s*ELO\s*\d+\s*[-–]\s*\d+\s*\)/gi, '').trim();
   }
 
   selectModalSkillTier(tier) {
@@ -5040,7 +5046,7 @@ class BadmintonAIApp {
       return;
     }
 
-    const name = document.getElementById('modal-room-name')?.value || 'Phòng Giao Lưu Mới';
+    const name = this.cleanMatchmakingRoomName(document.getElementById('modal-room-name')?.value || 'Phòng Giao Lưu Mới');
     const facId = parseInt(document.getElementById('modal-room-facility')?.value || '101', 10);
     const matchType = document.getElementById('modal-room-type')?.value || 'Đôi Nam/Nữ';
     const matchTime = document.getElementById('modal-room-time')?.value || '18:00 - 20:00 (Hôm nay)';
@@ -5050,7 +5056,7 @@ class BadmintonAIApp {
     const court = document.getElementById('modal-room-court')?.value || 'Sân số 03';
     const price = document.getElementById('modal-room-price')?.value || '45.000đ';
 
-    const requiredTier = this.getSkillTierInfo(requiredTierVal);
+    const requiredTier = this.getMatchmakingTierInfo(requiredTierVal);
     const hostTier = this.getSkillTierInfo(hostTierVal);
     const fac = MockData.facilities.find(f => f.id === facId) || MockData.facilities[0];
     const isDoubles = matchType.includes('Đôi');
