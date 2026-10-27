@@ -1,0 +1,37 @@
+% ==============================================================================
+% PHỤ LỤC A: MÃ NGUỒN CHƯƠNG TRÌNH
+% ==============================================================================
+
+\chapter{MÃ NGUỒN CHƯƠNG TRÌNH}
+\label{app:sourcecode}
+
+\section{Liên kết kho mã nguồn (Repository)}
+
+Toàn bộ mã nguồn, dữ liệu mẫu và tài liệu hướng dẫn chi tiết của dự án được lưu trữ công khai tại kho chứa mã nguồn GitHub:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Địa chỉ repository:} \url{https://github.com/ictu-fit/ai-app-template}
+    \item \textbf{Nhánh chính (Main branch):} \texttt{main}
+    \item \textbf{Giấy phép mã nguồn:} MIT License
+\end{itemize}
+
+\section{Cấu trúc thư mục dự án phần mềm}
+ 
+Dưới đây là sơ đồ tổ chức thư mục của dự án phần mềm ứng dụng AI:
+\begin{lstlisting}[language={}, caption={Cấu trúc cây thư mục mã nguồn phần mềm ứng dụng AI}, label={lst:tree}]
+AI_Application/
+|-- data/                 # Thư mục lưu trữ tập dữ liệu (train, val, test)
+|-- models/               # Định nghĩa các kiến trúc mạng nơ-ron
+|   |-- __init__.py
+|   |-- backbone.py       # Module trích xuất đặc trưng
+|   `-- classifier.py     # Module phân loại
+|-- weights/              # Tệp trọng số mô hình đã huấn luyện (.pt, .onnx)
+|-- utils/                # Các hàm tiện ích tiền xử lý dữ liệu và vẽ đồ thị
+|   |-- dataset.py
+|   `-- metrics.py
+|-- ui/                   # Giao diện người dùng (Streamlit / PyQt)
+|   `-- app.py
+|-- train.py              # Script chạy quá trình huấn luyện
+|-- evaluate.py           # Script đánh giá mô hình trên tập test
+|-- requirements.txt      # Danh sách các thư viện phụ thuộc
+`-- README.md             # Hướng dẫn tổng quan về dự án
+\end{lstlisting}

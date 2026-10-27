@@ -29,11 +29,17 @@ from sqlalchemy.future import select
 
 from app.config import settings
 from app.core.database import AsyncSessionLocal
+from app.core.redis import get_slot_lock_holder
 from app.ai.llm_provider import BaseLLMProvider, get_default_llm_provider
 from app.ai.retrieval_service import BaseRetriever, get_retrieval_service
 from app.ai.rag_context_builder import RAGContextBuilder, get_rag_context_builder
 from app.schemas.all_schemas import RAGSourceCitation
-from app.models.all_models import Facility, Court, TimeSlot
+from app.models.all_models import Facility, Court, TimeSlot, SlotPricing
+from app.ai.legacy_inventory import (
+    legacy_facilities_matching,
+    record_confirmed_ai_booking,
+    sync_legacy_inventory,
+)
 from app.ai.tools.business_tools import (
     search_courts,
     check_court_availability,
@@ -95,7 +101,7 @@ CONFIRM_HOLD_PATTERN = re.compile(
 )
 
 BOOK_SLOT_PATTERN = re.compile(
-    r"(?:tiến\s+hành\s+|tôi\s+muốn\s+|muốn\s+|tạo\s+đơn\s+)?(?:đặt\s+sân(?!\s+(?:ở|gần|nào))|tạo\s+booking|đặt\s+chính\s+thức|book\s+sân|đặt\s+chỗ\s+chính\s+thức)\b",
+    r"(?:tiến\s+hành\s+|tôi\s+muốn\s+|muốn\s+|tạo\s+đơn\s+)?(?:đặt\s+sân(?!\s+(?:gần|nào))|tạo\s+booking|đặt\s+chính\s+thức|book\s+sân|đặt\s+chỗ\s+chính\s+thức)\b",
     re.IGNORECASE
 )
 
@@ -155,6 +161,13 @@ def vietnam_today() -> str:
 async def find_facility_id_from_text(db: AsyncSession, text: str) -> Optional[int]:
     """Find facility id by exact name, normalized name or keywords."""
     try:
+        legacy_matches = legacy_facilities_matching(text)
+        if legacy_matches:
+            await sync_legacy_inventory(
+                db,
+                facility_ids=[int(item["id"]) for item in legacy_matches if item.get("id") is not None]
+            )
+
         fac_q = await db.execute(select(Facility.id, Facility.name).where(Facility.is_approved == True))
         all_facs = fac_q.all()
         text_lower = text.lower()
@@ -436,6 +449,7 @@ class ChatbotService:
                         )
                         if book_res["status"] == "booking_succeeded":
                             d = book_res["data"]
+                            record_confirmed_ai_booking(book_res, int(user_id))
                             total_fmt = f"{int(d['total_amount']):,}đ"
                             deposit_fmt = f"{int(d['deposit_amount']):,}đ"
                             ans = (
@@ -559,6 +573,9 @@ class ChatbotService:
                             }
 
                         if target_fac_id and parsed_date and parsed_time:
+                            await sync_legacy_inventory(
+                                db_session, date=parsed_date, facility_ids=[target_fac_id]
+                            )
                             slot_find_stmt = (
                                 select(TimeSlot)
                                 .join(Court, TimeSlot.court_id == Court.id)
@@ -574,15 +591,103 @@ class ChatbotService:
                                 target_slot_id = found_s.id
 
                     if not target_slot_id:
-                        ans = (
-                            "ℹ️ **Vui lòng chọn khung giờ cụ thể để đặt sân**:\n\n"
-                            "Để tạo bản xem trước đặt sân chính xác, bạn vui lòng giữ chỗ khung giờ trước hoặc cung cấp mã khung giờ (ví dụ: `#10` hay tên sân, ngày và giờ chơi) nhé! 🏸"
+                        slot_options = await check_court_availability(
+                            db=db_session,
+                            facility_id=target_fac_id,
+                            date=parsed_date,
+                            limit=500,
                         )
+                        if slot_options.get("status") in ("error", "availability_unverified", "internal_error"):
+                            ans = "⚠️ Mình chưa thể kiểm tra trạng thái khung giờ trực tiếp. Bạn vui lòng thử lại sau ít phút nhé."
+                            return {
+                                "answer": ans, "reply": ans, "conversation_id": conv_id, "message_id": msg_id,
+                                "user_id": user_id, "status": "availability_unverified",
+                                "retrieval_status": "data_unavailable", "sources": [],
+                                "provider": self.llm_provider.provider_name
+                            }
+                        open_slots = [
+                            slot for slot in slot_options.get("data", [])
+                            if slot.get("effective_status") == "AVAILABLE"
+                        ]
+                        if open_slots:
+                            by_time = {}
+                            for slot in open_slots:
+                                by_time.setdefault(slot["start_time"], []).append(slot)
+                            options = ", ".join(
+                                f"{start} (#{slots[0]['slot_id']})" for start, slots in sorted(by_time.items())
+                            )
+                            ans = (
+                                f"ℹ️ Mình chưa thấy giờ bắt đầu {parsed_time or ''} còn trống tại cơ sở này "
+                                f"ngày {parsed_date}. Các giờ đang mở là: {options}. "
+                                "Bạn chọn một giờ trong danh sách để mình tạo bản xem trước nhé. 🏸"
+                            )
+                        else:
+                            ans = f"🔎 Ngày {parsed_date}, cơ sở này hiện chưa có khung giờ trống đã được cấu hình."
                         return {
                             "answer": ans, "reply": ans, "conversation_id": conv_id, "message_id": msg_id,
                             "user_id": user_id, "status": "confirmation_required", "retrieval_status": "no_relevant_documents",
                             "sources": [], "provider": self.llm_provider.provider_name
                         }
+
+                    slot_row_result = await db_session.execute(
+                        select(TimeSlot, Court, Facility)
+                        .join(Court, TimeSlot.court_id == Court.id)
+                        .join(Facility, Court.facility_id == Facility.id)
+                        .where(TimeSlot.id == target_slot_id)
+                    )
+                    slot_row = slot_row_result.first()
+                    if not slot_row:
+                        ans = "⚠️ Khung giờ này không còn trong lịch đặt sân. Bạn vui lòng tra cứu lại giờ trống nhé."
+                        return {
+                            "answer": ans, "reply": ans, "conversation_id": conv_id, "message_id": msg_id,
+                            "user_id": user_id, "status": "slot_unavailable", "retrieval_status": "data_unavailable",
+                            "sources": [], "provider": self.llm_provider.provider_name
+                        }
+                    slot, court, facility = slot_row
+                    if slot.status in ("BOOKED", "MAINTENANCE"):
+                        ans = "❌ Khung giờ đó vừa được đặt hoặc đang bảo trì. Bạn vui lòng chọn giờ khác nhé."
+                        return {
+                            "answer": ans, "reply": ans, "conversation_id": conv_id, "message_id": msg_id,
+                            "user_id": user_id, "status": "slot_unavailable", "retrieval_status": "supported",
+                            "sources": [], "provider": self.llm_provider.provider_name
+                        }
+
+                    try:
+                        current_holder = await get_slot_lock_holder(slot.id)
+                    except Exception:
+                        current_holder = None
+                    if current_holder != str(user_id):
+                        pricing_result = await db_session.execute(
+                            select(SlotPricing.dynamic_price).where(SlotPricing.slot_id == slot.id)
+                        )
+                        slot_price = float(pricing_result.scalar_one_or_none() or 80_000)
+                        manager = get_pending_hold_manager()
+                        hold_intent = await manager.create_pending_intent(
+                            user_id=int(user_id),
+                            slot_id=slot.id,
+                            court_id=court.id,
+                            facility_id=facility.id,
+                            facility_name=facility.name,
+                            court_number=court.court_number,
+                            date=slot.date,
+                            start_time=slot.start_time,
+                            end_time=slot.end_time,
+                            price=slot_price,
+                            ttl_seconds=600,
+                        )
+                        hold_result = await execute_slot_hold(
+                            db=db_session,
+                            user_id=int(user_id),
+                            intent_id=hold_intent["intent_id"],
+                        )
+                        if hold_result.get("status") != "hold_succeeded":
+                            ans = f"❌ Chưa thể giữ khung giờ này: {hold_result.get('message', 'Vui lòng thử lại.') }"
+                            return {
+                                "answer": ans, "reply": ans, "conversation_id": conv_id, "message_id": msg_id,
+                                "user_id": user_id, "status": hold_result.get("status", "hold_failed"),
+                                "retrieval_status": "data_unavailable", "sources": [],
+                                "provider": self.llm_provider.provider_name
+                            }
 
                     prev_res = await create_booking_preview(
                         db=db_session,
@@ -635,7 +740,7 @@ class ChatbotService:
                     }
 
                 if db_session:
-                    parsed_date = extract_date_from_text(clean_message)
+                    parsed_date = extract_date_from_text(clean_message) or vietnam_today()
                     parsed_time = extract_time_from_text(clean_message)
 
                     target_fac_id = None
@@ -661,6 +766,11 @@ class ChatbotService:
                             "user_id": user_id, "status": "confirmation_required", "retrieval_status": "no_relevant_documents",
                             "sources": [], "provider": self.llm_provider.provider_name
                         }
+
+                    await sync_legacy_inventory(
+                        db_session, date=parsed_date, facility_ids=[target_fac_id],
+                        start_time=parsed_time
+                    )
 
                     # Check court availability using verified business tool
                     tool_res = await check_court_availability(
@@ -790,6 +900,18 @@ class ChatbotService:
                     if search_kw and search_kw.lower() in ["cầu lông", "pickleball", "thể thao", "sân"]:
                         search_kw = None
 
+                    search_date = extract_date_from_text(clean_message) or vietnam_today()
+                    search_time = extract_time_from_text(clean_message)
+                    matching_legacy_facilities = legacy_facilities_matching(search_kw)
+                    if not search_kw or matching_legacy_facilities:
+                        await sync_legacy_inventory(
+                            db_session,
+                            date=search_date,
+                            facility_ids=[int(item["id"]) for item in matching_legacy_facilities]
+                            if search_kw else None,
+                            start_time=search_time,
+                        )
+
                     tool_res = await search_courts(db=db_session, query=search_kw, limit=100)
                     if tool_res.get("status") in ("error", "internal_error"):
                         err_ans = "⚠️ Không thể tra cứu danh sách cụm sân lúc này do hệ thống gặp sự cố kỹ thuật. Vui lòng thử lại sau! 🏸"
@@ -801,7 +923,6 @@ class ChatbotService:
                     elif tool_res["status"] == "no_results":
                         ans = f"🔍 Không tìm thấy cụm sân nào phù hợp với từ khóa '{search_kw or ''}'. Bạn vui lòng thử tìm kiếm theo quận/khu vực khác nhé! 🏸"
                     else:
-                        search_date = extract_date_from_text(clean_message) or vietnam_today()
                         available_by_facility = []
                         availability_failed = False
                         for facility in tool_res.get("data", []):
@@ -809,6 +930,7 @@ class ChatbotService:
                                 db=db_session,
                                 facility_id=facility["facility_id"],
                                 date=search_date,
+                                time=search_time,
                                 limit=500
                             )
                             if availability.get("status") in ("error", "availability_unverified", "internal_error"):
@@ -913,29 +1035,74 @@ class ChatbotService:
                 else:
                     target_fac_id = await find_facility_id_from_text(db_session, combined_text)
 
-                # Missing required parameter: Facility
+                target_date = extract_date_from_text(clean_message) or vietnam_today()
+                target_time = extract_time_from_text(clean_message)
+
+                # If no facility is named, search all approved facilities and list
+                # matching available slots instead of asking the user to guess one.
                 if target_fac_id is None and not is_policy:
-                    realtime_msg = (
-                        "ℹ️ **Thông báo tra cứu trạng thái thời gian thực**:\n\n"
-                        "Để kiểm tra chính xác khung giờ còn trống, bạn vui lòng cho biết bạn muốn kiểm tra tại **cụm sân/cơ sở nào** (ví dụ: Sân Cầu Lông Đa Năng) và vào **ngày nào** nhé! 🏸\n\n"
-                        "👉 Bạn cũng có thể tra cứu trực tiếp trên **Ma trận Lịch đặt sân** tại giao diện chính của website để xem toàn bộ các sân trống tức thì."
+                    await sync_legacy_inventory(db_session, date=target_date, start_time=target_time)
+                    facility_result = await db_session.execute(
+                        select(Facility.id, Facility.name, Facility.address)
+                        .where(Facility.is_approved == True)
+                        .limit(100)
                     )
+                    facilities = facility_result.all()
+                    available_by_facility = []
+                    availability_failed = False
+                    for facility_id, facility_name, facility_address in facilities:
+                        availability = await check_court_availability(
+                            db=db_session,
+                            facility_id=facility_id,
+                            date=target_date,
+                            time=target_time,
+                            limit=500
+                        )
+                        if availability.get("status") in ("error", "availability_unverified", "internal_error"):
+                            availability_failed = True
+                            break
+                        open_slots = [
+                            slot for slot in availability.get("data", [])
+                            if slot.get("effective_status") == "AVAILABLE"
+                        ]
+                        if open_slots:
+                            available_by_facility.append((facility_name, facility_address, open_slots))
+
+                    if availability_failed:
+                        realtime_msg = "⚠️ Mình chưa thể xác minh lịch trống trực tiếp lúc này. Vui lòng thử lại sau ít phút nhé. 🏸"
+                    elif not facilities:
+                        realtime_msg = "⚠️ Dữ liệu cơ sở sân chưa được đồng bộ vào hệ thống tra cứu. Vui lòng thử lại sau khi quản trị viên cập nhật dữ liệu sân."
+                    elif not available_by_facility:
+                        time_text = f" lúc {target_time}" if target_time else ""
+                        realtime_msg = f"🔎 Hôm nay ({target_date}) mình chưa tìm thấy sân còn trống{time_text} trong các cơ sở đã đăng ký."
+                    else:
+                        time_text = f" lúc {target_time}" if target_time else ""
+                        lines = [f"🏸 **Các sân còn trống ngày {target_date}{time_text}:**"]
+                        for facility_name, facility_address, slots in available_by_facility:
+                            lines.append(f"\n**{facility_name}** — {facility_address}")
+                            for slot in slots:
+                                lines.append(
+                                    f"• Sân {slot['court_number']}: {slot['start_time']}–{slot['end_time']} "
+                                    f"(#{slot['slot_id']}, {int(slot['price']):,}đ)"
+                                )
+                        realtime_msg = "\n".join(lines)
                     return {
                         "answer": realtime_msg,
                         "reply": realtime_msg,
                         "conversation_id": conv_id,
                         "message_id": msg_id,
                         "user_id": user_id,
-                        "status": "success",
-                        "retrieval_status": "no_relevant_documents",
+                        "status": "availability_unverified" if availability_failed else "success",
+                        "retrieval_status": "data_unavailable" if availability_failed or not facilities else "supported",
                         "sources": [],
                         "provider": self.llm_provider.provider_name
                     }
 
                 if target_fac_id is not None:
-                    target_date = extract_date_from_text(clean_message) or vietnam_today()
-                    target_time = extract_time_from_text(clean_message)
-
+                    await sync_legacy_inventory(
+                        db_session, date=target_date, facility_ids=[target_fac_id],
+                        start_time=target_time
+                    )
                     tool_res = await check_court_availability(
                         db=db_session,
                         facility_id=target_fac_id,
