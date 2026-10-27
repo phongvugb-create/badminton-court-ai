@@ -2671,7 +2671,7 @@ class BadmintonAIApp {
 
     const tier = this.getSkillTierInfo(tierName || 5);
     const hasPhoto = photoUrl && (photoUrl.startsWith('data:image') || photoUrl.startsWith('http') || photoUrl.includes('/'));
-    const displayImg = hasPhoto ? photoUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
+    const displayImg = hasPhoto ? photoUrl : '';
 
     modalBody.innerHTML = `
       <div style="padding: 1rem 0; text-align: center;">
@@ -2685,7 +2685,7 @@ class BadmintonAIApp {
         </div>
 
         <div class="player-face-card-preview" style="max-width: 420px; margin: 0 auto; background: #ffffff; border: 2px solid #86efac; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
-          <img src="${displayImg}" alt="${playerName}" class="player-face-modal-img" style="width: 170px; height: 170px; border-radius: 50%; object-fit: cover; border: 4px solid #167946; box-shadow: 0 8px 24px rgba(22, 121, 70, 0.25);">
+          ${hasPhoto ? `<img src="${displayImg}" alt="${playerName}" class="player-face-modal-img" style="width: 170px; height: 170px; border-radius: 50%; object-fit: cover; border: 4px solid #167946; box-shadow: 0 8px 24px rgba(22, 121, 70, 0.25);">` : `<div class="avatar" style="width: 170px; height: 170px; margin: 0 auto; border-radius: 50%; background: #dcfce7; color: #167946; display: flex; align-items: center; justify-content: center; font-size: 4rem; font-weight: 800; border: 4px solid #86efac;">${(playerName || 'U').charAt(0).toUpperCase()}</div>`}
           
           <h2 style="margin: 0 0 6px; font-size: 1.35rem; color: #0f172a; font-weight: 800;">${playerName}</h2>
           
@@ -2696,9 +2696,9 @@ class BadmintonAIApp {
           </div>
 
           <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 12px 14px; text-align: left; font-size: 0.82rem; color: #166534; line-height: 1.5; margin-bottom: 12px; width: 100%;">
-            <div style="font-weight: 700; margin-bottom: 4px;"><i class="fa-solid fa-circle-check"></i> Xác Thực Ngoại Hình Người Chơi:</div>
+            <div style="font-weight: 700; margin-bottom: 4px;"><i class="fa-solid ${hasPhoto ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> Ảnh nhận diện:</div>
             <div>• Cấp bậc trình độ: <strong>${tier.name}</strong> (${tier.desc})</div>
-            <div>• Trạng thái nhận diện: <strong style="color: #16a34a;">Đã xác nhận ảnh chụp thực tế</strong></div>
+            <div>• Trạng thái: <strong style="color: ${hasPhoto ? '#16a34a' : '#b45309'};">${hasPhoto ? 'Người chơi đã tải ảnh lên' : 'Người chơi chưa tải ảnh lên'}</strong></div>
           </div>
 
           <div style="font-size: 0.8rem; color: #475569; line-height: 1.5; text-align: left; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; width: 100%;">
@@ -2928,6 +2928,68 @@ class BadmintonAIApp {
   // =========================================================================
   // CORE AI MATCHMAKING ENGINE: 7 SKILL TIERS AUTO-BALANCING
   // =========================================================================
+  updateMatchmakingPreferences() {
+    if (this.currentUser) {
+      const profile = (MockData.player_profiles || []).find(p =>
+        String(p.user_id ?? p.player_id) === String(this.currentUser.id)
+      );
+      if (profile && profile.is_searching) {
+        profile.preferred_area = document.getElementById('finder-area')?.value || profile.preferred_area;
+        profile.available_time = document.getElementById('finder-time')?.value || profile.available_time;
+        if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+      }
+    }
+    this.executeMatchmakingEngine();
+  }
+
+  toggleMatchmakingSearch() {
+    if (!this.currentUser) {
+      this.showToast("Vui lòng đăng nhập để bật tìm trận.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+
+    if (!MockData.player_profiles) MockData.player_profiles = [];
+    let profile = MockData.player_profiles.find(p =>
+      String(p.user_id ?? p.player_id) === String(this.currentUser.id)
+    );
+    if (!profile) {
+      const tier = this.getSkillTierInfo(
+        this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating || 5
+      );
+      profile = {
+        id: Date.now(),
+        user_id: this.currentUser.id,
+        gender: this.currentUser.gender || 'Khác',
+        preferred_area: '',
+        skill_level: tier.name,
+        current_elo: Number(this.currentUser.elo_rating || tier.defaultElo || 1200),
+        games_played: 0,
+        wins: 0,
+        losses: 0,
+        rating_confidence: 0.2,
+        is_searching: false,
+        available_time: '',
+        preferred_court: '',
+        play_style: this.currentUser.play_style || 'Công thủ toàn diện',
+        streak: '0'
+      };
+      MockData.player_profiles.push(profile);
+    }
+
+    profile.preferred_area = document.getElementById('finder-area')?.value || profile.preferred_area || '';
+    profile.available_time = document.getElementById('finder-time')?.value || profile.available_time || '';
+    profile.skill_level = this.currentUser.skill_tier || profile.skill_level || this.getSkillTierInfo(this.currentUser.skill_tier_id || 5).name;
+    profile.current_elo = Number(this.currentUser.elo_rating || profile.current_elo || 1200);
+    profile.is_searching = !profile.is_searching;
+
+    if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+    this.showToast(profile.is_searching
+      ? 'Radar đã bật. Người chơi khác có thể tìm thấy bạn theo giờ và khu vực đã chọn.'
+      : 'Bạn đã tắt trạng thái tìm trận.');
+    this.executeMatchmakingEngine();
+  }
+
   executeMatchmakingEngine() {
     const container = document.getElementById('matchmaking-rooms-grid');
     if (!container) return;
@@ -2994,122 +3056,145 @@ class BadmintonAIApp {
     const matchType = matchTypeEl ? matchTypeEl.value : 'DOUBLES';
     const preferredArea = document.getElementById('finder-area')?.value || 'Hoàng Mai';
     const preferredTime = document.getElementById('finder-time')?.value || '18:00 - 20:00';
+    const ownProfile = (MockData.player_profiles || []).find(p =>
+      String(p.user_id ?? p.player_id) === String(this.currentUser?.id)
+    );
+    const searchButton = document.getElementById('btn-run-matchmaking');
+    if (searchButton) {
+      const searching = Boolean(ownProfile?.is_searching);
+      searchButton.innerHTML = searching
+        ? '<i class="fa-solid fa-stop"></i> Tắt tìm trận'
+        : '<i class="fa-solid fa-play"></i> Bật tìm trận';
+      searchButton.style.background = searching ? '#b91c1c' : '#167946';
+    }
 
     let candidatePool = [];
 
-    // 1. Gather other players
+    // Match only players who explicitly opted in and have an actual profile.
+    // Candidate scores use saved area/time/ELO data instead of fixed demo values.
+    const normalizeMatchText = value => String(value || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
+    const parseMatchRange = value => {
+      const ranges = String(value || '').match(/([01]?\d|2[0-3]):([0-5]\d)\s*(?:-|–|đến|to)\s*([01]?\d|2[0-3]):([0-5]\d)/i);
+      if (!ranges) return null;
+      return [Number(ranges[1]) * 60 + Number(ranges[2]), Number(ranges[3]) * 60 + Number(ranges[4])];
+    };
+    const requestedRange = parseMatchRange(preferredTime);
+    const profileByUserId = new Map((MockData.player_profiles || []).map(profile => [String(profile.user_id ?? profile.player_id), profile]));
+    const currentElo = Number(this.currentUser?.elo_rating || userTier.defaultElo || 1200);
     (MockData.users || []).forEach(u => {
-      if (u.role === 'CUSTOMER' && u.name !== userName) {
-        const uTier = this.getSkillTierInfo(u.skill_tier_id || u.skill_tier || u.elo_rating || 5);
-        const tierDiff = Math.abs(userTier.tier - uTier.tier);
+      if (u.role !== 'CUSTOMER' || String(u.id) === String(this.currentUser?.id)) return;
+      const profile = profileByUserId.get(String(u.id));
+      if (!profile || profile.is_searching !== true || profile.skill_level === 'CHƯA CHỌN') return;
 
-        let isMatchAllowed = false;
-        if (skillMatchingFilter === 'same') {
-          isMatchAllowed = (tierDiff === 0);
-        } else if (skillMatchingFilter === 'adjacent') {
-          isMatchAllowed = (tierDiff <= 1);
-        } else {
-          isMatchAllowed = true;
-        }
+      const candidateElo = Number(profile.current_elo || u.elo_rating || 1200);
+      const uTier = this.getSkillTierInfo(profile.skill_level || u.skill_tier_id || u.skill_tier || candidateElo);
+      const tierDiff = Math.abs(userTier.tier - uTier.tier);
+      if ((skillMatchingFilter === 'same' && tierDiff !== 0) ||
+          (skillMatchingFilter === 'adjacent' && tierDiff > 1)) return;
 
-        if (isMatchAllowed) {
-          // Calculate MatchScore: Tier (50%), Time (25%), Location (25%)
-          const sSkill = tierDiff === 0 ? 100.0 : (tierDiff === 1 ? 85.0 : Math.max(30, 70 - tierDiff * 15));
-          const sTime = 95.0;
-          const sLoc = 90.0;
-          const matchScore = Math.round(sSkill * 0.50 + sTime * 0.25 + sLoc * 0.25);
+      const candidateRange = parseMatchRange(profile.available_time);
+      const overlapMinutes = requestedRange && candidateRange
+        ? Math.max(0, Math.min(requestedRange[1], candidateRange[1]) - Math.max(requestedRange[0], candidateRange[0]))
+        : 0;
+      if (!overlapMinutes) return;
 
-          // Win rate estimation based on skill rank
-          let winRateA = 50;
-          let winRateB = 50;
-          if (tierDiff === 1) {
-            if (userTier.tier > uTier.tier) { winRateA = 58; winRateB = 42; }
-            else { winRateA = 42; winRateB = 58; }
-          } else if (tierDiff >= 2) {
-            if (userTier.tier > uTier.tier) { winRateA = 70; winRateB = 30; }
-            else { winRateA = 30; winRateB = 70; }
-          }
+      const sTime = Math.min(100, Math.round(overlapMinutes / Math.max(1, requestedRange[1] - requestedRange[0]) * 100));
+      const requestedArea = normalizeMatchText(preferredArea);
+      const candidateArea = normalizeMatchText(profile.preferred_area);
+      const sLoc = !candidateArea ? 50 : (candidateArea.includes(requestedArea) || requestedArea.includes(candidateArea) ? 100 : 35);
+      const sSkill = tierDiff === 0 ? 100 : Math.max(20, 100 - tierDiff * 20);
+      const matchScore = Math.round(sSkill * 0.5 + sTime * 0.25 + sLoc * 0.25);
+      const expectedWinRate = Math.round(100 / (1 + (10 ** ((candidateElo - currentElo) / 400))));
+      const actualArea = profile.preferred_court || profile.preferred_area || 'Chưa chọn khu vực';
 
-          candidatePool.push({
-            id: u.id,
-            name: u.name,
-            photo: u.photo || u.avatar,
-            avatar: u.avatar,
-            tier: uTier,
-            tierDiff: tierDiff,
-            matchScore: matchScore,
-            subScores: {
-              tier: tierDiff === 0 ? "Cùng cấp" : `Lệch ${tierDiff} cấp`,
-              time: "95%",
-              loc: "90%",
-              balance: tierDiff === 0 ? "100% Cân kèo" : (tierDiff === 1 ? "Kèo lệch 1 cấp" : "Kèo thách đấu")
-            },
-            winRateA: winRateA,
-            winRateB: winRateB,
-            matchType: matchType,
-            facility: preferredArea === 'Hoàng Mai' ? 'CLB Catchy Badminton Arena' : 'CLB Cầu Giấy Pro Center',
-            time: preferredTime,
-            isRoom: false
-          });
-        }
-      }
+      candidatePool.push({
+        id: u.id,
+        name: u.name || u.full_name,
+        photo: u.photo || u.avatar,
+        avatar: u.avatar,
+        tier: uTier,
+        tierDiff,
+        matchScore,
+        subScores: {
+          tier: `${tierDiff === 0 ? 'Cùng cấp' : `Lệch ${tierDiff} cấp`} (ELO ${candidateElo})`,
+          time: `${Math.floor(overlapMinutes / 60)}h ${overlapMinutes % 60}p trùng giờ`,
+          loc: profile.preferred_area || 'Chưa cập nhật',
+          balance: `ELO ${currentElo} vs ${candidateElo}`
+        },
+        winRateA: expectedWinRate,
+        winRateB: 100 - expectedWinRate,
+        matchType,
+        facility: actualArea,
+        time: profile.available_time,
+        isRoom: false
+      });
     });
 
     // 2. Gather Matchmaking Rooms
     (MockData.matchmaking_rooms || []).forEach(r => {
+      if (String(r.status || 'OPEN').toUpperCase() !== 'OPEN') return;
+      if (Number(r.current_players || 1) >= Number(r.max_players || 4)) return;
+      if (r.visibility === 'INVITE_ONLY') return;
+      if (String(r.host_id || r.host_user_id || '') === String(this.currentUser?.id || '')) return;
+      if ((r.players || []).some(player => String(player.id) === String(this.currentUser?.id))) return;
+      const roomDate = String(r.match_date || r.play_date || '');
+      const parsedRoomDate = roomDate.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+      if (parsedRoomDate) {
+        const roomDay = new Date(Number(parsedRoomDate[3]), Number(parsedRoomDate[2]) - 1, Number(parsedRoomDate[1]));
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (roomDay < today) return;
+      }
+
       const rTier = this.getSkillTierInfo(r.required_tier_id || r.required_tier || r.host_tier || r.required_elo_min || 5);
       const tierDiff = Math.abs(userTier.tier - rTier.tier);
+      if ((skillMatchingFilter === 'same' && tierDiff !== 0) ||
+          (skillMatchingFilter === 'adjacent' && tierDiff > 1)) return;
 
-      let isMatchAllowed = false;
-      if (skillMatchingFilter === 'same') {
-        isMatchAllowed = (tierDiff === 0);
-      } else if (skillMatchingFilter === 'adjacent') {
-        isMatchAllowed = (tierDiff <= 1);
-      } else {
-        isMatchAllowed = true;
-      }
+      const roomType = normalizeMatchText(r.match_type);
+      const roomIsSingles = roomType.includes('don') || roomType.includes('singles');
+      if (roomType && ((matchType === 'SINGLES') !== roomIsSingles)) return;
 
-      if (isMatchAllowed) {
-        const sSkill = tierDiff === 0 ? 100.0 : (tierDiff === 1 ? 88.0 : Math.max(35, 75 - tierDiff * 15));
-        const sTime = 95.0;
-        const sLoc = (r.district && r.district.includes(preferredArea)) ? 100.0 : 85.0;
-        const matchScore = Math.round(sSkill * 0.50 + sTime * 0.25 + sLoc * 0.25);
+      const roomRange = parseMatchRange(r.match_time || r.play_time);
+      const overlapMinutes = requestedRange && roomRange
+        ? Math.max(0, Math.min(requestedRange[1], roomRange[1]) - Math.max(requestedRange[0], roomRange[0]))
+        : 0;
+      if (!overlapMinutes) return;
 
-        let winRateA = 50;
-        let winRateB = 50;
-        if (tierDiff === 1) {
-          if (userTier.tier > rTier.tier) { winRateA = 56; winRateB = 44; }
-          else { winRateA = 44; winRateB = 56; }
-        } else if (tierDiff >= 2) {
-          if (userTier.tier > rTier.tier) { winRateA = 68; winRateB = 32; }
-          else { winRateA = 32; winRateB = 68; }
-        }
+      const sTime = Math.min(100, Math.round(overlapMinutes / Math.max(1, requestedRange[1] - requestedRange[0]) * 100));
+      const roomArea = normalizeMatchText(r.district || r.facility_name);
+      const requestedArea = normalizeMatchText(preferredArea);
+      const sLoc = !roomArea ? 50 : (roomArea.includes(requestedArea) || requestedArea.includes(roomArea) ? 100 : 35);
+      const sSkill = tierDiff === 0 ? 100 : Math.max(20, 100 - tierDiff * 20);
+      const matchScore = Math.round(sSkill * 0.5 + sTime * 0.25 + sLoc * 0.25);
+      const hostElo = Number(r.host_elo || r.players?.[0]?.elo_rating || rTier.defaultElo || 1200);
+      const expectedWinRate = Math.round(100 / (1 + (10 ** ((hostElo - currentElo) / 400))));
 
-        candidatePool.push({
-          id: r.id,
-          roomId: r.id,
-          name: r.room_name,
-          hostName: r.host_name,
-          photo: r.host_photo || (r.players && r.players[0] && r.players[0].photo) || null,
-          avatar: (r.players && r.players[0] && r.players[0].avatar) || 'R',
-          tier: rTier,
-          tierDiff: tierDiff,
-          matchScore: matchScore,
-          subScores: {
-            tier: tierDiff === 0 ? "Cùng cấp" : `Lệch ${tierDiff} cấp`,
-            time: "95%",
-            loc: "100%",
-            balance: tierDiff === 0 ? "100% Cân kèo" : (tierDiff === 1 ? "Kèo chấp điểm" : "Kèo thách đấu")
-          },
-          winRateA: winRateA,
-          winRateB: winRateB,
-          matchType: r.match_type,
-          facility: r.facility_name,
-          time: `${r.match_date} (${r.match_time})`,
-          isRoom: true,
-          roomObj: r
-        });
-      }
+      candidatePool.push({
+        id: r.id,
+        roomId: r.id,
+        name: r.room_name,
+        hostName: r.host_name,
+        photo: r.host_photo || (r.players && r.players[0] && r.players[0].photo) || null,
+        avatar: (r.players && r.players[0] && r.players[0].avatar) || 'R',
+        tier: rTier,
+        tierDiff,
+        matchScore,
+        subScores: {
+          tier: `${tierDiff === 0 ? 'Cùng cấp' : `Lệch ${tierDiff} cấp`} (ELO chủ phòng ${hostElo})`,
+          time: `${Math.floor(overlapMinutes / 60)}h ${overlapMinutes % 60}p trùng giờ`,
+          loc: r.district || r.facility_name || 'Chưa chọn khu vực',
+          balance: `ELO ${currentElo} vs ${hostElo}`
+        },
+        winRateA: expectedWinRate,
+        winRateB: 100 - expectedWinRate,
+        matchType: r.match_type || 'Đôi 2v2',
+        facility: r.facility_name || r.district || 'Chưa chọn sân',
+        time: `${r.match_date || 'Chưa chọn ngày'} (${r.match_time || r.play_time})`,
+        isRoom: true,
+        roomObj: r
+      });
     });
 
     // Apply sorting
@@ -3135,15 +3220,14 @@ class BadmintonAIApp {
       if (matchBadge) matchBadge.textContent = `🎯 Khớp ${best.matchScore}% (${best.tierDiff === 0 ? 'Cùng cấp bậc hoàn hảo' : 'Lệch ' + best.tierDiff + ' cấp'})`;
       if (narrativeEl) {
         narrativeEl.innerHTML = `
-          <strong>AI Recommendation:</strong> Bạn thuộc cấp <strong>[${userTier.name}]</strong>. 
-          Hệ thống đề xuất tốt nhất với <strong>${best.name} (${best.tier.display})</strong> đạt độ phù hợp 
-          <strong style="color: #16a34a;">${best.matchScore}%</strong>. 
-          ${best.tierDiff === 0 ? 'Hai bên cùng hạng mức trình độ, tỉ lệ cân bằng 50% - 50%.' : `Chênh lệch ${best.tierDiff} cấp, AI đề xuất cơ chế chấp điểm công bằng.`}
-          Cả hai đều có ảnh nhận diện để gặp nhau tại <strong>${best.facility}</strong>.
+          <strong>Gợi ý ghép trận:</strong> Bạn thuộc cấp <strong>[${userTier.name}]</strong>.
+          Đề xuất phù hợp nhất là <strong>${best.name} (${best.tier.display})</strong>, điểm tương thích
+          <strong style="color: #16a34a;">${best.matchScore}%</strong> dựa trên hạng, thời gian trùng và khu vực.
+          Tỉ lệ thắng hiển thị bên dưới chỉ là ước tính theo ELO, không phải kết quả chắc chắn.
         `;
       }
     } else {
-      if (narrativeEl) narrativeEl.innerHTML = `Chưa tìm thấy phòng ghép cùng cấp <strong>[${userTier.name}]</strong>. Hãy nhấn <strong>"Nới Rộng Cấp Bậc"</strong> hoặc chọn mục <strong>"Cho phép lệch tối đa 1 cấp"</strong> để tìm bạn chơi nhanh chóng!`;
+      if (narrativeEl) narrativeEl.innerHTML = `Chưa có người chơi đang bật tìm trận hoặc phòng còn chỗ phù hợp với giờ, khu vực và bộ lọc hiện tại. Bạn có thể đổi bộ lọc hoặc bật tìm trận để người khác thấy hồ sơ của mình.`;
     }
 
     // Render Cards in Grid
@@ -3243,7 +3327,7 @@ class BadmintonAIApp {
                 <i class="fa-solid fa-camera"></i> Xem Diện Mạo
               </button>
               ${cand.isRoom ? `
-                <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${cand.roomId})" style="background: #167946; font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
+                <button class="btn btn-primary btn-sm" onclick="app.joinMatchmakingRoom(${cand.roomId})" style="background: #167946; font-size: 0.78rem; padding: 4px 12px; font-weight: 700;">
                   <i class="fa-solid fa-users"></i> Vào Phòng
                 </button>
               ` : (isGuest ? `
@@ -3289,26 +3373,35 @@ class BadmintonAIApp {
     const senderTier = this.getSkillTierInfo(sender.skill_tier_id || sender.skill_tier || sender.tier || sender.elo || 3);
     const oppTier = opponent ? this.getSkillTierInfo(opponent.skill_tier_id || opponent.skill_tier || opponent.tier || opponent.elo || 3) : { name: tierName || 'Trung bình', tier: 3, display: `Cấp: ${tierName}` };
 
-    const newRoomId = 800 + Math.floor(Math.random() * 9000);
-    const facName = facility || 'CLB Cầu Giấy Pro Center';
+    const newRoomId = Date.now();
+    const facName = facility || 'Chưa chọn sân';
     const timeStr = matchTime || '19:00 - 21:00';
+    const today = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+    const selectedFacility = (MockData.facilities || []).find(f =>
+      String(f.name || '').toLowerCase() === String(facName).toLowerCase() ||
+      String(f.name || '').toLowerCase().includes(String(facName).toLowerCase())
+    );
 
     const newRoom = {
       id: newRoomId,
       room_name: `Kèo Solo 1v1: ${sender.name} vs ${opponentName}`,
       facility_name: facName,
-      match_date: "Hôm nay",
+      match_date: today,
       match_time: timeStr,
       match_type: "Đơn 1v1",
-      district: facName.includes("Cầu Giấy") ? "Cầu Giấy" : "Hoàng Mai",
-      price_per_slot: "50.000đ/người",
+      district: selectedFacility?.address || facName,
+      price_per_slot: "Thỏa thuận theo giá sân thực tế",
       host_name: sender.name,
       host_id: sender.id,
       host_photo: sender.photo || sender.avatar || null,
       host_tier: senderTier.name,
+      host_elo: Number(sender.elo_rating || senderTier.defaultElo || 1200),
       required_tier_id: senderTier.tier,
-      current_players: 2,
+      current_players: 1,
       max_players: 2,
+      status: 'OPEN',
+      visibility: 'INVITE_ONLY',
+      invited_player_ids: opponent ? [opponent.id] : (opponentId ? [opponentId] : []),
       players: [
         {
           id: sender.id,
@@ -3320,23 +3413,12 @@ class BadmintonAIApp {
           role: "Host",
           team: "A",
           style: "Công thủ linh hoạt"
-        },
-        {
-          id: opponent ? opponent.id : (opponentId || 999),
-          name: opponentName,
-          photo: opponent ? (opponent.photo || opponent.avatar) : null,
-          avatar: opponentName.charAt(0),
-          tier_id: oppTier.tier,
-          tier: oppTier.name,
-          role: "Member",
-          team: "B",
-          style: "Đã mời ghép kèo"
         }
       ],
       chat_messages: [
         {
           sender: "🤖 AI Match Referee",
-          text: `🎉 Kèo đấu 1v1 được khởi tạo giữa ${sender.name} (Cấp [${senderTier.name}]) và ${opponentName} (Cấp [${oppTier.name}]). Phòng chat trực tiếp đã mở!`,
+          text: `🏸 ${sender.name} đã tạo lời mời ghép kèo 1v1 tới ${opponentName}. Phòng sẽ có đủ người sau khi đối thủ chấp nhận.`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isAI: true
         },
@@ -3366,6 +3448,7 @@ class BadmintonAIApp {
       title: `🏸 Lời Mời Ghép Kèo từ ${sender.name}`,
       content: `Tay vợt ${sender.name} (Cấp [${senderTier.name}]) vừa gửi lời mời ghép kèo Solo 1v1 với bạn tại ${facName} (${timeStr})!`,
       room_id: newRoom.id,
+      invite_status: 'PENDING',
       created_at: "Vừa xong",
       timestamp: Date.now(),
       is_read: false
@@ -3396,6 +3479,62 @@ class BadmintonAIApp {
     }, 350);
   }
 
+  joinMatchmakingRoom(roomId) {
+    if (!this.currentUser) {
+      this.showToast("Vui lòng đăng nhập để tham gia phòng.", "error");
+      this.navigateTo('ui-01');
+      return;
+    }
+    const room = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(roomId));
+    if (!room || room.visibility === 'INVITE_ONLY' || String(room.status || 'OPEN').toUpperCase() !== 'OPEN') {
+      this.showToast("Phòng không còn mở để tham gia.", "error");
+      return;
+    }
+    if (!room.players) room.players = [];
+    const existing = room.players.find(player => String(player.id) === String(this.currentUser.id));
+    if (!existing && room.players.length >= Number(room.max_players || 4)) {
+      room.status = 'MATCHED';
+      room.current_players = room.players.length;
+      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+      this.showToast("Phòng đã đủ người.", "error");
+      this.executeMatchmakingEngine();
+      return;
+    }
+    if (!existing) {
+      const tier = this.getSkillTierInfo(this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating || 5);
+      room.players.push({
+        id: this.currentUser.id,
+        name: this.currentUser.name,
+        photo: this.currentUser.photo || this.currentUser.avatar || null,
+        avatar: (this.currentUser.name || 'U').charAt(0),
+        tier_id: tier.tier,
+        tier: tier.name,
+        elo: Number(this.currentUser.elo_rating || tier.defaultElo || 1200),
+        role: 'Member',
+        style: 'Đã tham gia'
+      });
+      room.current_players = room.players.length;
+      if (!room.chat_messages) room.chat_messages = [];
+      room.chat_messages.push({
+        sender: '🤖 AI Match Referee',
+        text: `${this.currentUser.name} đã tham gia phòng.`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isAI: true
+      });
+      if (room.current_players >= Number(room.max_players || 4)) room.status = 'MATCHED';
+      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+      if (typeof broadcastLiveSync === 'function') {
+        broadcastLiveSync('ROOM_MEMBER_JOINED', {
+          roomId: room.id,
+          roomName: room.room_name,
+          hostName: room.host_name,
+          memberName: this.currentUser.name
+        });
+      }
+    }
+    this.openRoomChat(room.id);
+  }
+
   acceptChallengeInvitation(notiId, roomId) {
     this.closeModal();
 
@@ -3405,12 +3544,14 @@ class BadmintonAIApp {
       return;
     }
 
-    // 1. Mark notification as read
-    if (MockData.notifications) {
-      const noti = MockData.notifications.find(n => String(n.id) === String(notiId));
-      if (noti) {
-        noti.is_read = true;
-      }
+    const invitation = (MockData.notifications || []).find(n => String(n.id) === String(notiId));
+    const isRecipient = invitation && (
+      String(invitation.recipient_id) === String(this.currentUser.id) ||
+      (invitation.recipient_phone && invitation.recipient_phone === this.currentUser.phone)
+    );
+    if (!isRecipient || (invitation.invite_status && invitation.invite_status !== 'PENDING')) {
+      this.showToast("Lời mời này không dành cho tài khoản của bạn hoặc đã được xử lý.", "error");
+      return;
     }
 
     // 2. Find room in MockData.matchmaking_rooms
@@ -3419,6 +3560,16 @@ class BadmintonAIApp {
       this.showToast("⚠️ Không tìm thấy phòng đấu này hoặc phòng đã kết thúc!", "error");
       return;
     }
+    if (String(room.status || 'OPEN').toUpperCase() !== 'OPEN' || Number(room.current_players || 1) >= Number(room.max_players || 4)) {
+      this.showToast("Phòng đã đủ người hoặc đã đóng, bạn không thể tham gia nữa.", "error");
+      invitation.invite_status = 'EXPIRED';
+      invitation.is_read = true;
+      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+      return;
+    }
+
+    invitation.is_read = true;
+    invitation.invite_status = 'ACCEPTED';
 
     // 3. Ensure recipient is in room.players
     if (!room.players) room.players = [];
@@ -3443,6 +3594,7 @@ class BadmintonAIApp {
       existing.style = 'Đã vào phòng';
     }
     room.current_players = room.players.length;
+    room.status = room.current_players >= Number(room.max_players || 4) ? 'MATCHED' : 'OPEN';
 
     // 4. Add system referee chat message
     if (!room.chat_messages) room.chat_messages = [];
@@ -3477,11 +3629,21 @@ class BadmintonAIApp {
   }
 
   declineChallengeInvitation(notiId) {
-    if (MockData.notifications) {
-      const noti = MockData.notifications.find(n => String(n.id) === String(notiId));
-      if (noti) {
-        noti.is_read = true;
-      }
+    if (!this.currentUser) return;
+    const noti = (MockData.notifications || []).find(n => String(n.id) === String(notiId));
+    const isRecipient = noti && (
+      String(noti.recipient_id) === String(this.currentUser.id) ||
+      (noti.recipient_phone && noti.recipient_phone === this.currentUser.phone)
+    );
+    if (!isRecipient || (noti.invite_status && noti.invite_status !== 'PENDING')) {
+      this.showToast("Lời mời này không dành cho tài khoản của bạn hoặc đã được xử lý.", "error");
+      return;
+    }
+    noti.is_read = true;
+    noti.invite_status = 'DECLINED';
+    const room = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(noti.room_id));
+    if (room?.invited_player_ids) {
+      room.invited_player_ids = room.invited_player_ids.filter(id => String(id) !== String(this.currentUser.id));
     }
     if (typeof saveMockDataToLocalStorage === 'function') {
       saveMockDataToLocalStorage();
@@ -4176,7 +4338,7 @@ class BadmintonAIApp {
       metaEl.innerHTML = `
         <i class="fa-solid fa-map-pin text-rose"></i> ${this.activeRoom.facility_name} | 
         <i class="fa-solid fa-clock text-amber"></i> ${this.activeRoom.match_date} (${this.activeRoom.match_time}) | 
-        <i class="fa-solid fa-tag text-primary"></i> ${this.activeRoom.price_per_slot || '45.000đ/người'}
+        <i class="fa-solid fa-tag text-primary"></i> ${this.activeRoom.price_per_slot || 'Chưa có thông tin chi phí'}
       `;
     }
 
@@ -4825,6 +4987,8 @@ class BadmintonAIApp {
     const isDoubles = matchType.includes('Đôi');
     const maxPlayers = isDoubles ? 4 : 2;
     const currentUserName = this.currentUser.name;
+    const today = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+    const hostTierGap = Math.abs(requiredTier.tier - hostTier.tier);
 
     // Update currentUser skill tier
     this.currentUser.skill_tier_id = hostTier.tier;
@@ -4845,12 +5009,13 @@ class BadmintonAIApp {
       facility_id: fac.id,
       facility_name: fac.name,
       district: fac.address || 'Hà Nội',
-      match_date: "Hôm nay, 22/09/2026",
+      match_date: today,
       match_time: matchTime,
       required_tier: requiredTier.name,
       required_tier_id: requiredTier.tier,
       host_tier: hostTier.name,
       host_tier_id: hostTier.tier,
+      host_elo: Number(this.currentUser.elo_rating || hostTier.defaultElo || 1200),
       host_photo: hostPhoto,
       match_tolerance: tolerance,
       match_type: matchType,
@@ -4860,11 +5025,9 @@ class BadmintonAIApp {
       max_players: maxPlayers,
       status: "OPEN",
       host_name: currentUserName,
-      ai_compatibility: 98,
-      ai_prediction: `Phòng mới tạo. Trình độ yêu cầu [${requiredTier.name}], AI đang mời các tay vợt cùng hạng mức phù hợp.`,
-      ai_handicap: "Cùng cấp bậc - Đồng banh (0 điểm)",
+      ai_prediction: `Phòng mở cho người chơi cấp [${requiredTier.name}]${hostTierGap === 0 ? ', cùng cấp với chủ phòng' : `; chủ phòng hiện ở cấp ${hostTier.name}`}.`,
+      ai_handicap: hostTierGap === 0 ? "Chủ phòng cùng cấp yêu cầu." : `Chênh lệch cấp giữa chủ phòng và yêu cầu: ${hostTierGap}. Hai bên nên thỏa thuận trước khi chơi.`,
       category: isDoubles ? 'doubles' : 'singles',
-      is_ai_recommended: true,
       players: [
         {
           name: currentUserName,
@@ -4881,7 +5044,7 @@ class BadmintonAIApp {
       chat_messages: [
         {
           sender: "🤖 AI Match Referee",
-          text: `Phòng ghép "${name}" đã khởi tạo thành công! Radar AI đang tự động gửi thông báo đến các tay vợt thuộc cấp [${requiredTier.name}].`,
+          text: `Phòng ghép "${name}" đã mở. Người chơi phù hợp có thể tìm thấy và tham gia phòng.`,
           time: "vừa xong"
         },
         {

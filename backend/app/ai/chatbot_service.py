@@ -1029,11 +1029,25 @@ class ChatbotService:
                 # Resolve facility_id
                 target_fac_id = None
                 combined_text = f"{clean_message} {context or ''}"
-                fac_id_match = re.search(r"(?:cơ\s+sở\s+|facility_id\s*[:=]\s*)(\d+)", combined_text, re.IGNORECASE)
-                if fac_id_match:
-                    target_fac_id = int(fac_id_match.group(1))
-                else:
-                    target_fac_id = await find_facility_id_from_text(db_session, combined_text)
+                # A generic request such as "hôm nay sân nào còn trống?" means
+                # search the whole system. Do not let an old facility mentioned
+                # in chat context silently narrow this to one location.
+                named_facilities = legacy_facilities_matching(clean_message)
+                is_systemwide_query = bool(re.search(
+                    r"\b(?:toàn\s+(?:bộ\s+)?hệ\s+thống|tất\s+cả\s+(?:các\s+)?sân|các\s+sân|sân\s+nào|mọi\s+sân)\b",
+                    clean_message,
+                    re.IGNORECASE,
+                )) and not named_facilities
+                if not is_systemwide_query:
+                    fac_id_match = re.search(r"(?:cơ\s+sở\s+|facility_id\s*[:=]\s*)(\d+)", clean_message, re.IGNORECASE)
+                    if fac_id_match:
+                        target_fac_id = int(fac_id_match.group(1))
+                    else:
+                        # Prefer a facility explicitly named in this message;
+                        # use history only for genuine follow-up questions.
+                        target_fac_id = await find_facility_id_from_text(db_session, clean_message)
+                        if target_fac_id is None and context:
+                            target_fac_id = await find_facility_id_from_text(db_session, context)
 
                 target_date = extract_date_from_text(clean_message) or vietnam_today()
                 target_time = extract_time_from_text(clean_message)

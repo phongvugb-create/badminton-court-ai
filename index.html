@@ -815,7 +815,7 @@
                 <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px;">
                   <i class="fa-solid fa-location-dot text-rose"></i> Khu Vực:
                 </label>
-                <select id="finder-area" class="form-control" style="font-size: 0.85rem;">
+                <select id="finder-area" class="form-control" style="font-size: 0.85rem;" onchange="app.updateMatchmakingPreferences()">
                   <option value="Hoàng Mai" selected>Quận Hoàng Mai (8 sân)</option>
                   <option value="Cầu Giấy">Quận Cầu Giấy (12 sân)</option>
                   <option value="Đống Đa">Quận Đống Đa (10 sân)</option>
@@ -830,7 +830,7 @@
                 <label class="form-label" style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px;">
                   <i class="fa-solid fa-clock text-amber"></i> Khung Giờ Rảnh:
                 </label>
-                <select id="finder-time" class="form-control" style="font-size: 0.85rem;">
+                <select id="finder-time" class="form-control" style="font-size: 0.85rem;" onchange="app.updateMatchmakingPreferences()">
                   <option value="18:00 - 20:00" selected>18:00 - 20:00 (Giờ Vàng)</option>
                   <option value="19:00 - 21:00">19:00 - 21:00 (Sau ca làm)</option>
                   <option value="20:00 - 22:00">20:00 - 22:00 (Kèo muộn)</option>
@@ -850,8 +850,8 @@
               </div>
 
               <div style="display: flex; align-items: flex-end;">
-                <button class="btn btn-primary" id="btn-run-matchmaking" onclick="app.executeMatchmakingEngine()" style="width: 100%; height: 38px; font-weight: 700; background: #167946; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                  <i class="fa-solid fa-play"></i> Quét Kèo Phù Hợp
+                <button class="btn btn-primary" id="btn-run-matchmaking" onclick="app.toggleMatchmakingSearch()" style="width: 100%; height: 38px; font-weight: 700; background: #167946; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                  <i class="fa-solid fa-play"></i> Bật tìm trận
                 </button>
               </div>
             </div>
