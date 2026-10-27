@@ -85,7 +85,7 @@ async def search_courts(
         if not clean_query:
             clean_query = None
 
-    effective_limit = max(1, min(limit, 20))
+    effective_limit = max(1, min(limit, 100))
 
     try:
         stmt = (
@@ -183,7 +183,7 @@ async def check_court_availability(
     if facility_id is None and court_id is None:
         return make_tool_envelope("invalid_input", reason="missing_facility_or_court")
 
-    effective_limit = max(1, min(limit, 50))
+    effective_limit = max(1, min(limit, 500))
 
     try:
         stmt = (

@@ -1435,6 +1435,9 @@ const MockData = {
 
 // Luu va Tai du lieu tu dong vao LocalStorage & May chu Backend tap trung (Central Server)
 const CENTRAL_API_URL = "/api/database";
+let centralSyncQueue = Promise.resolve();
+let centralDatabaseSnapshot = null;
+let centralDatabaseFetchInFlight = false;
 
 function loadMockDataFromLocalStorage() {
   try {
@@ -1497,7 +1500,10 @@ function saveMockDataToLocalStorage() {
     localStorage.setItem('badminton_mock_data', JSON.stringify(payload));
 
     // Dong thoi tu dong gui du lieu len May chu Backend de dong bo tat ca trinh duyet
-    syncDataToCentralServer(payload);
+    // Keep writes from this browser ordered so overlapping saves do not arrive out of sequence.
+    centralSyncQueue = centralSyncQueue
+      .catch(() => {})
+      .then(() => syncDataToCentralServer(payload));
   } catch (e) {
     console.warn('Could not save mock data to localStorage:', e);
   }
@@ -1511,9 +1517,7 @@ async function syncDataToCentralServer(payload) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (res.ok) {
-      console.log('⚡ Central server synced successfully');
-    }
+    if (!res.ok) throw new Error(`Central sync failed (${res.status})`);
   } catch (err) {
     // Neu chua chay server.py thi van chay muot ma offline qua localStorage
   }
@@ -1521,27 +1525,35 @@ async function syncDataToCentralServer(payload) {
 
 // Lay du lieu tu Server tap trung ve de dong bo voi bat ky trinh duyet nao (Brave, Chrome, Edge)
 async function fetchCentralServerDatabase() {
+  if (centralDatabaseFetchInFlight) return;
+  centralDatabaseFetchInFlight = true;
   try {
     const res = await fetch(CENTRAL_API_URL);
     if (res.ok) {
       const serverData = await res.json();
       if (serverData && (serverData.users || serverData.facilities)) {
-        const prevUsersCount = MockData.users.length;
-        const prevFacsCount = MockData.facilities.length;
+        const previousNotificationIds = new Set((MockData.notifications || []).map(n => String(n.id)));
+        const nextSnapshot = JSON.stringify(serverData);
+        const hasRemoteChanges = centralDatabaseSnapshot !== null && centralDatabaseSnapshot !== nextSnapshot;
 
         applyDataToMockData(serverData);
+        centralDatabaseSnapshot = nextSnapshot;
         localStorage.setItem('badminton_mock_data', JSON.stringify(MockData));
 
-        // Re-render moi giao dien neu co du lieu thay doi
-        if (window.app) {
-          const hasChanges = (prevUsersCount !== MockData.users.length) || (prevFacsCount !== MockData.facilities.length);
-          if (hasChanges || window.app.currentView === 'ui-02' || window.app.currentView === 'ui-03' || window.app.currentView === 'ui-20' || window.app.currentView === 'ui-19') {
-            if (window.app.renderCustomerFacilities) window.app.renderCustomerFacilities();
-            if (window.app.initLeafletMap) window.app.initLeafletMap();
-            if (window.app.renderAdminUsers) window.app.renderAdminUsers();
-            if (window.app.renderDatabaseInspector) window.app.renderDatabaseInspector();
-            if (window.app.renderAdminOverviewFacilities) window.app.renderAdminOverviewFacilities();
-          }
+        if (hasRemoteChanges && window.app && window.app.handleLiveSyncEvent) {
+          window.app.handleLiveSyncEvent({ type: 'CENTRAL_DATABASE_UPDATED' });
+          (MockData.notifications || [])
+            .filter(n => !previousNotificationIds.has(String(n.id)) && n.type === 'CHALLENGE_INVITE')
+            .forEach(n => window.app.handleLiveSyncEvent({
+              type: 'NEW_CHALLENGE',
+              payload: {
+                recipientId: n.recipient_id,
+                recipientName: n.recipient_name,
+                senderName: n.sender_name,
+                roomId: n.room_id,
+                roomName: (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(n.room_id))?.room_name
+              }
+            }));
         }
       } else if (MockData.users && MockData.users.length > 0) {
         // Neu server chua co du lieu, day toan bo du lieu hien tai len server
@@ -1550,6 +1562,8 @@ async function fetchCentralServerDatabase() {
     }
   } catch (err) {
     // Server chua khoi chay thi dung localStorage
+  } finally {
+    centralDatabaseFetchInFlight = false;
   }
 }
 

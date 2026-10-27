@@ -3533,6 +3533,22 @@ class BadmintonAIApp {
       }
     }
 
+    // Refresh data-backed views after another browser syncs a database change.
+    if (eventData.type === 'CENTRAL_DATABASE_UPDATED') {
+      if (this.currentView === 'ui-05') this.renderBookingOrdersList();
+      if (this.currentView === 'ui-08') this.renderUserProfilePage();
+      if (this.currentView === 'ui-02') this.renderHomeAuthBanner();
+      if (this.currentView === 'ui-03') this.renderCustomerFacilities();
+      if (this.currentView === 'ui-10' || this.currentView === 'ui-map') this.initLeafletMap();
+      if (this.currentView === 'ui-09') this.renderOwnerDashboardOrders();
+      if (this.currentView === 'ui-13') this.renderOwnerStaff();
+      if (this.currentView === 'ui-15') this.renderPOSTodayBookingsTable();
+      if (this.currentView === 'ui-17') this.renderAdminOverviewFacilities();
+      if (this.currentView === 'ui-18') this.renderAdminApprovals();
+      if (this.currentView === 'ui-19') this.renderAdminUsers();
+      if (this.currentView === 'ui-20') this.renderDatabaseInspector();
+    }
+
     // 4. Neu co su kien lien quan den user hien tai, phat am thanh va thong bao Toast
     if (eventData.type === 'NEW_CHALLENGE' || eventData.type === 'ROOM_MEMBER_JOINED') {
       const payload = eventData.payload || {};
