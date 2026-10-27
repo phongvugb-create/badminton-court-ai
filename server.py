@@ -8,6 +8,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import http.cookies
+import threading
 
 # Ensure backend directory is in path if needed
 backend_dir = os.path.join(os.path.dirname(__file__), "backend")
@@ -34,6 +35,105 @@ except ImportError:
     from app.config import settings
 PORT = int(os.environ.get("PORT", 8085))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "database.json")
+CENTRAL_DATABASE_LOCK = threading.RLock()
+
+
+def _merge_records_by_id(existing, incoming):
+    """Merge append/update records without dropping records from a stale browser snapshot."""
+    records = {}
+    for item in existing if isinstance(existing, list) else []:
+        if isinstance(item, dict) and item.get("id") is not None:
+            records[str(item["id"])] = item
+    for item in incoming if isinstance(incoming, list) else []:
+        if not isinstance(item, dict) or item.get("id") is None:
+            continue
+        key = str(item["id"])
+        previous = records.get(key)
+        if previous is None:
+            records[key] = item
+            continue
+        merged = {**previous, **item}
+        if "players" in previous or "players" in item:
+            players = {}
+            for player in (previous.get("players") or []) + (item.get("players") or []):
+                if isinstance(player, dict) and player.get("id") is not None:
+                    players[str(player["id"])] = player
+            merged["players"] = list(players.values())
+            merged["current_players"] = max(
+                len(players),
+                int(previous.get("current_players") or 0),
+                int(item.get("current_players") or 0),
+            )
+        if "chat_messages" in previous or "chat_messages" in item:
+            messages = {}
+            for message in (previous.get("chat_messages") or []) + (item.get("chat_messages") or []):
+                marker = json.dumps(message, ensure_ascii=False, sort_keys=True)
+                messages[marker] = message
+            merged["chat_messages"] = list(messages.values())
+        if "invited_player_ids" in previous or "invited_player_ids" in item:
+            invited = {str(value): value for value in (previous.get("invited_player_ids") or [])}
+            invited.update({str(value): value for value in (item.get("invited_player_ids") or [])})
+            merged["invited_player_ids"] = list(invited.values())
+        max_players = int(merged.get("max_players") or 0)
+        if max_players and int(merged.get("current_players") or 0) >= max_players:
+            merged["status"] = "MATCHED"
+        elif previous.get("status") in ("CANCELLED", "CLOSED", "MATCHED") and item.get("status") == "OPEN":
+            merged["status"] = previous["status"]
+        records[key] = merged
+    return list(records.values())
+
+
+def _merge_notifications(existing, incoming):
+    merged = {str(item["id"]): item for item in existing if isinstance(item, dict) and item.get("id") is not None}
+    for item in incoming:
+        if not isinstance(item, dict) or item.get("id") is None:
+            continue
+        key = str(item["id"])
+        previous = merged.get(key, {})
+        notification = {**previous, **item}
+        if previous.get("is_read"):
+            notification["is_read"] = True
+        previous_status = previous.get("invite_status")
+        if previous_status in ("ACCEPTED", "DECLINED", "EXPIRED") and item.get("invite_status") == "PENDING":
+            notification["invite_status"] = previous_status
+        merged[key] = notification
+    return list(merged.values())
+
+
+def _save_central_database_update(incoming_data):
+    with CENTRAL_DATABASE_LOCK:
+        current_data = db_manager.load_data() or {}
+        merged_database = {**current_data}
+
+        if isinstance(incoming_data.get("users"), list):
+            sanitized_users = []
+            for user in incoming_data["users"]:
+                if not isinstance(user, dict):
+                    continue
+                password = user.get("password")
+                if not password or str(password).strip() in ["", "undefined", "null"]:
+                    password = "02092006" if user.get("phone") == "0123456789" else "123456"
+                user_copy = {**user, "password": str(password)}
+                if "elo_rating" not in user_copy or user_copy["elo_rating"] is None or str(user_copy["elo_rating"]) == "undefined":
+                    user_copy["elo_rating"] = 1200 if user_copy.get("role") == "CUSTOMER" else "N/A"
+                sanitized_users.append(user_copy)
+            merged_database["users"] = sanitized_users
+
+        if isinstance(incoming_data.get("facilities"), list):
+            merged_database["facilities"] = incoming_data["facilities"]
+
+        for key, value in incoming_data.items():
+            if key in ("users", "facilities") or not isinstance(value, list):
+                continue
+            if key == "matchmaking_rooms":
+                merged_database[key] = _merge_records_by_id(merged_database.get(key, []), value)
+            elif key == "notifications":
+                merged_database[key] = _merge_notifications(merged_database.get(key, []), value)
+            else:
+                merged_database[key] = value
+
+        db_manager.save_data(merged_database)
+        return merged_database
 
 SYSTEM_INSTRUCTION = """Bạn là Trợ lý AI Thông Minh (BADMINTON.AI Virtual Assistant) của nền tảng Quản Lý & Cho Thuê Sân Cầu Lông & Pickleball BADMINTON.AI.
 Nhiệm vụ của bạn:
@@ -1125,34 +1225,9 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             try:
                 incoming_data = json.loads(post_data.decode("utf-8"))
-                current_data = db_manager.load_data() or {}
-                merged_database = {**current_data}
-
-                # 1. Authoritative sync for users (preserves deletions and sanitizes passwords)
-                if "users" in incoming_data and isinstance(incoming_data["users"], list):
-                    sanitized_users = []
-                    for u in incoming_data["users"]:
-                        pwd = u.get("password")
-                        if not pwd or str(pwd).strip() in ["", "undefined", "null"]:
-                            pwd = "02092006" if u.get("phone") == "0123456789" else "123456"
-
-                        user_copy = {**u, "password": str(pwd)}
-                        if "elo_rating" not in user_copy or user_copy["elo_rating"] is None or str(user_copy["elo_rating"]) == "undefined":
-                            user_copy["elo_rating"] = 1200 if user_copy.get("role") == "CUSTOMER" else "N/A"
-                        sanitized_users.append(user_copy)
-                    merged_database["users"] = sanitized_users
-
-                # 2. Authoritative sync for facilities (preserves deletions)
-                if "facilities" in incoming_data and isinstance(incoming_data["facilities"], list):
-                    merged_database["facilities"] = incoming_data["facilities"]
-
-                # 3. Other tables: courts, bookings, booking_orders, player_profiles, elo_histories, etc.
-                for k, v in incoming_data.items():
-                    if k not in ["users", "facilities"] and isinstance(v, list):
-                        merged_database[k] = v
-
-                # Save merged data using db_manager (PostgreSQL on Render + SQLite + JSON fallback)
-                db_manager.save_data(merged_database)
+                if not isinstance(incoming_data, dict):
+                    raise ValueError("Dữ liệu gửi lên phải là một object JSON.")
+                merged_database = _save_central_database_update(incoming_data)
 
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")

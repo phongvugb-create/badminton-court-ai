@@ -3535,7 +3535,7 @@ class BadmintonAIApp {
     this.openRoomChat(room.id);
   }
 
-  acceptChallengeInvitation(notiId, roomId) {
+  async acceptChallengeInvitation(notiId, roomId) {
     this.closeModal();
 
     if (!this.currentUser) {
@@ -3544,7 +3544,7 @@ class BadmintonAIApp {
       return;
     }
 
-    const invitation = (MockData.notifications || []).find(n => String(n.id) === String(notiId));
+    let invitation = (MockData.notifications || []).find(n => String(n.id) === String(notiId));
     const isRecipient = invitation && (
       String(invitation.recipient_id) === String(this.currentUser.id) ||
       (invitation.recipient_phone && invitation.recipient_phone === this.currentUser.phone)
@@ -3553,14 +3553,34 @@ class BadmintonAIApp {
       this.showToast("Lời mời này không dành cho tài khoản của bạn hoặc đã được xử lý.", "error");
       return;
     }
+    const effectiveRoomId = roomId ?? invitation.room_id;
 
     // 2. Find room in MockData.matchmaking_rooms
-    const room = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(roomId));
-    if (!room) {
-      this.showToast("⚠️ Không tìm thấy phòng đấu này hoặc phòng đã kết thúc!", "error");
+    let room = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(effectiveRoomId));
+    if (!room && typeof fetchCentralServerDatabase === 'function') {
+      // The notification and room are saved together, but another browser may
+      // receive the notification before its next central snapshot refresh.
+      await fetchCentralServerDatabase();
+      const refreshedInvitation = (MockData.notifications || []).find(n => String(n.id) === String(notiId));
+      if (refreshedInvitation) invitation = refreshedInvitation;
+      room = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(effectiveRoomId));
+    }
+    if (invitation && invitation.invite_status && invitation.invite_status !== 'PENDING') {
+      this.showToast("Lời mời này đã được xử lý trên thiết bị khác.", "error");
       return;
     }
-    if (String(room.status || 'OPEN').toUpperCase() !== 'OPEN' || Number(room.current_players || 1) >= Number(room.max_players || 4)) {
+    if (!room) {
+      this.showToast("Lời mời đã đến nhưng phòng chưa đồng bộ về thiết bị này. Vui lòng đợi vài giây rồi thử lại.", "error");
+      return;
+    }
+    const roomMemberCount = Array.isArray(room.players)
+      ? room.players.length
+      : Number(room.current_players || 1);
+    const isAlreadyMember = (room.players || []).some(player =>
+      String(player.id) === String(this.currentUser.id)
+    );
+    if (String(room.status || 'OPEN').toUpperCase() !== 'OPEN' ||
+        (!isAlreadyMember && roomMemberCount >= Number(room.max_players || 4))) {
       this.showToast("Phòng đã đủ người hoặc đã đóng, bạn không thể tham gia nữa.", "error");
       invitation.invite_status = 'EXPIRED';
       invitation.is_read = true;

@@ -1438,6 +1438,7 @@ const CENTRAL_API_URL = "/api/database";
 let centralSyncQueue = Promise.resolve();
 let centralDatabaseSnapshot = null;
 let centralDatabaseFetchInFlight = false;
+let centralDatabaseFetchPromise = null;
 
 function loadMockDataFromLocalStorage() {
   try {
@@ -1524,47 +1525,51 @@ async function syncDataToCentralServer(payload) {
 }
 
 // Lay du lieu tu Server tap trung ve de dong bo voi bat ky trinh duyet nao (Brave, Chrome, Edge)
-async function fetchCentralServerDatabase() {
-  if (centralDatabaseFetchInFlight) return;
+function fetchCentralServerDatabase() {
+  if (centralDatabaseFetchPromise) return centralDatabaseFetchPromise;
   centralDatabaseFetchInFlight = true;
-  try {
-    const res = await fetch(CENTRAL_API_URL);
-    if (res.ok) {
-      const serverData = await res.json();
-      if (serverData && (serverData.users || serverData.facilities)) {
-        const previousNotificationIds = new Set((MockData.notifications || []).map(n => String(n.id)));
-        const nextSnapshot = JSON.stringify(serverData);
-        const hasRemoteChanges = centralDatabaseSnapshot !== null && centralDatabaseSnapshot !== nextSnapshot;
+  centralDatabaseFetchPromise = (async () => {
+    try {
+      const res = await fetch(CENTRAL_API_URL, { cache: 'no-store' });
+      if (res.ok) {
+        const serverData = await res.json();
+        if (serverData && (serverData.users || serverData.facilities)) {
+          const previousNotificationIds = new Set((MockData.notifications || []).map(n => String(n.id)));
+          const nextSnapshot = JSON.stringify(serverData);
+          const hasRemoteChanges = centralDatabaseSnapshot !== null && centralDatabaseSnapshot !== nextSnapshot;
 
-        applyDataToMockData(serverData);
-        centralDatabaseSnapshot = nextSnapshot;
-        localStorage.setItem('badminton_mock_data', JSON.stringify(MockData));
+          applyDataToMockData(serverData);
+          centralDatabaseSnapshot = nextSnapshot;
+          localStorage.setItem('badminton_mock_data', JSON.stringify(MockData));
 
-        if (hasRemoteChanges && window.app && window.app.handleLiveSyncEvent) {
-          window.app.handleLiveSyncEvent({ type: 'CENTRAL_DATABASE_UPDATED' });
-          (MockData.notifications || [])
-            .filter(n => !previousNotificationIds.has(String(n.id)) && n.type === 'CHALLENGE_INVITE')
-            .forEach(n => window.app.handleLiveSyncEvent({
-              type: 'NEW_CHALLENGE',
-              payload: {
-                recipientId: n.recipient_id,
-                recipientName: n.recipient_name,
-                senderName: n.sender_name,
-                roomId: n.room_id,
-                roomName: (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(n.room_id))?.room_name
-              }
-            }));
+          if (hasRemoteChanges && window.app && window.app.handleLiveSyncEvent) {
+            window.app.handleLiveSyncEvent({ type: 'CENTRAL_DATABASE_UPDATED' });
+            (MockData.notifications || [])
+              .filter(n => !previousNotificationIds.has(String(n.id)) && n.type === 'CHALLENGE_INVITE')
+              .forEach(n => window.app.handleLiveSyncEvent({
+                type: 'NEW_CHALLENGE',
+                payload: {
+                  recipientId: n.recipient_id,
+                  recipientName: n.recipient_name,
+                  senderName: n.sender_name,
+                  roomId: n.room_id,
+                  roomName: (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(n.room_id))?.room_name
+                }
+              }));
+          }
+        } else if (MockData.users && MockData.users.length > 0) {
+          // Neu server chua co du lieu, day toan bo du lieu hien tai len server
+          saveMockDataToLocalStorage();
         }
-      } else if (MockData.users && MockData.users.length > 0) {
-        // Neu server chua co du lieu, day toan bo du lieu hien tai len server
-        saveMockDataToLocalStorage();
       }
+    } catch (err) {
+      // Neu chua chay server.py thi van chay muot ma offline qua localStorage
+    } finally {
+      centralDatabaseFetchInFlight = false;
+      centralDatabaseFetchPromise = null;
     }
-  } catch (err) {
-    // Server chua khoi chay thi dung localStorage
-  } finally {
-    centralDatabaseFetchInFlight = false;
-  }
+  })();
+  return centralDatabaseFetchPromise;
 }
 
 // BroadcastChannel de dong bo tuc thi (<10ms) giua cac tab / cua so ma khong co do tre
