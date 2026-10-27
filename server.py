@@ -9,6 +9,8 @@ import urllib.error
 import urllib.parse
 import http.cookies
 import threading
+import queue
+import time
 
 # Ensure backend directory is in path if needed
 backend_dir = os.path.join(os.path.dirname(__file__), "backend")
@@ -36,6 +38,36 @@ except ImportError:
 PORT = int(os.environ.get("PORT", 8085))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "database.json")
 CENTRAL_DATABASE_LOCK = threading.RLock()
+CHAT_SUBSCRIBERS_LOCK = threading.Lock()
+CHAT_SUBSCRIBERS = {}
+
+
+def _publish_room_chat_message(room_id, message):
+    with CHAT_SUBSCRIBERS_LOCK:
+        subscribers = list(CHAT_SUBSCRIBERS.get(str(room_id), set()))
+    for subscriber in subscribers:
+        try:
+            subscriber.put_nowait(message)
+        except queue.Full:
+            try:
+                subscriber.get_nowait()
+                subscriber.put_nowait(message)
+            except (queue.Empty, queue.Full):
+                pass
+
+
+def _add_chat_subscriber(room_id, subscriber):
+    with CHAT_SUBSCRIBERS_LOCK:
+        CHAT_SUBSCRIBERS.setdefault(str(room_id), set()).add(subscriber)
+
+
+def _remove_chat_subscriber(room_id, subscriber):
+    with CHAT_SUBSCRIBERS_LOCK:
+        subscribers = CHAT_SUBSCRIBERS.get(str(room_id))
+        if subscribers:
+            subscribers.discard(subscriber)
+            if not subscribers:
+                CHAT_SUBSCRIBERS.pop(str(room_id), None)
 
 
 def _merge_records_by_id(existing, incoming):
@@ -67,7 +99,8 @@ def _merge_records_by_id(existing, incoming):
         if "chat_messages" in previous or "chat_messages" in item:
             messages = {}
             for message in (previous.get("chat_messages") or []) + (item.get("chat_messages") or []):
-                marker = json.dumps(message, ensure_ascii=False, sort_keys=True)
+                message_id = message.get("id") if isinstance(message, dict) else None
+                marker = f"id:{message_id}" if message_id else json.dumps(message, ensure_ascii=False, sort_keys=True)
                 messages[marker] = message
             merged["chat_messages"] = list(messages.values())
         if "invited_player_ids" in previous or "invited_player_ids" in item:
@@ -626,6 +659,31 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                 return payload
         return None
 
+    def _get_authenticated_room_member(self, room_id):
+        auth = self._authenticate_request()
+        if not auth or not auth.get("sub"):
+            return None, None, 401
+        with CENTRAL_DATABASE_LOCK:
+            data = db_manager.load_data() or {}
+        user = next((item for item in data.get("users", [])
+                     if isinstance(item, dict) and str(item.get("id")) == str(auth["sub"])), None)
+        room = next((item for item in data.get("matchmaking_rooms", [])
+                     if isinstance(item, dict) and str(item.get("id")) == str(room_id)), None)
+        if not user or not room:
+            return user, room, 404 if user else 401
+        user_id = str(user.get("id"))
+        user_name = str(user.get("name") or "").strip().casefold()
+        is_member = user_id == str(room.get("host_id") or "")
+        is_member = is_member or (user_name and user_name == str(room.get("host_name") or "").strip().casefold())
+        is_member = is_member or any(
+            isinstance(player, dict) and (
+                user_id == str(player.get("id") or "") or
+                (user_name and user_name == str(player.get("name") or "").strip().casefold())
+            )
+            for player in (room.get("players") or [])
+        )
+        return (user, room, 200) if is_member else (user, room, 403)
+
     def _build_auth_cookie(self, token: str, max_age: int = 60 * 60 * 24 * 7) -> str:
         """Build a Set-Cookie header value for the auth token.
         Always sets Secure in production (ENVIRONMENT in production/prod or HTTPS enabled)."""
@@ -669,6 +727,43 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        chat_events_match = re.fullmatch(r"/api/chat/rooms/([^/]+)/events", urllib.parse.urlsplit(self.path).path)
+        if chat_events_match:
+            room_id = urllib.parse.unquote(chat_events_match.group(1))
+            _, _, auth_status = self._get_authenticated_room_member(room_id)
+            if auth_status != 200:
+                self.send_response(auth_status)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+
+            subscriber = queue.Queue(maxsize=100)
+            _add_chat_subscriber(room_id, subscriber)
+            self.protocol_version = "HTTP/1.1"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache, no-transform")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+            try:
+                self.wfile.write(b": connected\n\n")
+                self.wfile.flush()
+                while True:
+                    try:
+                        message = subscriber.get(timeout=15)
+                        event_data = json.dumps(message, ensure_ascii=False, separators=(",", ":"))
+                        self.wfile.write(f"data: {event_data}\n\n".encode("utf-8"))
+                    except queue.Empty:
+                        self.wfile.write(b": keep-alive\n\n")
+                    self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass
+            finally:
+                _remove_chat_subscriber(room_id, subscriber)
+            return
+
         if self.path == "/health" or self.path == "/api/health":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -1015,6 +1110,71 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(json.dumps({"detail": "CSRF verification failed: Origin/Referer disallowed"}).encode("utf-8"))
+            return
+
+        chat_message_match = re.fullmatch(r"/api/chat/rooms/([^/]+)/messages", urllib.parse.urlsplit(self.path).path)
+        if chat_message_match:
+            room_id = urllib.parse.unquote(chat_message_match.group(1))
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                if content_length <= 0 or content_length > 20_000:
+                    raise ValueError("Nội dung tin nhắn không hợp lệ.")
+                incoming = json.loads(self.rfile.read(content_length).decode("utf-8"))
+                if not isinstance(incoming, dict):
+                    raise ValueError("Dữ liệu tin nhắn không hợp lệ.")
+                text = str(incoming.get("text") or "").strip()
+                if not text or len(text) > 4_000:
+                    raise ValueError("Tin nhắn phải có từ 1 đến 4.000 ký tự.")
+
+                user, room, auth_status = self._get_authenticated_room_member(room_id)
+                if auth_status != 200:
+                    self.send_response(auth_status)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+
+                message_id = str(incoming.get("id") or f"chat_{secrets.token_urlsafe(18)}")[:120]
+                is_ai_message = bool(incoming.get("isAI", False))
+                requested_sender = str(incoming.get("sender") or "")
+                ai_senders = {"🤖 AI Match Referee", "🤖 AI Virtual Coach"}
+                message = {
+                    "id": message_id,
+                    "sender": requested_sender if is_ai_message and requested_sender in ai_senders else str(user.get("name") or "Thành viên"),
+                    "text": text,
+                    "time": str(incoming.get("time") or time.strftime("%H:%M"))[:16],
+                    "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "isAI": is_ai_message,
+                }
+                existing_messages = room.get("chat_messages") or []
+                stored_message = next((item for item in existing_messages
+                                       if isinstance(item, dict) and str(item.get("id")) == message_id), None)
+                if stored_message:
+                    message = stored_message
+                else:
+                    _save_central_database_update({"matchmaking_rooms": [{"id": room.get("id"), "chat_messages": [message]}]})
+                _publish_room_chat_message(room_id, message)
+
+                response_body = json.dumps({"success": True, "message": message}, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(response_body)))
+                self.end_headers()
+                self.wfile.write(response_body)
+            except (ValueError, json.JSONDecodeError) as error:
+                response_body = json.dumps({"detail": str(error)}, ensure_ascii=False).encode("utf-8")
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(response_body)))
+                self.end_headers()
+                self.wfile.write(response_body)
+            except Exception:
+                response_body = json.dumps({"detail": "Không thể lưu tin nhắn."}, ensure_ascii=False).encode("utf-8")
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(response_body)))
+                self.end_headers()
+                self.wfile.write(response_body)
             return
 
         if self.path == "/api/login":

@@ -1491,7 +1491,7 @@ function applyDataToMockData(sourceData) {
   }
 }
 
-function saveMockDataToLocalStorage() {
+function saveMockDataToLocalStorage(options = {}) {
   try {
     const payload = {};
     const keys = ['users', 'facilities', 'courts', 'time_slots', 'equipments', 'booking_orders', 'invoices', 'matchmaking_rooms', 'occupancy_heatmap', 'player_profiles', 'elo_histories', 'matches', 'match_players', 'bookings', 'orders', 'notifications'];
@@ -1500,13 +1500,17 @@ function saveMockDataToLocalStorage() {
     });
     localStorage.setItem('badminton_mock_data', JSON.stringify(payload));
 
-    // Dong thoi tu dong gui du lieu len May chu Backend de dong bo tat ca trinh duyet
-    // Keep writes from this browser ordered so overlapping saves do not arrive out of sequence.
-    centralSyncQueue = centralSyncQueue
-      .catch(() => {})
-      .then(() => syncDataToCentralServer(payload));
+    if (options.syncToCentral !== false) {
+      // Keep writes from this browser ordered so overlapping saves do not arrive out of sequence.
+      centralSyncQueue = centralSyncQueue
+        .catch(() => {})
+        .then(() => syncDataToCentralServer(payload));
+      return centralSyncQueue;
+    }
+    return Promise.resolve();
   } catch (e) {
     console.warn('Could not save mock data to localStorage:', e);
+    return Promise.resolve(false);
   }
 }
 

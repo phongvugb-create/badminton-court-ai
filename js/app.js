@@ -23,6 +23,8 @@ class BadmintonAIApp {
 
     // Chat & Active Room
     this.activeRoom = MockData.matchmaking_rooms[0];
+    this.roomChatEventSource = null;
+    this.roomChatEventRoomId = null;
     this.currentMMFilter = 'all';
     this.currentMMSearch = '';
     this.currentMMSort = 'ai-match';
@@ -1359,6 +1361,13 @@ class BadmintonAIApp {
     }
 
     this.currentView = screenId;
+    if (screenId === 'ui-07' && this.currentUser && this.activeRoom) {
+      this.connectRoomChatRealtime(this.activeRoom.id);
+    } else if (screenId !== 'ui-07' && this.roomChatEventSource) {
+      this.roomChatEventSource.close();
+      this.roomChatEventSource = null;
+      this.roomChatEventRoomId = null;
+    }
 
     document.querySelectorAll('.screen-view').forEach(view => view.classList.remove('active'));
     const targetView = document.getElementById(`view-${screenId}`);
@@ -3483,7 +3492,7 @@ class BadmintonAIApp {
     }, 350);
   }
 
-  joinMatchmakingRoom(roomId) {
+  async joinMatchmakingRoom(roomId) {
     if (!this.currentUser) {
       this.showToast("Vui lòng đăng nhập để tham gia phòng.", "error");
       this.navigateTo('ui-01');
@@ -3519,14 +3528,15 @@ class BadmintonAIApp {
       });
       room.current_players = room.players.length;
       if (!room.chat_messages) room.chat_messages = [];
-      room.chat_messages.push({
-        sender: '🤖 AI Match Referee',
-        text: `${this.currentUser.name} đã tham gia phòng.`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isAI: true
-      });
+      const memberMessage = this.createRoomChatMessage(
+        '🤖 AI Match Referee',
+        `${this.currentUser.name} đã tham gia phòng.`,
+        { isAI: true }
+      );
+      room.chat_messages.push(memberMessage);
       if (room.current_players >= Number(room.max_players || 4)) room.status = 'MATCHED';
-      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+      if (typeof saveMockDataToLocalStorage === 'function') await saveMockDataToLocalStorage();
+      this.publishRoomChatMessage(room.id, memberMessage);
       if (typeof broadcastLiveSync === 'function') {
         broadcastLiveSync('ROOM_MEMBER_JOINED', {
           roomId: room.id,
@@ -3668,16 +3678,17 @@ class BadmintonAIApp {
 
     // 4. Add system referee chat message
     if (!room.chat_messages) room.chat_messages = [];
-    room.chat_messages.push({
-      sender: "🤖 AI Match Referee",
-      text: `🎉 ${this.currentUser.name} (Cấp [${userTier.name}]) đã chấp nhận lời mời ghép kèo và tham gia phòng! Hai bên đã có mặt đầy đủ, có thể chat trao đổi giờ giấc và sân đấu ngay bên dưới.`,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isAI: true
-    });
+    const joinedMessage = this.createRoomChatMessage(
+      "🤖 AI Match Referee",
+      `🎉 ${this.currentUser.name} (Cấp [${userTier.name}]) đã chấp nhận lời mời ghép kèo và tham gia phòng! Hai bên đã có mặt đầy đủ, có thể chat trao đổi giờ giấc và sân đấu ngay bên dưới.`,
+      { isAI: true }
+    );
+    room.chat_messages.push(joinedMessage);
 
     if (typeof saveMockDataToLocalStorage === 'function') {
-      saveMockDataToLocalStorage();
+      await saveMockDataToLocalStorage();
     }
+    this.publishRoomChatMessage(room.id, joinedMessage);
 
     if (typeof broadcastLiveSync === 'function') {
       broadcastLiveSync('ROOM_MEMBER_JOINED', {
@@ -4577,12 +4588,9 @@ class BadmintonAIApp {
       ];
       const randomTip = coachTips[Math.floor(Math.random() * coachTips.length)];
 
-      this.activeRoom.chat_messages.push({
-        sender: "🤖 AI Virtual Coach",
-        text: randomTip,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isAI: true
-      });
+      const coachMessage = this.createRoomChatMessage("🤖 AI Virtual Coach", randomTip, { isAI: true });
+      this.activeRoom.chat_messages.push(coachMessage);
+      this.publishRoomChatMessage(this.activeRoom.id, coachMessage);
 
       this.renderChatMessages();
       this.showToast("✅ AI Coach đã gửi lời khuyên chiến thuật vào phòng chat!");
@@ -4635,7 +4643,7 @@ class BadmintonAIApp {
     }
   }
 
-  joinActiveRoomChat() {
+  async joinActiveRoomChat() {
     if (!this.currentUser) {
       this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để chấp nhận & tham gia kèo đấu này.", "error");
       this.navigateTo('ui-01');
@@ -4675,11 +4683,12 @@ class BadmintonAIApp {
 
     this.activeRoom.current_players = this.activeRoom.players.length;
 
-    this.activeRoom.chat_messages.push({
-      sender: "🤖 AI Match Referee",
-      text: `🎉 Chào mừng ${user.name} (Cấp [${userTier.name}]) đã chấp nhận kèo và tham gia phòng! Kèo đấu hiện có ${this.activeRoom.current_players}/${this.activeRoom.max_players} thành viên.`,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
+    const welcomeMessage = this.createRoomChatMessage(
+      "🤖 AI Match Referee",
+      `🎉 Chào mừng ${user.name} (Cấp [${userTier.name}]) đã chấp nhận kèo và tham gia phòng! Kèo đấu hiện có ${this.activeRoom.current_players}/${this.activeRoom.max_players} thành viên.`,
+      { isAI: true }
+    );
+    this.activeRoom.chat_messages.push(welcomeMessage);
 
     const hostName = this.activeRoom.host_name;
     const isJoiningMyOwnRoom = this.currentUser.name === hostName;
@@ -4714,8 +4723,9 @@ class BadmintonAIApp {
     this.renderAIRoomTactics();
     this.renderMatchmakingRooms();
     if (typeof saveMockDataToLocalStorage === 'function') {
-      saveMockDataToLocalStorage();
+      await saveMockDataToLocalStorage();
     }
+    this.publishRoomChatMessage(this.activeRoom.id, welcomeMessage);
 
     if (typeof broadcastLiveSync === 'function') {
       broadcastLiveSync('ROOM_MEMBER_JOINED', {
@@ -4758,6 +4768,74 @@ class BadmintonAIApp {
     container.scrollTop = container.scrollHeight;
   }
 
+  createRoomChatMessage(sender, text, extra = {}) {
+    const randomId = window.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    return {
+      id: `chat_${randomId}`,
+      sender,
+      text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      created_at: new Date().toISOString(),
+      ...extra
+    };
+  }
+
+  connectRoomChatRealtime(roomId) {
+    if (!this.currentUser || !roomId || typeof EventSource === 'undefined') return;
+    const roomKey = String(roomId);
+    if (this.roomChatEventSource && this.roomChatEventRoomId === roomKey) return;
+    if (this.roomChatEventSource) this.roomChatEventSource.close();
+
+    const source = new EventSource(`/api/chat/rooms/${encodeURIComponent(roomKey)}/events`, { withCredentials: true });
+    this.roomChatEventSource = source;
+    this.roomChatEventRoomId = roomKey;
+    source.onmessage = event => {
+      try {
+        this.receiveRoomChatMessage(roomKey, JSON.parse(event.data));
+      } catch (error) {
+        console.warn('Không đọc được tin nhắn realtime:', error);
+      }
+    };
+  }
+
+  receiveRoomChatMessage(roomId, message) {
+    const room = (MockData.matchmaking_rooms || []).find(item => String(item.id) === String(roomId));
+    if (!room || !message || !message.id) return;
+    if (!Array.isArray(room.chat_messages)) room.chat_messages = [];
+    if (room.chat_messages.some(item => String(item.id || '') === String(message.id))) return;
+
+    room.chat_messages.push(message);
+    if (this.currentView === 'ui-07' && this.activeRoom && String(this.activeRoom.id) === String(roomId)) {
+      this.activeRoom = room;
+      this.renderChatMessages();
+      if (this.currentUser && message.sender !== this.currentUser.name) this.playNotificationChime();
+    }
+    if (typeof saveMockDataToLocalStorage === 'function') {
+      saveMockDataToLocalStorage({ syncToCentral: false });
+    }
+  }
+
+  async publishRoomChatMessage(roomId, message) {
+    try {
+      const response = await fetch(`/api/chat/rooms/${encodeURIComponent(roomId)}/messages`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message)
+      });
+      if (!response.ok) {
+        const messageText = response.status === 401
+          ? 'Phiên đăng nhập chưa được xác thực. Hãy đăng xuất rồi đăng nhập lại.'
+          : response.status === 403
+            ? 'Tài khoản này chưa tham gia phòng chat.'
+            : 'Không thể đồng bộ tin nhắn lên máy chủ.';
+        this.showToast(`⚠️ ${messageText}`, 'error');
+      }
+    } catch (error) {
+      this.showToast('⚠️ Mất kết nối máy chủ; tin nhắn hiện chỉ lưu trên thiết bị này.', 'error');
+    }
+  }
+
   sendChatMessage(e) {
     if (e && e.preventDefault) e.preventDefault();
     if (!this.currentUser) {
@@ -4772,47 +4850,42 @@ class BadmintonAIApp {
     if (!text || !this.activeRoom) return;
 
     const currentUserName = this.currentUser.name;
-    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
     if (!this.activeRoom.chat_messages) this.activeRoom.chat_messages = [];
-
-    this.activeRoom.chat_messages.push({
-      sender: currentUserName,
-      text: text,
-      time: nowTime
-    });
+    const message = this.createRoomChatMessage(currentUserName, text);
+    this.activeRoom.chat_messages.push(message);
 
     input.value = '';
     this.renderChatMessages();
 
     if (typeof saveMockDataToLocalStorage === 'function') {
-      saveMockDataToLocalStorage();
+      saveMockDataToLocalStorage({ syncToCentral: false });
     }
+    this.publishRoomChatMessage(this.activeRoom.id, message);
 
     if (typeof broadcastLiveSync === 'function') {
       broadcastLiveSync('CHAT_MESSAGE', {
         roomId: this.activeRoom.id,
         sender: currentUserName,
         text: text,
-        time: nowTime
+        time: message.time
       });
     }
 
     // If user asks @AI or mentions tactics, auto reply with AI coach advice
     if (text.toLowerCase().includes('@ai') || text.toLowerCase().includes('chiến thuật') || text.toLowerCase().includes('kèo')) {
       setTimeout(() => {
-        const aiMsg = {
-          sender: "🤖 AI Virtual Coach",
-          text: `🎯 Trả lời bạn @${currentUserName}: Dựa trên phân tích ELO trận đấu này, đề xuất chiến thuật tối ưu nhất là tập trung kiểm soát nhịp độ, phát cầu ngắn sát lưới và bọc lót chéo góc!`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isAI: true
-        };
+        const aiMsg = this.createRoomChatMessage(
+          "🤖 AI Virtual Coach",
+          `🎯 Trả lời bạn @${currentUserName}: Dựa trên phân tích ELO trận đấu này, đề xuất chiến thuật tối ưu nhất là tập trung kiểm soát nhịp độ, phát cầu ngắn sát lưới và bọc lót chéo góc!`,
+          { isAI: true }
+        );
         this.activeRoom.chat_messages.push(aiMsg);
         this.renderChatMessages();
 
         if (typeof saveMockDataToLocalStorage === 'function') {
-          saveMockDataToLocalStorage();
+          saveMockDataToLocalStorage({ syncToCentral: false });
         }
+        this.publishRoomChatMessage(this.activeRoom.id, aiMsg);
         if (typeof broadcastLiveSync === 'function') {
           broadcastLiveSync('CHAT_MESSAGE', {
             roomId: this.activeRoom.id,
@@ -7872,7 +7945,7 @@ class BadmintonAIApp {
     this.showToast(`✨ Đã điền thông tin tài khoản ${acc.label || role}! Nhấn "Đăng Nhập" để truy cập.`);
   }
 
-  handleRegister(e) {
+  async handleRegister(e) {
     e.preventDefault();
     const name = document.getElementById('reg-fullname').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
@@ -7904,11 +7977,28 @@ class BadmintonAIApp {
     };
 
     MockData.users.push(newUser);
-    if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+    if (typeof saveMockDataToLocalStorage === 'function') await saveMockDataToLocalStorage();
 
-    // Tu dong dang nhap voi tai khoan Khach Hang vua tao
+    // Establish the same HttpOnly server session used by existing accounts,
+    // so newly registered members can use authenticated room chat too.
+    let serverSessionReady = false;
+    try {
+      const authResponse = await fetch('/api/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password })
+      });
+      serverSessionReady = authResponse.ok;
+    } catch (error) {
+      console.warn('Không thể tạo phiên đăng nhập máy chủ sau khi đăng ký:', error);
+    }
+
     this.switchRole('CUSTOMER', newUser);
-    this.showToast(`🎉 Đăng ký thành công! Đã lưu mật khẩu & tự động đăng nhập tài khoản Khách Hàng cho ${name}.`);
+    this.showToast(serverSessionReady
+      ? `🎉 Đăng ký thành công! Đã đăng nhập và bật đồng bộ chat cho ${name}.`
+      : `🎉 Đăng ký thành công cho ${name}. Máy chủ chưa tạo được phiên chat; hãy đăng nhập lại khi backend hoạt động.`,
+    serverSessionReady ? 'success' : 'error');
 
     this.renderAdminUsers();
   }
