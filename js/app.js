@@ -3448,6 +3448,9 @@ class BadmintonAIApp {
       title: `🏸 Lời Mời Ghép Kèo từ ${sender.name}`,
       content: `Tay vợt ${sender.name} (Cấp [${senderTier.name}]) vừa gửi lời mời ghép kèo Solo 1v1 với bạn tại ${facName} (${timeStr})!`,
       room_id: newRoom.id,
+      // Keep a recoverable room snapshot with the invitation so a stale
+      // central snapshot cannot leave the recipient with an orphan notice.
+      room_snapshot: JSON.parse(JSON.stringify(newRoom)),
       invite_status: 'PENDING',
       created_at: "Vừa xong",
       timestamp: Date.now(),
@@ -3568,6 +3571,52 @@ class BadmintonAIApp {
     if (invitation && invitation.invite_status && invitation.invite_status !== 'PENDING') {
       this.showToast("Lời mời này đã được xử lý trên thiết bị khác.", "error");
       return;
+    }
+    let recoverableRoom = invitation?.room_snapshot;
+    if (!recoverableRoom && invitation?.type === 'CHALLENGE_INVITE') {
+      // Recover older invitations created before room snapshots were attached.
+      const content = String(invitation.content || '');
+      const details = content.match(/\btại\s+(.+?)\s+\(([^()]*)\)!?$/i);
+      const senderName = invitation.sender_name || 'Đối thủ';
+      const senderTier = invitation.sender_tier || 'Chưa xác định';
+      recoverableRoom = {
+        id: effectiveRoomId,
+        room_name: `Kèo Solo 1v1: ${senderName} vs ${this.currentUser.name}`,
+        facility_name: details?.[1] || 'Chưa xác định sân',
+        match_date: new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date()),
+        match_time: details?.[2] || 'Chưa chốt giờ',
+        match_type: 'Đơn 1v1',
+        host_name: senderName,
+        host_id: invitation.sender_id,
+        host_photo: invitation.sender_photo || null,
+        host_tier: senderTier,
+        current_players: 1,
+        max_players: 2,
+        status: 'OPEN',
+        visibility: 'INVITE_ONLY',
+        invited_player_ids: [this.currentUser.id],
+        players: [{
+          id: invitation.sender_id,
+          name: senderName,
+          photo: invitation.sender_photo || null,
+          avatar: senderName.charAt(0),
+          tier: senderTier,
+          role: 'Host',
+          team: 'A'
+        }],
+        chat_messages: [{
+          sender: '🤖 AI Match Referee',
+          text: 'Phòng được khôi phục từ lời mời đang chờ xác nhận.',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isAI: true
+        }]
+      };
+    }
+    if (!room && recoverableRoom && String(recoverableRoom.id) === String(effectiveRoomId)) {
+      room = JSON.parse(JSON.stringify(recoverableRoom));
+      if (!MockData.matchmaking_rooms) MockData.matchmaking_rooms = [];
+      MockData.matchmaking_rooms.unshift(room);
+      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
     }
     if (!room) {
       this.showToast("Lời mời đã đến nhưng phòng chưa đồng bộ về thiết bị này. Vui lòng đợi vài giây rồi thử lại.", "error");
