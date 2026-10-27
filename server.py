@@ -1018,6 +1018,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     "role": user.get("role")
                 }
             }, ensure_ascii=False).encode("utf-8"))
+            return
         # =========================================================================
         # LOGOUT ENDPOINT — expires the HttpOnly cookie server-side
         # =========================================================================
