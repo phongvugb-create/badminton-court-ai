@@ -88,14 +88,36 @@ def _merge_records_by_id(existing, incoming):
         if "players" in previous or "players" in item:
             players = {}
             for player in (previous.get("players") or []) + (item.get("players") or []):
-                if isinstance(player, dict) and player.get("id") is not None:
-                    players[str(player["id"])] = player
+                if not isinstance(player, dict):
+                    continue
+                player_id = player.get("id")
+                player_name = str(player.get("name") or "").strip().casefold()
+                # Older rooms did not persist an id on the host player. Keep those
+                # roster entries too, using the name as a stable fallback key.
+                player_key = f"id:{player_id}" if player_id is not None else f"name:{player_name}" if player_name else None
+                if player_key:
+                    players[player_key] = player
+            host_name = str(merged.get("host_name") or "").strip()
+            if host_name and not any(
+                str(player.get("name") or "").strip().casefold() == host_name.casefold()
+                for player in players.values()
+            ):
+                host_id = merged.get("host_id") or merged.get("host_user_id")
+                host_player = {
+                    "name": host_name,
+                    "role": "Host",
+                    "tier": merged.get("host_tier"),
+                    "tier_id": merged.get("host_tier_id"),
+                    "elo": merged.get("host_elo"),
+                    "photo": merged.get("host_photo"),
+                }
+                if host_id is not None:
+                    host_player["id"] = host_id
+                players[f"id:{host_id}" if host_id is not None else f"name:{host_name.casefold()}"] = host_player
             merged["players"] = list(players.values())
-            merged["current_players"] = max(
-                len(players),
-                int(previous.get("current_players") or 0),
-                int(item.get("current_players") or 0),
-            )
+            # The roster is the source of truth; a stale counter must not show
+            # phantom members or mark a room full when its slots are empty.
+            merged["current_players"] = len(players)
         if "chat_messages" in previous or "chat_messages" in item:
             messages = {}
             for message in (previous.get("chat_messages") or []) + (item.get("chat_messages") or []):

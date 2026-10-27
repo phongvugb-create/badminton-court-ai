@@ -22,7 +22,7 @@ class BadmintonAIApp {
     this.isFavoritesFilterActive = false;
 
     // Chat & Active Room
-    this.activeRoom = MockData.matchmaking_rooms[0];
+    this.activeRoom = null;
     this.roomChatEventSource = null;
     this.roomChatEventRoomId = null;
     this.currentMMFilter = 'all';
@@ -1355,6 +1355,11 @@ class BadmintonAIApp {
   }
 
   navigateTo(screenId) {
+    if (screenId === 'ui-07' && !this.activeRoom) {
+      this.showToast('Hãy chọn một phòng trong danh sách ghép kèo để mở phòng chat.', 'error');
+      this.navigateTo('ui-06');
+      return;
+    }
     if (screenId === 'ui-20' && this.currentRole !== 'ADMIN') {
       this.showToast("Quyền truy cập bị từ chối! Chỉ tài khoản Quản Trị Viên (ADMIN) mới được quyền truy cập CSDL Web!", "error");
       return;
@@ -1399,9 +1404,6 @@ class BadmintonAIApp {
         this.renderRoomDetailMembers();
         this.renderChatMessages();
         this.renderAIRoomTactics();
-      } else {
-        const firstRoom = (MockData.matchmaking_rooms && MockData.matchmaking_rooms[0]);
-        if (firstRoom) this.openRoomChat(firstRoom.id);
       }
     }
     if (screenId === 'ui-08') this.renderUserProfilePage();
@@ -3144,7 +3146,9 @@ class BadmintonAIApp {
     // 2. Gather Matchmaking Rooms
     (MockData.matchmaking_rooms || []).forEach(r => {
       if (String(r.status || 'OPEN').toUpperCase() !== 'OPEN') return;
-      if (Number(r.current_players || 1) >= Number(r.max_players || 4)) return;
+      const roomCapacity = this.getRoomCapacity(r);
+      const roomPlayers = this.getRoomPlayerCount(r);
+      if (roomPlayers >= roomCapacity) return;
       if (r.visibility === 'INVITE_ONLY') return;
       if (String(r.host_id || r.host_user_id || '') === String(this.currentUser?.id || '')) return;
       if ((r.players || []).some(player => String(player.id) === String(this.currentUser?.id))) return;
@@ -3162,9 +3166,9 @@ class BadmintonAIApp {
       if ((skillMatchingFilter === 'same' && tierDiff !== 0) ||
           (skillMatchingFilter === 'adjacent' && tierDiff > 1)) return;
 
-      const roomType = normalizeMatchText(r.match_type);
-      const roomIsSingles = roomType.includes('don') || roomType.includes('singles');
-      if (roomType && ((matchType === 'SINGLES') !== roomIsSingles)) return;
+      const roomType = normalizeMatchText(this.getRoomMatchType(r));
+      const roomIsSingles = roomType.includes('don') || roomType.includes('singles') || roomType.includes('1v1');
+      if ((matchType === 'SINGLES') !== roomIsSingles) return;
 
       const roomRange = parseMatchRange(r.match_time || r.play_time);
       const overlapMinutes = requestedRange && roomRange
@@ -3199,7 +3203,7 @@ class BadmintonAIApp {
         },
         winRateA: expectedWinRate,
         winRateB: 100 - expectedWinRate,
-        matchType: r.match_type || 'Đôi 2v2',
+        matchType: this.getRoomMatchType(r),
         facility: r.facility_name || r.district || 'Chưa chọn sân',
         time: `${r.match_date || 'Chưa chọn ngày'} (${r.match_time || r.play_time})`,
         isRoom: true,
@@ -3248,6 +3252,7 @@ class BadmintonAIApp {
       if (cand.matchScore < 75) badgeBg = '#dc2626';
 
       const hasPhoto = cand.photo && (cand.photo.startsWith('data:image') || cand.photo.startsWith('http') || cand.photo.includes('/'));
+      const candidateCapacity = cand.isRoom ? this.getRoomCapacity(cand.roomObj) : (String(cand.matchType).includes('Đôi') ? 4 : 2);
 
       html += `
         <div class="mm-room-card">
@@ -3256,8 +3261,8 @@ class BadmintonAIApp {
               <i class="fa-solid fa-wand-magic-sparkles"></i> Khớp ${cand.matchScore}%
             </span>
             <div style="display: flex; gap: 6px; align-items: center;">
-              <span class="badge ${cand.matchType.includes('Đôi') ? 'badge-info' : 'badge-warning'}" style="font-size: 0.72rem; padding: 3px 8px;">
-                ${cand.matchType.includes('Đôi') ? '🏸 Đôi 2v2' : '⚡ Đơn 1v1'}
+              <span class="badge ${candidateCapacity > 2 ? 'badge-info' : 'badge-warning'}" style="font-size: 0.72rem; padding: 3px 8px;">
+                ${cand.matchType} (${candidateCapacity} người)
               </span>
               <span class="tier-badge-pill" style="background: ${cand.tier.bg}; color: ${cand.tier.color}; border: 1px solid ${cand.tier.borderColor || '#cbd5e1'};">
                 ${cand.tier.badgeText || cand.tier.name}
@@ -3504,8 +3509,10 @@ class BadmintonAIApp {
       return;
     }
     if (!room.players) room.players = [];
+    room.max_players = this.getRoomCapacity(room);
+    room.current_players = room.players.length;
     const existing = room.players.find(player => String(player.id) === String(this.currentUser.id));
-    if (!existing && room.players.length >= Number(room.max_players || 4)) {
+    if (!existing && room.players.length >= room.max_players) {
       room.status = 'MATCHED';
       room.current_players = room.players.length;
       if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
@@ -3534,7 +3541,7 @@ class BadmintonAIApp {
         { isAI: true }
       );
       room.chat_messages.push(memberMessage);
-      if (room.current_players >= Number(room.max_players || 4)) room.status = 'MATCHED';
+      if (room.current_players >= room.max_players) room.status = 'MATCHED';
       if (typeof saveMockDataToLocalStorage === 'function') await saveMockDataToLocalStorage();
       this.publishRoomChatMessage(room.id, memberMessage);
       if (typeof broadcastLiveSync === 'function') {
@@ -3685,8 +3692,9 @@ class BadmintonAIApp {
     );
     room.chat_messages.push(joinedMessage);
 
+    let roomSavedCentrally = false;
     if (typeof saveMockDataToLocalStorage === 'function') {
-      await saveMockDataToLocalStorage();
+      roomSavedCentrally = await saveMockDataToLocalStorage();
     }
     this.publishRoomChatMessage(room.id, joinedMessage);
 
@@ -4073,6 +4081,25 @@ class BadmintonAIApp {
     this.executeMatchmakingEngine();
   }
 
+  getRoomMatchType(room) {
+    const declaredType = String(room?.match_type || '').trim();
+    if (declaredType) return declaredType;
+    if (String(room?.category || '').toLowerCase() === 'singles') return 'Đơn';
+    if (String(room?.category || '').toLowerCase() === 'doubles') return 'Đôi';
+    return Number(room?.max_players) === 2 ? 'Đơn' : 'Đôi';
+  }
+
+  getRoomCapacity(room) {
+    const type = this.getRoomMatchType(room).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (type.includes('don') || type.includes('singles') || type.includes('1v1')) return 2;
+    if (type.includes('tu do') || type.includes('free')) return Number(room?.max_players) || 4;
+    return 4;
+  }
+
+  getRoomPlayerCount(room) {
+    return Array.isArray(room?.players) ? room.players.length : Number(room?.current_players || 0);
+  }
+
   // =========================================================================
   // 8. TWO-WAY RESULT CONFIRMATION & DISPUTE MODAL (Component 8 & 9)
   // =========================================================================
@@ -4404,7 +4431,7 @@ class BadmintonAIApp {
 
 
   openRoomChat(roomId) {
-    this.activeRoom = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(roomId)) || (MockData.matchmaking_rooms && MockData.matchmaking_rooms[0]);
+    this.activeRoom = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(roomId));
     if (!this.activeRoom) {
       this.showToast("⚠️ Không tìm thấy phòng ghép kèo này!", "error");
       return;
@@ -4424,13 +4451,15 @@ class BadmintonAIApp {
     }
 
     if (statusBadge) {
-      const isFull = (this.activeRoom.current_players || 0) >= (this.activeRoom.max_players || 4);
+      const roomCount = this.getRoomPlayerCount(this.activeRoom);
+      const roomCapacity = this.getRoomCapacity(this.activeRoom);
+      const isFull = roomCount >= roomCapacity;
       if (isFull) {
         statusBadge.className = "badge badge-danger";
         statusBadge.innerHTML = `<i class="fa-solid fa-users"></i> Phòng đã đủ thành viên`;
       } else {
         statusBadge.className = "badge badge-success";
-        statusBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đang mở ghép kèo (${this.activeRoom.current_players || 1}/${this.activeRoom.max_players || 4})`;
+        statusBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đang mở ghép kèo (${roomCount}/${roomCapacity})`;
       }
     }
 
@@ -4442,7 +4471,7 @@ class BadmintonAIApp {
         joinBtn.onclick = () => app.navigateTo('ui-01');
       } else {
         const isMember = this.activeRoom.players && this.activeRoom.players.some(p => p.name === this.currentUser.name || (p.id && String(p.id) === String(this.currentUser.id)));
-        const isFull = (this.activeRoom.current_players || 0) >= (this.activeRoom.max_players || 4);
+        const isFull = this.getRoomPlayerCount(this.activeRoom) >= this.getRoomCapacity(this.activeRoom);
         if (isMember) {
           joinBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Bạn Đã Trong Kèo Này`;
           joinBtn.style.background = "#059669";
@@ -4471,7 +4500,7 @@ class BadmintonAIApp {
 
     const room = this.activeRoom;
     const players = room.players || [];
-    const maxPlayers = room.max_players || 4;
+    const maxPlayers = this.getRoomCapacity(room);
     let html = '';
 
     players.forEach((p) => {
@@ -4544,7 +4573,7 @@ class BadmintonAIApp {
     if (!body || !this.activeRoom) return;
 
     const room = this.activeRoom;
-    const isDoubles = room.match_type && room.match_type.includes('Đôi');
+    const matchType = this.getRoomMatchType(room);
     const roomTier = this.getSkillTierInfo(room.required_tier_id || room.required_tier || 5);
 
     body.innerHTML = `
@@ -4554,7 +4583,7 @@ class BadmintonAIApp {
             <i class="fa-solid fa-users text-primary"></i> TỔNG QUAN CẶP ĐẤU & ĐỘ CÂN BẰNG:
           </div>
           <div style="font-size: 0.8rem; color: #475569;">
-            • Thể thức: <strong>${room.match_type || 'Đôi Nam/Nữ'}</strong> | Khung giờ: <strong>${room.match_time}</strong><br>
+            • Thể thức: <strong>${matchType}</strong> (${this.getRoomCapacity(room)} người) | Khung giờ: <strong>${room.match_time}</strong><br>
             • Cấp bậc yêu cầu: <span class="tier-badge-pill" style="background: ${roomTier.bg}; color: ${roomTier.color}; border: 1px solid ${roomTier.borderColor || '#cbd5e1'}; font-size: 0.75rem; padding: 1px 7px;">${roomTier.display}</span><br>
             • Đánh giá AI: <strong>${room.ai_prediction || 'Kèo cùng cấp bậc vô cùng cân đối, kịch tính.'}</strong>
           </div>
@@ -4652,6 +4681,9 @@ class BadmintonAIApp {
 
     if (!this.activeRoom) return;
 
+    this.activeRoom.max_players = this.getRoomCapacity(this.activeRoom);
+    this.activeRoom.current_players = this.getRoomPlayerCount(this.activeRoom);
+
     const user = this.currentUser;
     const alreadyIn = this.activeRoom.players && this.activeRoom.players.some(p => p.name === user.name || p.id === user.id);
 
@@ -4660,7 +4692,7 @@ class BadmintonAIApp {
       return;
     }
 
-    if ((this.activeRoom.current_players || 0) >= (this.activeRoom.max_players || 4)) {
+    if (this.activeRoom.current_players >= this.activeRoom.max_players) {
       this.showToast("⚠️ Phòng ghép đã đủ số lượng thành viên!");
       return;
     }
@@ -4917,6 +4949,8 @@ class BadmintonAIApp {
     const userTierVal = (this.currentUser && (this.currentUser.skill_tier_id || this.currentUser.skill_tier)) || 5;
     const userTier = this.getSkillTierInfo(userTierVal);
     const matchmakingTier = this.getMatchmakingTierInfo(userTierVal);
+    const requestedMatchType = document.getElementById('finder-match-type')?.value || this.currentMatchType || 'DOUBLES';
+    const defaultRoomType = requestedMatchType === 'SINGLES' ? 'Đơn Nam' : 'Đôi Nam/Nữ';
     const userPhoto = (this.currentUser && (this.currentUser.photo || this.currentUser.avatar)) || '';
     const hasPhoto = userPhoto && (userPhoto.startsWith('data:image') || userPhoto.startsWith('http') || userPhoto.includes('/'));
 
@@ -4946,9 +4980,9 @@ class BadmintonAIApp {
             <div class="form-group">
               <label class="form-label">Thể Thức Thi Đấu</label>
               <select id="modal-room-type" class="form-control">
-                <option value="Đôi Nam/Nữ">🏸 Đôi Nam/Nữ (4 người)</option>
+                <option value="Đôi Nam/Nữ" ${defaultRoomType === 'Đôi Nam/Nữ' ? 'selected' : ''}>🏸 Đôi Nam/Nữ (4 người)</option>
                 <option value="Đôi Nam">🏸 Đôi Nam (4 người)</option>
-                <option value="Đơn Nam">⚡ Đơn Nam (2 người)</option>
+                <option value="Đơn Nam" ${defaultRoomType === 'Đơn Nam' ? 'selected' : ''}>⚡ Đơn Nam (2 người)</option>
                 <option value="Đơn Nữ">⚡ Đơn Nữ (2 người)</option>
                 <option value="Giao Lưu Tự Do">🎯 Giao Lưu Tự Do</option>
               </select>
@@ -5111,7 +5145,7 @@ class BadmintonAIApp {
     }
   }
 
-  handleCreateRoom(e) {
+  async handleCreateRoom(e) {
     if (e && e.preventDefault) e.preventDefault();
     if (!this.currentUser) {
       this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập tài khoản để tạo phòng ghép kèo.", "error");
@@ -5132,7 +5166,7 @@ class BadmintonAIApp {
     const requiredTier = this.getMatchmakingTierInfo(requiredTierVal);
     const hostTier = this.getSkillTierInfo(hostTierVal);
     const fac = MockData.facilities.find(f => f.id === facId) || MockData.facilities[0];
-    const isDoubles = matchType.includes('Đôi');
+    const isDoubles = matchType.includes('Đôi') || matchType.includes('Tự Do');
     const maxPlayers = isDoubles ? 4 : 2;
     const currentUserName = this.currentUser.name;
     const today = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
@@ -5178,6 +5212,7 @@ class BadmintonAIApp {
       category: isDoubles ? 'doubles' : 'singles',
       players: [
         {
+          id: this.currentUser.id,
           name: currentUserName,
           tier: hostTier.name,
           tier_id: hostTier.tier,
@@ -5202,13 +5237,15 @@ class BadmintonAIApp {
         }
       ]
     };
+    newRoom.host_id = this.currentUser.id;
+    newRoom.owner_id = this.currentUser.id;
 
     MockData.matchmaking_rooms.unshift(newRoom);
 
     this.closeModal();
     this.renderMatchmakingRooms();
     if (typeof saveMockDataToLocalStorage === 'function') {
-      saveMockDataToLocalStorage();
+      await saveMockDataToLocalStorage();
     }
 
     if (typeof broadcastLiveSync === 'function') {
@@ -5220,7 +5257,9 @@ class BadmintonAIApp {
       });
     }
 
-    this.showToast(`🎉 Đã khởi tạo phòng ghép thành công (Cấp [${requiredTier.name}]) và đưa bạn vào phòng!`, "success");
+    this.showToast(roomSavedCentrally
+      ? `🎉 Đã lưu phòng lên hệ thống và đưa bạn vào phòng! Người chơi khác sẽ thấy phòng sau khi đồng bộ.`
+      : `⚠️ Đã tạo phòng trên thiết bị này nhưng chưa kết nối được database. Người khác có thể chưa thấy phòng; hãy kiểm tra backend/mạng.` , roomSavedCentrally ? "success" : "error");
     setTimeout(() => {
       this.openRoomChat(newRoom.id);
     }, 300);

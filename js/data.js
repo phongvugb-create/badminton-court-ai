@@ -1523,8 +1523,10 @@ async function syncDataToCentralServer(payload) {
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error(`Central sync failed (${res.status})`);
+    return true;
   } catch (err) {
     // Neu chua chay server.py thi van chay muot ma offline qua localStorage
+    return false;
   }
 }
 

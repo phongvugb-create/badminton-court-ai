@@ -5,6 +5,8 @@ services:
     container_name: badminton_ai_app
     env_file:
       - .env
+    volumes:
+      - ./database.json:/app/database.json
     ports:
       - "${PORT:-8085}:8085"
     healthcheck:
