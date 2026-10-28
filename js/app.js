@@ -250,7 +250,7 @@ class BadmintonAIApp {
                 <span style="font-size: 0.72rem; background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 9999px; text-transform: uppercase; font-weight: 800;">Chưa Đăng Nhập</span>
               </div>
               <div style="font-size: 0.84rem; opacity: 0.95; margin-top: 3px; line-height: 1.4;">
-                Đăng nhập để tự động lưu lịch sử đặt sân, giữ chỗ 10 phút, tra cứu vé QR điện tử và ghép kèo thi đấu ELO!
+                Đăng nhập để tự động lưu lịch sử đặt sân, giữ chỗ 10 phút, tra cứu vé QR điện tử và ghép kèo theo cấp bậc!
               </div>
             </div>
           </div>
@@ -302,7 +302,7 @@ class BadmintonAIApp {
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button class="btn btn-outline-primary btn-sm" onclick="app.navigateTo('ui-08')">
-              <i class="fa-solid fa-id-card"></i> Hồ Sơ ELO
+              <i class="fa-solid fa-id-card"></i> Hồ Sơ Cấp Bậc
             </button>
             <button class="btn btn-primary btn-sm" onclick="app.navigateTo('ui-05')">
               <i class="fa-solid fa-ticket"></i> Vé QR Của Tôi
@@ -1236,9 +1236,9 @@ class BadmintonAIApp {
           { id: 'ui-03', icon: 'fa-calendar-days', text: 'Đặt Sân & Thuê Đồ' },
           { id: 'ui-04', icon: 'fa-qrcode', text: 'Thanh Toán Cọc QR' },
           { id: 'ui-05', icon: 'fa-ticket', text: 'Vé QR Điện Tử', requiresAuth: true },
-          { id: 'ui-06', icon: 'fa-users-viewfinder', text: 'AI Matchmaking ELO' },
+          { id: 'ui-06', icon: 'fa-users-viewfinder', text: 'AI Ghép Kèo Cấp Bậc' },
           { id: 'ui-07', icon: 'fa-comments', text: 'Chat Nhóm Giao Lưu' },
-          { id: 'ui-08', icon: 'fa-id-card', text: 'Hồ Sơ & Điểm ELO', requiresAuth: true }
+          { id: 'ui-08', icon: 'fa-id-card', text: 'Hồ Sơ & Cấp Bậc', requiresAuth: true }
         ]
       },
       'OWNER': {
@@ -2740,7 +2740,7 @@ class BadmintonAIApp {
 
     const currentTierVal = (this.currentUser && (this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating)) || 5;
     const currentTier = this.getSkillTierInfo(currentTierVal);
-    const tiers = App.SKILL_TIERS;
+    const tiers = BadmintonAIApp.SKILL_TIERS;
 
     let rowsHtml = '';
     tiers.forEach(t => {
@@ -3064,6 +3064,7 @@ class BadmintonAIApp {
     }
 
     const skillMatchingFilter = document.getElementById('finder-skill-matching')?.value || 'same';
+    const effectiveSkillFilter = this.currentMMFilter === 'handicap' ? 'all' : skillMatchingFilter;
     const matchTypeEl = document.getElementById('finder-match-type');
     const matchType = matchTypeEl ? matchTypeEl.value : 'DOUBLES';
     const preferredArea = document.getElementById('finder-area')?.value || 'Hoàng Mai';
@@ -3083,7 +3084,7 @@ class BadmintonAIApp {
     let candidatePool = [];
 
     // Match only players who explicitly opted in and have an actual profile.
-    // Candidate scores use saved area/time/ELO data instead of fixed demo values.
+    // Candidate scores use saved area, time, and skill-tier data.
     const normalizeMatchText = value => String(value || '')
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
     const parseMatchRange = value => {
@@ -3093,17 +3094,17 @@ class BadmintonAIApp {
     };
     const requestedRange = parseMatchRange(preferredTime);
     const profileByUserId = new Map((MockData.player_profiles || []).map(profile => [String(profile.user_id ?? profile.player_id), profile]));
-    const currentElo = Number(this.currentUser?.elo_rating || userTier.defaultElo || 1200);
     (MockData.users || []).forEach(u => {
       if (u.role !== 'CUSTOMER' || String(u.id) === String(this.currentUser?.id)) return;
       const profile = profileByUserId.get(String(u.id));
-      if (!profile || profile.is_searching !== true || profile.skill_level === 'CHƯA CHỌN') return;
+      const profileIsSearching = profile?.is_searching === true || profile?.is_searching === 1 || profile?.is_searching === 'true';
+      if (!profile || !profileIsSearching || profile.skill_level === 'CHƯA CHỌN') return;
 
       const candidateElo = Number(profile.current_elo || u.elo_rating || 1200);
       const uTier = this.getSkillTierInfo(profile.skill_level || u.skill_tier_id || u.skill_tier || candidateElo);
       const tierDiff = Math.abs(userTier.tier - uTier.tier);
-      if ((skillMatchingFilter === 'same' && tierDiff !== 0) ||
-          (skillMatchingFilter === 'adjacent' && tierDiff > 1)) return;
+      if ((effectiveSkillFilter === 'same' && tierDiff !== 0) ||
+          (effectiveSkillFilter === 'adjacent' && tierDiff > 1)) return;
 
       const candidateRange = parseMatchRange(profile.available_time);
       const overlapMinutes = requestedRange && candidateRange
@@ -3117,7 +3118,7 @@ class BadmintonAIApp {
       const sLoc = !candidateArea ? 50 : (candidateArea.includes(requestedArea) || requestedArea.includes(candidateArea) ? 100 : 35);
       const sSkill = tierDiff === 0 ? 100 : Math.max(20, 100 - tierDiff * 20);
       const matchScore = Math.round(sSkill * 0.5 + sTime * 0.25 + sLoc * 0.25);
-      const expectedWinRate = Math.round(100 / (1 + (10 ** ((candidateElo - currentElo) / 400))));
+      const expectedWinRate = Math.max(20, Math.min(80, 50 - (uTier.tier - userTier.tier) * 8));
       const actualArea = profile.preferred_court || profile.preferred_area || 'Chưa chọn khu vực';
 
       candidatePool.push({
@@ -3129,14 +3130,14 @@ class BadmintonAIApp {
         tierDiff,
         matchScore,
         subScores: {
-          tier: `${tierDiff === 0 ? 'Cùng cấp' : `Lệch ${tierDiff} cấp`} (ELO ${candidateElo})`,
+          tier: tierDiff === 0 ? 'Cùng cấp bậc' : `Lệch ${tierDiff} cấp bậc`,
           time: `${Math.floor(overlapMinutes / 60)}h ${overlapMinutes % 60}p trùng giờ`,
           loc: profile.preferred_area || 'Chưa cập nhật',
-          balance: `ELO ${currentElo} vs ${candidateElo}`
+          balance: `Cấp ${userTier.name} vs ${uTier.name}`
         },
         winRateA: expectedWinRate,
         winRateB: 100 - expectedWinRate,
-        matchType,
+        matchType: matchType === 'SINGLES' ? 'Đơn 1v1' : 'Đôi 2v2',
         facility: actualArea,
         time: profile.available_time,
         isRoom: false
@@ -3150,8 +3151,11 @@ class BadmintonAIApp {
       const roomPlayers = this.getRoomPlayerCount(r);
       if (roomPlayers >= roomCapacity) return;
       if (r.visibility === 'INVITE_ONLY') return;
-      if (String(r.host_id || r.host_user_id || '') === String(this.currentUser?.id || '')) return;
-      if ((r.players || []).some(player => String(player.id) === String(this.currentUser?.id))) return;
+      if (this.currentUser && (
+        String(r.host_id || r.host_user_id || r.owner_id || '') === String(this.currentUser.id) ||
+        String(r.host_name || '').trim().toLowerCase() === String(this.currentUser.name || '').trim().toLowerCase()
+      )) return;
+      if (this.currentUser && (r.players || []).some(player => String(player.id) === String(this.currentUser.id))) return;
       const roomDate = String(r.match_date || r.play_date || '');
       const parsedRoomDate = roomDate.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
       if (parsedRoomDate) {
@@ -3162,9 +3166,12 @@ class BadmintonAIApp {
       }
 
       const rTier = this.getMatchmakingTierInfo(r.required_tier_id || r.required_tier || r.host_tier || r.required_elo_min || 5);
-      const tierDiff = Math.abs(matchmakingTier.tier - rTier.tier);
-      if ((skillMatchingFilter === 'same' && tierDiff !== 0) ||
-          (skillMatchingFilter === 'adjacent' && tierDiff > 1)) return;
+      const tierDiff = Math.abs(matchmakingTier.tier - rTier.tier) / 2;
+      const roomTolerance = r.match_tolerance || 'same';
+      const roomTierGap = roomTolerance === 'all' ? Number.POSITIVE_INFINITY : (roomTolerance === 'adjacent' ? 1 : 0);
+      if (tierDiff > roomTierGap) return;
+      if ((effectiveSkillFilter === 'same' && tierDiff !== 0) ||
+          (effectiveSkillFilter === 'adjacent' && tierDiff > 1)) return;
 
       const roomType = normalizeMatchText(this.getRoomMatchType(r));
       const roomIsSingles = roomType.includes('don') || roomType.includes('singles') || roomType.includes('1v1');
@@ -3182,8 +3189,7 @@ class BadmintonAIApp {
       const sLoc = !roomArea ? 50 : (roomArea.includes(requestedArea) || requestedArea.includes(roomArea) ? 100 : 35);
       const sSkill = tierDiff === 0 ? 100 : Math.max(20, 100 - tierDiff * 20);
       const matchScore = Math.round(sSkill * 0.5 + sTime * 0.25 + sLoc * 0.25);
-      const hostElo = Number(r.host_elo || r.players?.[0]?.elo_rating || rTier.defaultElo || 1200);
-      const expectedWinRate = Math.round(100 / (1 + (10 ** ((hostElo - currentElo) / 400))));
+      const expectedWinRate = Math.max(20, Math.min(80, 50 - ((rTier.tier - matchmakingTier.tier) / 2) * 8));
 
       candidatePool.push({
         id: r.id,
@@ -3196,10 +3202,10 @@ class BadmintonAIApp {
         tierDiff,
         matchScore,
         subScores: {
-          tier: `${tierDiff === 0 ? 'Cùng cấp' : `Lệch ${tierDiff} cấp`} (ELO chủ phòng ${hostElo})`,
+          tier: tierDiff === 0 ? 'Cùng cấp bậc' : `Lệch ${tierDiff} cấp bậc`,
           time: `${Math.floor(overlapMinutes / 60)}h ${overlapMinutes % 60}p trùng giờ`,
           loc: r.district || r.facility_name || 'Chưa chọn khu vực',
-          balance: `ELO ${currentElo} vs ${hostElo}`
+          balance: `Cấp ${matchmakingTier.name} vs ${rTier.name}`
         },
         winRateA: expectedWinRate,
         winRateB: 100 - expectedWinRate,
@@ -3211,12 +3217,32 @@ class BadmintonAIApp {
       });
     });
 
+    // Apply the selected category and search query before sorting/counting.
+    const activeFilter = this.currentMMFilter || 'all';
+    const searchQuery = normalizeMatchText(this.currentMMSearch || '');
+    candidatePool = candidatePool.filter(candidate => {
+      const normalizedType = normalizeMatchText(candidate.matchType);
+      const isSingles = normalizedType.includes('don') || normalizedType.includes('singles') || normalizedType.includes('1v1');
+      if (activeFilter === 'singles' && !isSingles) return false;
+      if (activeFilter === 'doubles' && isSingles) return false;
+      if (activeFilter === 'recommended' && candidate.tierDiff !== 0) return false;
+      if (activeFilter === 'handicap' && candidate.tierDiff === 0) return false;
+      if (searchQuery && !normalizeMatchText(`${candidate.name} ${candidate.hostName || ''} ${candidate.facility} ${candidate.time}`).includes(searchQuery)) return false;
+      return true;
+    });
+
     // Apply sorting
     const sortBy = this.currentMMSort || 'ai-match';
     if (sortBy === 'tier-asc') {
       candidatePool.sort((a, b) => a.tier.tier - b.tier.tier);
     } else if (sortBy === 'tier-desc') {
       candidatePool.sort((a, b) => b.tier.tier - a.tier.tier);
+    } else if (sortBy === 'time') {
+      const startMinute = candidate => {
+        const range = parseMatchRange(candidate.time);
+        return range ? range[0] : Number.MAX_SAFE_INTEGER;
+      };
+      candidatePool.sort((a, b) => startMinute(a) - startMinute(b));
     } else {
       candidatePool.sort((a, b) => b.matchScore - a.matchScore);
     }
@@ -3237,7 +3263,7 @@ class BadmintonAIApp {
           <strong>Gợi ý ghép trận:</strong> Bạn thuộc cấp <strong>[${userTier.name}]</strong>.
           Đề xuất phù hợp nhất là <strong>${best.name} (${best.tier.display})</strong>, điểm tương thích
           <strong style="color: #16a34a;">${best.matchScore}%</strong> dựa trên hạng, thời gian trùng và khu vực.
-          Tỉ lệ thắng hiển thị bên dưới chỉ là ước tính theo ELO, không phải kết quả chắc chắn.
+          Tỉ lệ cân bằng hiển thị bên dưới chỉ là ước tính theo chênh lệch cấp bậc, không phải kết quả chắc chắn.
         `;
       }
     } else {
@@ -3252,7 +3278,7 @@ class BadmintonAIApp {
       if (cand.matchScore < 75) badgeBg = '#dc2626';
 
       const hasPhoto = cand.photo && (cand.photo.startsWith('data:image') || cand.photo.startsWith('http') || cand.photo.includes('/'));
-      const candidateCapacity = cand.isRoom ? this.getRoomCapacity(cand.roomObj) : (String(cand.matchType).includes('Đôi') ? 4 : 2);
+      const candidateCapacity = cand.isRoom ? this.getRoomCapacity(cand.roomObj) : this.getRoomCapacity({ match_type: cand.matchType });
 
       html += `
         <div class="mm-room-card">
@@ -3394,13 +3420,14 @@ class BadmintonAIApp {
           ${rooms.map(room => {
             const capacity = this.getRoomCapacity(room);
             const players = this.getRoomPlayerCount(room);
-            const isOpen = String(room.status || 'OPEN').toUpperCase() === 'OPEN';
+            const isOpen = String(room.status || 'OPEN').toUpperCase() === 'OPEN' && players < capacity;
+            const tier = this.getMatchmakingTierInfo(room.required_tier_id || room.required_tier || room.host_tier_id || room.host_tier || 5);
             return `<article style="background:#fff; border:1px solid #bbf7d0; border-radius:11px; padding:12px;">
               <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
                 <strong style="color:#0f172a;">${this.cleanMatchmakingRoomName(room.room_name)}</strong>
                 <span style="white-space:nowrap; font-size:.75rem; font-weight:800; color:${isOpen ? '#166534' : '#475569'}; background:${isOpen ? '#dcfce7' : '#f1f5f9'}; padding:3px 8px; border-radius:99px;">${isOpen ? 'Đang mở' : 'Đã đủ người'}</span>
               </div>
-              <div style="font-size:.82rem; color:#64748b; margin:7px 0 10px;">${room.facility_name || room.district || 'Chưa chọn sân'} · ${room.match_time || room.play_time || 'Chưa chọn giờ'} · ${players}/${capacity} người</div>
+              <div style="font-size:.82rem; color:#64748b; margin:7px 0 10px;">${this.getRoomMatchType(room)} · Cấp ${tier.name} · ${room.facility_name || room.district || 'Chưa chọn sân'} · ${room.match_time || room.play_time || 'Chưa chọn giờ'} · ${players}/${capacity} người</div>
               <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${JSON.stringify(room.id)})" style="background:#167946; font-weight:700;">
                 <i class="fa-solid fa-arrow-right-to-bracket"></i> Vào phòng ghép
               </button>
@@ -3555,7 +3582,8 @@ class BadmintonAIApp {
       this.showToast("Phòng không còn mở để tham gia.", "error");
       return;
     }
-    if (!room.players) room.players = [];
+    if (!this.canJoinMatchmakingRoom(room)) return;
+    this.ensureRoomPlayers(room);
     room.max_players = this.getRoomCapacity(room);
     room.current_players = room.players.length;
     const existing = room.players.find(player => String(player.id) === String(this.currentUser.id));
@@ -3687,14 +3715,14 @@ class BadmintonAIApp {
       this.showToast("Lời mời đã đến nhưng phòng chưa đồng bộ về thiết bị này. Vui lòng đợi vài giây rồi thử lại.", "error");
       return;
     }
-    const roomMemberCount = Array.isArray(room.players)
-      ? room.players.length
-      : Number(room.current_players || 1);
+    this.ensureRoomPlayers(room);
+    room.max_players = this.getRoomCapacity(room);
+    const roomMemberCount = room.players.length;
     const isAlreadyMember = (room.players || []).some(player =>
       String(player.id) === String(this.currentUser.id)
     );
     if (String(room.status || 'OPEN').toUpperCase() !== 'OPEN' ||
-        (!isAlreadyMember && roomMemberCount >= Number(room.max_players || 4))) {
+        (!isAlreadyMember && roomMemberCount >= room.max_players)) {
       this.showToast("Phòng đã đủ người hoặc đã đóng, bạn không thể tham gia nữa.", "error");
       invitation.invite_status = 'EXPIRED';
       invitation.is_read = true;
@@ -3706,7 +3734,6 @@ class BadmintonAIApp {
     invitation.invite_status = 'ACCEPTED';
 
     // 3. Ensure recipient is in room.players
-    if (!room.players) room.players = [];
     const userTier = this.getSkillTierInfo(this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.tier || this.currentUser.elo || 3);
     const existing = room.players.find(p => p.name === this.currentUser.name || (p.id && String(p.id) === String(this.currentUser.id)));
 
@@ -3728,7 +3755,7 @@ class BadmintonAIApp {
       existing.style = 'Đã vào phòng';
     }
     room.current_players = room.players.length;
-    room.status = room.current_players >= Number(room.max_players || 4) ? 'MATCHED' : 'OPEN';
+    room.status = room.current_players >= room.max_players ? 'MATCHED' : 'OPEN';
 
     // 4. Add system referee chat message
     if (!room.chat_messages) room.chat_messages = [];
@@ -4130,7 +4157,12 @@ class BadmintonAIApp {
 
   getRoomMatchType(room) {
     const declaredType = String(room?.match_type || '').trim();
-    if (declaredType) return declaredType;
+    if (declaredType) {
+      const normalized = declaredType.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      if (normalized.includes('singles') || normalized.includes('single') || normalized.includes('1v1')) return 'Đơn 1v1';
+      if (normalized.includes('doubles') || normalized.includes('double') || normalized.includes('2v2')) return 'Đôi 2v2';
+      return declaredType;
+    }
     if (String(room?.category || '').toLowerCase() === 'singles') return 'Đơn';
     if (String(room?.category || '').toLowerCase() === 'doubles') return 'Đôi';
     return Number(room?.max_players) === 2 ? 'Đơn' : 'Đôi';
@@ -4138,13 +4170,48 @@ class BadmintonAIApp {
 
   getRoomCapacity(room) {
     const type = this.getRoomMatchType(room).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    if (type.includes('don') || type.includes('singles') || type.includes('1v1')) return 2;
+    if (type.includes('don') || type.includes('singles') || type.includes('1v1') || type.includes('single')) return 2;
     if (type.includes('tu do') || type.includes('free')) return Number(room?.max_players) || 4;
+    if (type.includes('doi') || type.includes('doubles') || type.includes('double') || type.includes('2v2')) return 4;
+    if (Number(room?.max_players) === 2) return 2;
     return 4;
   }
 
   getRoomPlayerCount(room) {
-    return Array.isArray(room?.players) ? room.players.length : Number(room?.current_players || 0);
+    return Math.max(Array.isArray(room?.players) ? room.players.length : 0, Number(room?.current_players || 0));
+  }
+
+  ensureRoomPlayers(room) {
+    if (!room) return [];
+    if (!Array.isArray(room.players)) room.players = [];
+    const expectedCount = Math.max(room.players.length, Number(room.current_players || 0), room.host_name ? 1 : 0);
+    while (room.players.length < expectedCount) {
+      const isHost = room.players.length === 0;
+      room.players.push({
+        id: isHost ? (room.host_id || room.host_user_id || `legacy-host-${room.id}`) : `legacy-member-${room.id}-${room.players.length + 1}`,
+        name: isHost ? (room.host_name || 'Chủ phòng') : `Thành viên ${room.players.length + 1}`,
+        tier: isHost ? (room.host_tier || room.required_tier || 'Chưa cập nhật') : 'Chưa cập nhật',
+        tier_id: isHost ? (room.host_tier_id || room.required_tier_id || 5) : 5,
+        role: isHost ? 'Host' : 'Member',
+        style: 'Đã tham gia'
+      });
+    }
+    room.current_players = room.players.length;
+    return room.players;
+  }
+
+  canJoinMatchmakingRoom(room) {
+    if (!this.currentUser || !room) return false;
+    const playerTier = this.getMatchmakingTierInfo(this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating || 5);
+    const requiredTier = this.getMatchmakingTierInfo(room.required_tier_id || room.required_tier || room.host_tier_id || room.host_tier || 5);
+    const tierGap = Math.abs(playerTier.tier - requiredTier.tier) / 2;
+    const tolerance = room.match_tolerance || 'same';
+    const allowedTierGap = tolerance === 'all' ? Number.POSITIVE_INFINITY : (tolerance === 'adjacent' ? 1 : 0);
+    if (tierGap > allowedTierGap) {
+      this.showToast(`Phòng này đang nhận cấp ${requiredTier.name}. Cấp của bạn là ${playerTier.name}; hãy chọn phòng phù hợp hoặc phòng cho phép lệch cấp.`, "error");
+      return false;
+    }
+    return true;
   }
 
   // =========================================================================
@@ -4483,6 +4550,7 @@ class BadmintonAIApp {
       this.showToast("⚠️ Không tìm thấy phòng ghép kèo này!", "error");
       return;
     }
+    this.ensureRoomPlayers(this.activeRoom);
     
     const titleEl = document.getElementById('room-detail-title');
     const metaEl = document.getElementById('room-detail-meta');
@@ -4501,9 +4569,12 @@ class BadmintonAIApp {
       const roomCount = this.getRoomPlayerCount(this.activeRoom);
       const roomCapacity = this.getRoomCapacity(this.activeRoom);
       const isFull = roomCount >= roomCapacity;
-      if (isFull) {
+      const isOpen = String(this.activeRoom.status || 'OPEN').toUpperCase() === 'OPEN';
+      if (isFull || !isOpen) {
         statusBadge.className = "badge badge-danger";
-        statusBadge.innerHTML = `<i class="fa-solid fa-users"></i> Phòng đã đủ thành viên`;
+        statusBadge.innerHTML = isFull
+          ? `<i class="fa-solid fa-users"></i> Phòng đã đủ thành viên (${roomCount}/${roomCapacity})`
+          : `<i class="fa-solid fa-lock"></i> Phòng đã đóng (${roomCount}/${roomCapacity})`;
       } else {
         statusBadge.className = "badge badge-success";
         statusBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đang mở ghép kèo (${roomCount}/${roomCapacity})`;
@@ -4525,6 +4596,10 @@ class BadmintonAIApp {
           joinBtn.onclick = null;
         } else if (isFull) {
           joinBtn.innerHTML = `<i class="fa-solid fa-ban"></i> Phòng Đã Đủ Thành Viên`;
+          joinBtn.style.background = "#64748b";
+          joinBtn.onclick = null;
+        } else if (String(this.activeRoom.status || 'OPEN').toUpperCase() !== 'OPEN') {
+          joinBtn.innerHTML = `<i class="fa-solid fa-ban"></i> Phòng Đã Đóng`;
           joinBtn.style.background = "#64748b";
           joinBtn.onclick = null;
         } else {
@@ -4621,6 +4696,7 @@ class BadmintonAIApp {
 
     const room = this.activeRoom;
     const matchType = this.getRoomMatchType(room);
+    const isDoubles = this.getRoomCapacity(room) > 2;
     const roomTier = this.getSkillTierInfo(room.required_tier_id || room.required_tier || 5);
 
     body.innerHTML = `
@@ -4727,12 +4803,18 @@ class BadmintonAIApp {
     }
 
     if (!this.activeRoom) return;
+    if (String(this.activeRoom.status || 'OPEN').toUpperCase() !== 'OPEN') {
+      this.showToast("Phòng này đã đóng và không nhận thêm thành viên.", "error");
+      return;
+    }
+    if (!this.canJoinMatchmakingRoom(this.activeRoom)) return;
+    this.ensureRoomPlayers(this.activeRoom);
 
     this.activeRoom.max_players = this.getRoomCapacity(this.activeRoom);
     this.activeRoom.current_players = this.getRoomPlayerCount(this.activeRoom);
 
     const user = this.currentUser;
-    const alreadyIn = this.activeRoom.players && this.activeRoom.players.some(p => p.name === user.name || p.id === user.id);
+    const alreadyIn = this.activeRoom.players && this.activeRoom.players.some(p => p.name === user.name || String(p.id) === String(user.id));
 
     if (alreadyIn) {
       this.showToast("ℹ️ Bạn đã là thành viên trong phòng ghép này!");
@@ -4746,7 +4828,6 @@ class BadmintonAIApp {
 
     const userTier = this.getSkillTierInfo(user.skill_tier_id || user.skill_tier || 5);
 
-    if (!this.activeRoom.players) this.activeRoom.players = [];
     this.activeRoom.players.push({
       id: user.id,
       name: user.name,
@@ -4761,6 +4842,8 @@ class BadmintonAIApp {
     });
 
     this.activeRoom.current_players = this.activeRoom.players.length;
+    if (this.activeRoom.current_players >= this.activeRoom.max_players) this.activeRoom.status = 'MATCHED';
+    if (!Array.isArray(this.activeRoom.chat_messages)) this.activeRoom.chat_messages = [];
 
     const welcomeMessage = this.createRoomChatMessage(
       "🤖 AI Match Referee",
@@ -4955,7 +5038,7 @@ class BadmintonAIApp {
       setTimeout(() => {
         const aiMsg = this.createRoomChatMessage(
           "🤖 AI Virtual Coach",
-          `🎯 Trả lời bạn @${currentUserName}: Dựa trên phân tích ELO trận đấu này, đề xuất chiến thuật tối ưu nhất là tập trung kiểm soát nhịp độ, phát cầu ngắn sát lưới và bọc lót chéo góc!`,
+          `🎯 Trả lời bạn @${currentUserName}: Dựa trên cấp bậc và thể thức trận đấu này, đề xuất chiến thuật tối ưu nhất là tập trung kiểm soát nhịp độ, phát cầu ngắn sát lưới và bọc lót chéo góc!`,
           { isAI: true }
         );
         this.activeRoom.chat_messages.push(aiMsg);
@@ -5171,7 +5254,7 @@ class BadmintonAIApp {
   }
 
   cleanMatchmakingRoomName(name) {
-    return String(name || '').replace(/\s*\(\s*ELO\s*\d+\s*[-–]\s*\d+\s*\)/gi, '').trim();
+    return String(name || '').replace(/\s*\(?\s*ELO\s*[:#]?\s*\d+(?:\s*[-–]\s*\d+)?\s*\)?/gi, '').trim();
   }
 
   selectModalSkillTier(tier) {
@@ -5212,13 +5295,18 @@ class BadmintonAIApp {
 
     const requiredTier = this.getMatchmakingTierInfo(requiredTierVal);
     const hostTier = this.getSkillTierInfo(hostTierVal);
+    const hostMatchTier = this.getMatchmakingTierInfo(hostTier.tier);
+    const hostTierGap = Math.abs(requiredTier.tier - hostMatchTier.tier) / 2;
+    const allowedHostGap = tolerance === 'all' ? Number.POSITIVE_INFINITY : (tolerance === 'adjacent' ? 1 : 0);
+    if (hostTierGap > allowedHostGap) {
+      this.showToast(`Cấp của bạn thuộc nhóm ${hostMatchTier.name}, không khớp điều kiện ${requiredTier.name} đã chọn. Hãy đổi cấp yêu cầu hoặc chọn tiêu chuẩn ghép phù hợp.`, 'error');
+      return;
+    }
     const fac = MockData.facilities.find(f => f.id === facId) || MockData.facilities[0];
-    const isDoubles = matchType.includes('Đôi') || matchType.includes('Tự Do');
-    const maxPlayers = isDoubles ? 4 : 2;
+    const maxPlayers = this.getRoomCapacity({ match_type: matchType });
+    const isDoubles = maxPlayers > 2;
     const currentUserName = this.currentUser.name;
     const today = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
-    const hostTierGap = Math.abs(requiredTier.tier - hostTier.tier);
-
     // Update currentUser skill tier
     this.currentUser.skill_tier_id = hostTier.tier;
     this.currentUser.skill_tier = hostTier.name;
