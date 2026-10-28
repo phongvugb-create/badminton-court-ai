@@ -638,9 +638,11 @@ def get_sqlite_connection():
     return conn
 
 def init_sqlite(conn):
-    cur = conn.cursor()
     for stmt in SQLITE_SCHEMAS:
-        cur.execute(stmt)
+        # Some schema entries intentionally contain a table definition followed
+        # by index definitions. execute() only accepts one statement; execute
+        # the complete schema script so every table and index is initialized.
+        conn.executescript(stmt)
     conn.commit()
     logger.info(f"✅ SQLite tables initialized successfully at {SQLITE_PATH}.")
 
