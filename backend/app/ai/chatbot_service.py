@@ -33,6 +33,7 @@ from app.core.redis import get_slot_lock_holder
 from app.ai.llm_provider import BaseLLMProvider, get_default_llm_provider
 from app.ai.retrieval_service import BaseRetriever, get_retrieval_service
 from app.ai.catalog_assistant import try_catalog_answer
+from app.ai.availability_range import range_question, parse_range, answer_range
 from app.ai.rag_context_builder import RAGContextBuilder, get_rag_context_builder
 from app.schemas.all_schemas import RAGSourceCitation
 from app.models.all_models import Facility, Court, TimeSlot, SlotPricing
@@ -349,9 +350,15 @@ class ChatbotService:
                 "provider": self.llm_provider.provider_name
             }
 
+        ranged_query = range_question(clean_message, history)
+        range_request = parse_range(ranged_query) if ranged_query else None
+        if range_request and (range_request.get('error') or range_request.get('ambiguous') or not range_request.get('date')):
+            result = await answer_range(range_request, None, sync_legacy_inventory, check_court_availability)
+            return {**result, "conversation_id": conv_id, "message_id": msg_id, "user_id": user_id}
+
         # Public catalogue questions use server-side data, not static SRS prices
         # or the untrusted list of facilities supplied by the browser.
-        catalog_result = await try_catalog_answer(clean_message, history)
+        catalog_result = await try_catalog_answer(clean_message, history) if not range_request else None
         if catalog_result is not None:
             return {**catalog_result, "conversation_id": conv_id,
                     "message_id": msg_id, "user_id": user_id}
@@ -365,6 +372,14 @@ class ChatbotService:
                 should_close_session = True
             except Exception as e:
                 logger.warning(f"[Chatbot Service] Không thể khởi tạo DB session: {e}")
+
+        if range_request:
+            try:
+                result = await answer_range(range_request, db_session, sync_legacy_inventory, check_court_availability)
+                return {**result, "conversation_id": conv_id, "message_id": msg_id, "user_id": user_id}
+            finally:
+                if should_close_session and db_session:
+                    await db_session.close()
 
         # 3. Direct Support for Legacy Phase 1 & 2 Unit Test Mock Providers
         if self.llm_provider.__class__.__name__ in [

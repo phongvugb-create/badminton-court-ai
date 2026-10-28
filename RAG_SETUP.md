@@ -10,6 +10,11 @@ Chatbot website (`js/chatbot.js`) gọi `/api/chat` trên `server.py`, dùng chu
   của website; lọc cơ sở đã duyệt, trả đúng giá và đơn vị niêm yết, không gửi
   dữ liệu tài khoản/đơn hàng vào mô hình. Hỗ trợ câu không dấu và câu hỏi tiếp nối.
 - Địa chỉ và giờ mở cửa: đọc danh mục cơ sở; thiếu tên sân thì hỏi thêm.
+- Lịch trống theo khoảng giờ: câu như “từ 7 giờ đến 9 giờ ở Hà Nội có trống
+  sân nào không” được tra bằng công cụ lịch sân. Thiếu ngày hoặc chưa rõ sáng/tối
+  thì hỏi bổ sung, giữ khu vực và khoảng giờ khi người dùng trả lời tiếp.
+  Chỉ báo trống nếu cùng một sân trống liên tục toàn khoảng yêu cầu; không nối
+  giờ của hai sân khác nhau, không dùng SRS hay dữ liệu trình duyệt để xác nhận.
 - Giữ chỗ và đặt sân: yêu cầu đăng nhập và xác nhận theo luồng hiện có.
 
 ## Khởi chạy
@@ -50,6 +55,7 @@ phiên bản cũ qua API tài liệu hiện có để tránh các chính sách m
 ```powershell
 python -m unittest test_phase6_rag -q
 python -m unittest test_chatbot_catalog test_chatbot_proxy -q
+python -m unittest test_availability_range -q
 ```
 
 Bộ kiểm thử này dùng embedding và LLM giả lập trong cơ sở dữ liệu riêng.
