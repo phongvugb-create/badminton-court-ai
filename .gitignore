@@ -9,6 +9,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 node_modules/
+.runtime-packages/
 verify_syntax.py
 backups/
 *.db

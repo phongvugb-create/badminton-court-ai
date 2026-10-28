@@ -1072,7 +1072,7 @@ class ChatbotService:
                             time=target_time,
                             limit=500
                         )
-                        if availability.get("status") in ("error", "availability_unverified", "internal_error"):
+                        if availability.get("status") in ("error", "availability_unverified", "internal_error", "data_unavailable") or availability.get("reason") == "availability_unverified":
                             availability_failed = True
                             break
                         open_slots = [
@@ -1125,7 +1125,7 @@ class ChatbotService:
                         limit=20
                     )
 
-                    if tool_res.get("status") in ("error", "availability_unverified", "internal_error") or tool_res.get("reason") == "availability_unverified":
+                    if tool_res.get("status") in ("error", "availability_unverified", "internal_error", "data_unavailable") or tool_res.get("reason") == "availability_unverified":
                         err_ans = "⚠️ Hệ thống hiện tại chưa thể xác minh trạng thái sân trống tức thì do kết nối tới dịch vụ khóa Redis đang gián đoạn. Vui lòng kiểm tra lại sau hoặc tra cứu trên Ma trận Lịch đặt sân nhé! 🏸"
                         return {
                             "answer": err_ans, "reply": err_ans, "conversation_id": conv_id, "message_id": msg_id,

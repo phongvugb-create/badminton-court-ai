@@ -26,6 +26,7 @@ import sys
 import json
 import asyncio
 import unittest
+from unittest.mock import AsyncMock, patch
 import aiosqlite
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -656,20 +657,18 @@ class TestPhase6RAGIntegration(unittest.TestCase):
     # TEST 17: DYNAMIC BUSINESS DATA REFUSAL
     # -------------------------------------------------------------------------
     def test_17_dynamic_business_data_refusal(self):
-        """
-        Inquiries asking for realtime live court status ('sân 1 hiện tại còn trống không?')
-        must be refused politely, explaining lack of live realtime availability tools.
-        """
+        """Unavailable live tools must never be replaced with static SRS evidence."""
         async def _test():
-            chatbot_svc = ChatbotService(retriever=self.retriever, context_builder=self.context_builder)
+            chatbot_svc = ChatbotService(llm_provider=MockLLMProviderForTest(), retriever=self.retriever, context_builder=self.context_builder)
             async with self._make_session() as session:
-                res = await chatbot_svc.handle_message(
-                    message="Sân 1 hiện tại còn trống lúc 20h tối nay không?",
-                    db=session
-                )
-                self.assertEqual(res["retrieval_status"], "no_relevant_documents")
-                self.assertIn("thời gian thực", res["answer"].lower())
-                self.assertIn("lịch đặt sân", res["answer"].lower())
+                with patch("app.ai.chatbot_service.find_facility_id_from_text", new=AsyncMock(return_value=1)), patch("app.ai.chatbot_service.sync_legacy_inventory", new=AsyncMock()), patch("app.ai.chatbot_service.check_court_availability", new=AsyncMock(return_value={"status": "data_unavailable", "data": [], "reason": "availability_unverified"})) as tool:
+                    res = await chatbot_svc.handle_message(
+                        message="Sân 1 hiện tại còn trống lúc 20h tối nay không?",
+                        db=session
+                    )
+                tool.assert_awaited_once()
+                self.assertEqual(res["retrieval_status"], "data_unavailable")
+                self.assertIn("chưa thể xác minh", res["answer"].lower())
                 self.assertEqual(res["sources"], [])
         self.run_async(_test())
 

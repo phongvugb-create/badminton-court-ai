@@ -1,11 +1,12 @@
 import os
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=False,
-        env_file=".env",
+        env_file=str(Path(__file__).resolve().parents[2] / ".env"),
         extra="ignore"
     )
 
@@ -51,7 +52,7 @@ class Settings(BaseSettings):
     # Google Gemini AI API Configuration
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-3.5-flash-lite")
-    LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "10.0"))
+    LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "30.0"))
 
     # RAG Embedding Configuration (Phase 4 & Phase 4.1)
     EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "gemini")

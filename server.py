@@ -1383,7 +1383,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     "nên chưa thể truy xuất dữ liệu xác thực thời gian thực cho câu hỏi của bạn.\n\n"
                     "👉 Để đảm bảo thông tin chính xác nhất, bạn vui lòng:\n"
                     "- Tra cứu trực tiếp danh sách sân, bảng giá và lịch trống tại giao diện chính của website.\n"
-                    "- Hoặc liên hệ Hotline CSKH: **1900 6868** (24/7) để được giải đáp tức thì.\n\n"
+                    "- Hoặc liên hệ ban quản lý sân qua thông tin liên hệ trên website.\n\n"
                     "Rất xin lỗi bạn vì sự bất tiện này! 🏸"
                 )
                 self.send_response(200)
@@ -1398,7 +1398,8 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     "user_id": user_info.get("id") if user_info else None,
                     "status": "fallback",
                     "fallback": True,
-                    "error": err_msg
+                    "retrieval_status": "data_unavailable",
+                    "sources": []
                 }, ensure_ascii=False).encode("utf-8"))
             return
 
