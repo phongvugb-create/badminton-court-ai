@@ -50,10 +50,13 @@ class RoomNotificationTests(unittest.TestCase):
                 'max_players': capacity, 'status': 'OPEN', 'required_tier_id': 5, 'chat_messages': [], **extra}
         server._save_central_database_update({'matchmaking_rooms': [room]})
 
-    def request(self, path, user=None, body=None):
+    def request(self, path, user=None, body=None, cookie_user=None):
         headers = {'Content-Type': 'application/json'}
         if user:
             headers['Authorization'] = 'Bearer ' + server.create_access_token(user, 'CUSTOMER')
+        if cookie_user:
+            headers['Cookie'] = 'auth_token=' + server.create_access_token(cookie_user, 'CUSTOMER')
+            headers['Origin'] = self.base
         req = urllib.request.Request(self.base + path, data=json.dumps(body).encode() if body is not None else None, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=3) as response:
@@ -138,6 +141,51 @@ class RoomNotificationTests(unittest.TestCase):
     def test_same_name_different_id_is_not_a_member(self):
         self.store.data['users'][4]['name'] = 'Player 1'
         self.assertEqual(self.request('/api/chat/rooms/100/messages', 5, {'text': 'intrude'})[0], 403)
+
+    def test_shared_cookie_cannot_join_as_the_wrong_account(self):
+        status, result = self.request('/api/matchmaking/rooms/100/join', user=2, body={'expected_user_id': 2}, cookie_user=1)
+        self.assertEqual(status, 409)
+        self.assertIn('Phiên đăng nhập', result['detail'])
+        self.assertEqual(self.store.data['matchmaking_rooms'][0]['current_players'], 1)
+        status, result = self.request('/api/matchmaking/rooms/100/join', body={'expected_user_id': 2}, cookie_user=2)
+        self.assertEqual(status, 200)
+        self.assertEqual(result['actor_user_id'], '2')
+        self.assertEqual({p['id'] for p in result['room']['players']}, {1, 2})
+        self.assertEqual(self.store.data['notifications'][0]['recipient_id'], 1)
+
+    def test_legacy_name_only_member_repaired_without_duplicate(self):
+        room = self.store.data['matchmaking_rooms'][0]
+        room['players'].append({'name': 'Player 2'})
+        room['current_players'] = 2
+        status, result = self.join(2)
+        self.assertEqual(status, 200)
+        self.assertEqual(len(result['room']['players']), 2)
+        self.assertEqual({p['id'] for p in result['room']['players']}, {1, 2})
+        self.assertEqual(self.request('/api/chat/rooms/100/messages',2,{'text':'Now I can chat','expected_user_id':2})[0],200)
+
+    def test_roster_version_increases_only_when_members_change(self):
+        before = self.store.data['matchmaking_rooms'][0]['_membership_version']
+        _, result = self.join(2)
+        after = result['room']['_membership_version']
+        self.assertGreater(after,before)
+        _, retry = self.join(2)
+        self.assertEqual(retry['room']['_membership_version'],after)
+
+    def test_message_rejects_session_identity_mismatch(self):
+        self.join(2)
+        status,_ = self.request('/api/chat/rooms/100/messages',body={'text':'Wrong actor','expected_user_id':2},cookie_user=1)
+        self.assertEqual(status,409)
+        self.assertFalse([n for n in self.store.data['notifications'] if n['type']=='ROOM_CHAT_MESSAGE'])
+
+    def test_conflicting_host_metadata_does_not_create_phantom_membership(self):
+        # Exact symptom: a nonmember is reported already joined because a stale
+        # host_id identifies them even though only the real host is in players.
+        self.store.data['matchmaking_rooms'][0]['host_id'] = 2
+        status, result = self.request('/api/matchmaking/rooms/100/join',2,{'expected_user_id':2})
+        self.assertEqual(status,200)
+        self.assertTrue(result['joined'])
+        self.assertEqual(len(result['room']['players']),2)
+        self.assertEqual(self.store.data['notifications'][0]['recipient_id'],1)
 
 
 if __name__ == '__main__':

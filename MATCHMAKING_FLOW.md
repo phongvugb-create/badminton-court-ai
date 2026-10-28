@@ -8,6 +8,13 @@
   `POST /api/matchmaking/rooms/{id}/join`. Máy chủ xác minh đăng nhập,
   lời mời phòng riêng, cấp bậc, trạng thái và sức chứa theo bản ghi mới nhất.
   Tham gia lại không thêm người hay tạo thông báo trùng.
+  Giao diện gửi ID tài khoản đang hiển thị để đối chiếu với phiên đã xác thực;
+  nếu cookie thuộc tài khoản khác thì yêu cầu đăng nhập lại, không nhận nhầm người
+  hay báo “đã tham gia” sai. Danh sách `players` có chủ phòng là nguồn chuẩn khi
+  thông tin chủ phòng cũ bị mâu thuẫn; bản ghi tên chưa có ID được chuẩn hóa khi vào.
+- Kết quả tham gia chứa phiên bản danh sách thành viên. Bản đồng bộ cũ không được
+  ghi đè danh sách vừa tham gia. Cả hai phía cập nhật lại bộ đếm, nút tham gia và
+  danh sách thành viên khi nhận thay đổi từ máy chủ.
 - Người mới vào: máy chủ lưu thông báo tên người và số phòng cho những thành viên
   hiện có, gồm chủ phòng. Không thông báo cho chính người vừa vào.
 - Nhắn tin: máy chủ lấy danh tính người gửi từ tài khoản xác thực, lưu tin nhắn

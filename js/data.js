@@ -1469,7 +1469,10 @@ function applyDataToMockData(sourceData) {
   if (sourceData.matchmaking_rooms && Array.isArray(sourceData.matchmaking_rooms)) {
     const unsent = new Map((MockData.matchmaking_rooms || []).map(room => [String(room.id),
       (room.chat_messages || []).filter(m => ['pending', 'failed'].includes(m.delivery_state))]));
+    const previousRooms = new Map((MockData.matchmaking_rooms || []).map(room => [String(room.id), room]));
     MockData.matchmaking_rooms = sourceData.matchmaking_rooms.map(room => {
+      const local = previousRooms.get(String(room.id));
+      if (Number(local?._membership_version || 0) > Number(room._membership_version || 0)) room = local;
       const messages = room.chat_messages || [];
       const known = new Set(messages.map(m => String(m.id)));
       return { ...room, chat_messages: [...messages, ...(unsent.get(String(room.id)) || []).filter(m => !known.has(String(m.id)))] };

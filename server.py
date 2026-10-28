@@ -97,6 +97,10 @@ def _merge_records_by_id(existing, incoming):
                 # roster entries too, using the name as a stable fallback key.
                 player_key = f"id:{player_id}" if player_id is not None else f"name:{player_name}" if player_name else None
                 if player_key:
+                    if player_id is not None:
+                        players.pop(f"name:{player_name}", None)
+                    elif any(p.get("id") is not None and str(p.get("name", "")).strip().casefold() == player_name for p in players.values()):
+                        continue
                     players[player_key] = player
             host_name = str(merged.get("host_name") or "").strip()
             if host_name and not any(
@@ -191,6 +195,13 @@ def _save_central_database_update(incoming_data):
         rooms = merged_database.get("matchmaking_rooms", [])
         previous_rooms = current_data.get("matchmaking_rooms", [])
         assign_room_numbers(previous_rooms, rooms)
+        previous_by_id = {str(r['id']): r for r in previous_rooms}
+        for room in rooms:
+            previous = previous_by_id.get(str(room['id']), {})
+            before = [(str(p.get('id')), p.get('name')) for p in previous.get('players', [])]
+            after = [(str(p.get('id')), p.get('name')) for p in room.get('players', [])]
+            version = int(previous.get('_membership_version') or 0)
+            room['_membership_version'] = version + 1 if before != after or not version else version
         generated = build_room_notifications(previous_rooms, rooms, merged_database.get("users", []))
         merged_database["notifications"] = _merge_notifications(merged_database.get("notifications", []), generated)
         db_manager.save_data(merged_database)
@@ -1137,9 +1148,14 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                 length = int(self.headers.get("Content-Length", 0))
                 if length < 0 or length > 2048:
                     raise RoomError(400, "Yêu cầu tham gia phòng không hợp lệ.")
-                self.rfile.read(length)
+                raw = self.rfile.read(length)
+                payload = json.loads(raw) if raw else {}
+                if not isinstance(payload, dict):
+                    raise RoomError(400, "Yêu cầu tham gia phòng không hợp lệ.")
                 if not auth or not auth.get("sub"):
                     raise RoomError(401, "Vui lòng đăng nhập để tham gia phòng.")
+                if payload.get("expected_user_id") is not None and str(payload['expected_user_id']) != str(auth['sub']):
+                    raise RoomError(409, "Phiên đăng nhập đã đổi sang tài khoản khác. Vui lòng đăng nhập lại tài khoản đang hiển thị trước khi tham gia phòng.")
                 with CENTRAL_DATABASE_LOCK:
                     data = db_manager.load_data() or {}
                     room, changed = join_room(data, auth["sub"], urllib.parse.unquote(join_match.group(1)))
@@ -1149,7 +1165,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                                        and str(n.get("recipient_id")) == str(auth["sub"])]
                         saved = _save_central_database_update({"matchmaking_rooms": [room], "notifications": invitations})
                         room = next(r for r in saved["matchmaking_rooms"] if str(r["id"]) == str(room["id"]))
-                status, body = 200, {"success": True, "room": room, "joined": changed}
+                status, body = 200, {"success": True, "room": room, "joined": changed, "actor_user_id": str(auth['sub'])}
             except RoomError as error:
                 status, body = error.status, {"detail": str(error)}
             except Exception:
@@ -1185,6 +1201,14 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     return
 
                 message_id = str(incoming.get("id") or f"chat_{secrets.token_urlsafe(18)}")[:120]
+                if incoming.get("expected_user_id") is not None and str(incoming['expected_user_id']) != str(user.get('id')):
+                    content = json.dumps({"detail": "Phiên đăng nhập không khớp. Vui lòng đăng nhập lại tài khoản đang hiển thị."}, ensure_ascii=False).encode('utf-8')
+                    self.send_response(409)
+                    self.send_header('Content-Type', 'application/json; charset=utf-8')
+                    self.send_header('Content-Length', str(len(content)))
+                    self.end_headers()
+                    self.wfile.write(content)
+                    return
                 is_ai_message = bool(incoming.get("isAI", False))
                 requested_sender = str(incoming.get("sender") or "")
                 ai_senders = {"🤖 AI Match Referee", "🤖 AI Virtual Coach"}
@@ -1326,7 +1350,13 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     "id": user.get("id"),
                     "name": user.get("name"),
                     "phone": user.get("phone"),
-                    "role": user.get("role")
+                    "role": user.get("role"),
+                    "skill_tier_id": user.get("skill_tier_id"),
+                    "skill_tier": user.get("skill_tier"),
+                    "elo_rating": user.get("elo_rating"),
+                    "photo": user.get("photo"),
+                    "avatar": user.get("avatar"),
+                    "is_approved": user.get("is_approved", True)
                 }
             }, ensure_ascii=False).encode("utf-8"))
             return

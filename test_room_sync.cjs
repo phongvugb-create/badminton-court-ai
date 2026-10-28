@@ -33,5 +33,8 @@ vm.runInContext(fs.readFileSync('js/data.js', 'utf8'), ctx);
   vm.runInContext(`MockData.matchmaking_rooms = [{ id: 7, chat_messages: [{ id: 'retry', delivery_state: 'failed' }] }];
     applyDataToMockData({ matchmaking_rooms: [{ id: 7, chat_messages: [] }] });`, ctx);
   assert.equal(vm.runInContext('MockData.matchmaking_rooms[0].chat_messages[0].id', ctx), 'retry');
+  vm.runInContext(`MockData.matchmaking_rooms = [{ id: 7, _membership_version: 2, players: [{id:1},{id:2}], chat_messages: [] }];
+    applyDataToMockData({ matchmaking_rooms: [{ id: 7, _membership_version: 1, players: [{id:1}], chat_messages: [] }] });`, ctx);
+  assert.equal(vm.runInContext('MockData.matchmaking_rooms[0].players.length', ctx), 2);
   console.log('Room sync: cross-browser join/chat dispatch once, failed/pending messages excluded from snapshots: OK');
 })().catch(error => { console.error(error); process.exitCode = 1; });

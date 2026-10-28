@@ -7,7 +7,10 @@ import copy
 def members(room, users):
     by_id = {str(u['id']): u for u in users if u.get('id') is not None}
     result = {}
-    entries = list(room.get('players') or []) + [{'id': room.get('host_id') or room.get('host_user_id') or room.get('owner_id'), 'name': room.get('host_name')}]
+    entries = list(room.get('players') or [])
+    has_host = any(isinstance(p, dict) and (p.get('role') == 'Host' or (p.get('name') and p.get('name') == room.get('host_name'))) for p in entries)
+    if not has_host:
+        entries.append({'id': room.get('host_id') or room.get('host_user_id') or room.get('owner_id'), 'name': room.get('host_name')})
     for entry in entries:
         if not isinstance(entry, dict):
             continue
@@ -105,6 +108,18 @@ def join_room(data, user_id, room_id):
     room = copy.deepcopy(original)
     roster = members(room, data.get('users', []))
     if str(user_id) in roster:
+        # Repair legacy name-only rows so the browser's ID-based membership
+        # check agrees with server authorization. Never duplicate that member.
+        players = room.setdefault('players', [])
+        for player in players:
+            if player.get('id') is None and player.get('name') == user.get('name'):
+                player['id'] = user['id']
+                room['current_players'] = len(players)
+                return room, True
+        if not any(str(p.get('id')) == str(user_id) for p in players):
+            players.append({'id': user['id'], 'name': user.get('name'), 'role': 'Host'})
+            room['current_players'] = len(players)
+            return room, True
         return room, False
     if room.get('visibility') == 'INVITE_ONLY':
         invited = {str(x) for x in room.get('invited_player_ids', [])}

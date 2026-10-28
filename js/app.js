@@ -1401,6 +1401,7 @@ class BadmintonAIApp {
     }
     if (screenId === 'ui-07') {
       if (this.activeRoom) {
+        this.renderActiveRoomHeader();
         this.renderRoomDetailMembers();
         this.renderChatMessages();
         this.renderAIRoomTactics();
@@ -2630,6 +2631,7 @@ class BadmintonAIApp {
       this.updateUserAvatarElements(dataUrl);
       this.executeMatchmakingEngine();
       if (this.activeRoom) {
+        this.renderActiveRoomHeader();
         this.renderRoomDetailMembers();
         this.renderChatMessages();
       }
@@ -3536,12 +3538,17 @@ class BadmintonAIApp {
     }
     if (this._joiningRoom) return null;
     this._joiningRoom = true;
+    const expectedUserId = this.currentUser.id;
     try {
       const response = await fetch(`/api/matchmaking/rooms/${encodeURIComponent(roomId)}/join`, {
-        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expected_user_id: expectedUserId })
       });
       const result = await response.json();
       if (!response.ok || !result.room) throw new Error(result.detail || 'Không thể tham gia phòng.');
+      if (String(result.actor_user_id) !== String(expectedUserId) || String(this.currentUser?.id) !== String(expectedUserId)) {
+        throw new Error('Phiên đăng nhập không khớp tài khoản đang hiển thị. Vui lòng đăng nhập lại.');
+      }
+      if (!this.isRoomMember(result.room)) throw new Error('Máy chủ chưa xác nhận bạn trong danh sách thành viên. Vui lòng thử lại.');
       const index = (MockData.matchmaking_rooms || []).findIndex(r => String(r.id) === String(roomId));
       if (index < 0) MockData.matchmaking_rooms.unshift(result.room);
       else MockData.matchmaking_rooms[index] = result.room;
@@ -3719,6 +3726,7 @@ class BadmintonAIApp {
       const freshRoom = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(this.activeRoom.id));
       if (freshRoom) {
         this.activeRoom = freshRoom;
+        this.renderActiveRoomHeader();
         this.renderRoomDetailMembers();
         this.renderChatMessages();
         this.renderAIRoomTactics();
@@ -3795,6 +3803,7 @@ class BadmintonAIApp {
               this.renderChatMessages();
             }
             if (oldPlayers !== newPlayers) {
+              this.renderActiveRoomHeader();
               this.renderRoomDetailMembers();
               this.renderAIRoomTactics();
             }
@@ -4462,12 +4471,26 @@ class BadmintonAIApp {
     }
     this.ensureRoomPlayers(this.activeRoom);
     
+    this.renderActiveRoomHeader();
+    this.markRoomNotificationsRead(roomId);
+
+    this.renderRoomDetailMembers();
+    this.renderChatMessages();
+    this.renderAIRoomTactics();
+    this.navigateTo('ui-07');
+  }
+
+  isRoomMember(room, user = this.currentUser) {
+    return !!user && (room?.players || []).some(p => p.id != null && String(p.id) === String(user.id));
+  }
+
+  renderActiveRoomHeader() {
+    if (!this.activeRoom) return;
     const titleEl = document.getElementById('room-detail-title');
     const metaEl = document.getElementById('room-detail-meta');
     const statusBadge = document.getElementById('room-detail-status-badge');
 
     if (titleEl) titleEl.textContent = `Phòng #${this.activeRoom.room_number || this.activeRoom.id} · ${this.cleanMatchmakingRoomName(this.activeRoom.room_name)}`;
-    this.markRoomNotificationsRead(roomId);
     if (metaEl) {
       metaEl.innerHTML = `
         <i class="fa-solid fa-map-pin text-rose"></i> ${this.activeRoom.facility_name} | 
@@ -4499,7 +4522,7 @@ class BadmintonAIApp {
         joinBtn.style.background = "#d97706";
         joinBtn.onclick = () => app.navigateTo('ui-01');
       } else {
-        const isMember = this.activeRoom.players && this.activeRoom.players.some(p => p.name === this.currentUser.name || (p.id && String(p.id) === String(this.currentUser.id)));
+        const isMember = this.isRoomMember(this.activeRoom);
         const isFull = this.getRoomPlayerCount(this.activeRoom) >= this.getRoomCapacity(this.activeRoom);
         if (isMember) {
           joinBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Bạn Đã Trong Kèo Này`;
@@ -4521,10 +4544,6 @@ class BadmintonAIApp {
       }
     }
 
-    this.renderRoomDetailMembers();
-    this.renderChatMessages();
-    this.renderAIRoomTactics();
-    this.navigateTo('ui-07');
   }
 
   renderRoomDetailMembers() {
@@ -4541,7 +4560,7 @@ class BadmintonAIApp {
       const photo = p.photo || p.avatar;
       const isPhotoUrl = photo && (photo.startsWith('data:image') || photo.startsWith('http') || photo.includes('/'));
       const isHost = p.role === 'Host' || p.name === room.host_name;
-      const isMe = this.currentUser && (p.name === this.currentUser.name || p.id === this.currentUser.id);
+      const isMe = this.currentUser && p.id != null && String(p.id) === String(this.currentUser.id);
 
       html += `
         <div style="background: #ffffff; border: 1.5px solid ${isHost ? '#10b981' : '#cbd5e1'}; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
@@ -4797,11 +4816,13 @@ class BadmintonAIApp {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message)
+        body: JSON.stringify({ ...message, expected_user_id: this.currentUser?.id })
       });
       if (!response.ok) {
         const messageText = response.status === 401
           ? 'Phiên đăng nhập chưa được xác thực. Hãy đăng xuất rồi đăng nhập lại.'
+          : response.status === 409
+            ? 'Phiên đăng nhập đã đổi tài khoản. Vui lòng đăng nhập lại tài khoản đang hiển thị.'
           : response.status === 403
             ? 'Tài khoản này chưa tham gia phòng chat.'
             : 'Không thể đồng bộ tin nhắn lên máy chủ.';
@@ -4837,7 +4858,7 @@ class BadmintonAIApp {
     if (!text || !this.activeRoom) return;
 
     const room = this.activeRoom;
-    if (!(room.players || []).some(p => String(p.id) === String(this.currentUser.id))) {
+    if (!this.isRoomMember(room)) {
       this.showToast("Bạn cần tham gia phòng trước khi gửi tin nhắn.", "error");
       return;
     }
