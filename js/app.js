@@ -3360,7 +3360,54 @@ class BadmintonAIApp {
       `;
     });
 
-    container.innerHTML = html;
+    container.innerHTML = html || `
+      <div style="grid-column: 1 / -1; padding: 1.5rem; text-align: center; color: #64748b; background: #fff; border: 1px dashed #cbd5e1; border-radius: 14px;">
+        <i class="fa-solid fa-magnifying-glass" style="font-size: 1.25rem; margin-bottom: 8px;"></i>
+        <div>Chưa có đối thủ hoặc phòng ghép phù hợp bộ lọc hiện tại.</div>
+      </div>`;
+    this.renderMyMatchmakingRooms();
+  }
+
+  renderMyMatchmakingRooms() {
+    const container = document.getElementById('my-matchmaking-rooms');
+    if (!container) return;
+    const userId = String(this.currentUser?.id ?? '');
+    const userName = String(this.currentUser?.name || '');
+    const rooms = (MockData.matchmaking_rooms || []).filter(room =>
+      (userId && [room.host_id, room.host_user_id, room.owner_id].some(id => String(id ?? '') === userId)) ||
+      (userName && String(room.host_name || '') === userName)
+    );
+    if (!rooms.length) {
+      container.innerHTML = '';
+      return;
+    }
+    container.innerHTML = `
+      <section style="padding: 1rem; background: #f0fdf4; border: 1px solid #86efac; border-radius: 14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 10px;">
+          <div>
+            <h3 style="margin:0; color:#166534; font-size:1rem;"><i class="fa-solid fa-house-user"></i> Phòng ghép của bạn</h3>
+            <div style="font-size:.82rem; color:#4b5563; margin-top:3px;">Phòng bạn đã tạo sẽ luôn hiện ở đây để kiểm tra và vào trao đổi với người chơi.</div>
+          </div>
+          <span style="font-weight:800; color:#166534;">${rooms.length} phòng</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:10px;">
+          ${rooms.map(room => {
+            const capacity = this.getRoomCapacity(room);
+            const players = this.getRoomPlayerCount(room);
+            const isOpen = String(room.status || 'OPEN').toUpperCase() === 'OPEN';
+            return `<article style="background:#fff; border:1px solid #bbf7d0; border-radius:11px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
+                <strong style="color:#0f172a;">${this.cleanMatchmakingRoomName(room.room_name)}</strong>
+                <span style="white-space:nowrap; font-size:.75rem; font-weight:800; color:${isOpen ? '#166534' : '#475569'}; background:${isOpen ? '#dcfce7' : '#f1f5f9'}; padding:3px 8px; border-radius:99px;">${isOpen ? 'Đang mở' : 'Đã đủ người'}</span>
+              </div>
+              <div style="font-size:.82rem; color:#64748b; margin:7px 0 10px;">${room.facility_name || room.district || 'Chưa chọn sân'} · ${room.match_time || room.play_time || 'Chưa chọn giờ'} · ${players}/${capacity} người</div>
+              <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${JSON.stringify(room.id)})" style="background:#167946; font-weight:700;">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i> Vào phòng ghép
+              </button>
+            </article>`;
+          }).join('')}
+        </div>
+      </section>`;
   }
 
   challengeOpponentPrompt(opponentName, tierName, opponentId = null, facility = null, matchTime = null) {
@@ -5244,8 +5291,9 @@ class BadmintonAIApp {
 
     this.closeModal();
     this.renderMatchmakingRooms();
+    let roomSavedCentrally = false;
     if (typeof saveMockDataToLocalStorage === 'function') {
-      await saveMockDataToLocalStorage();
+      roomSavedCentrally = await saveMockDataToLocalStorage();
     }
 
     if (typeof broadcastLiveSync === 'function') {
@@ -5258,8 +5306,8 @@ class BadmintonAIApp {
     }
 
     this.showToast(roomSavedCentrally
-      ? `🎉 Đã lưu phòng lên hệ thống và đưa bạn vào phòng! Người chơi khác sẽ thấy phòng sau khi đồng bộ.`
-      : `⚠️ Đã tạo phòng trên thiết bị này nhưng chưa kết nối được database. Người khác có thể chưa thấy phòng; hãy kiểm tra backend/mạng.` , roomSavedCentrally ? "success" : "error");
+      ? `🎉 Đã tạo và lưu phòng ghép. Phòng của bạn đang hiển thị bên dưới danh sách; đang mở phòng chat.`
+      : `✅ Đã tạo phòng ghép trên thiết bị này. Phòng của bạn đang hiển thị bên dưới danh sách; hiện chưa đồng bộ được database trung tâm.`, roomSavedCentrally ? "success" : "info");
     setTimeout(() => {
       this.openRoomChat(newRoom.id);
     }, 300);
