@@ -666,6 +666,14 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             return True
         return False
 
+    def _request_tab_session(self):
+        value = self.headers.get("X-Tab-Session")
+        path = urllib.parse.urlsplit(getattr(self, "path", ""))
+        if value is None and re.fullmatch(r"/api/chat/rooms/[^/]+/events", path.path):
+            values = urllib.parse.parse_qs(path.query).get('tab_session', [])
+            value = values[0] if values else None
+        return value
+
     def _parse_auth_cookie(self):
         """Parse the HttpOnly auth_token cookie from request headers.
         Returns the raw JWT string or None."""
@@ -674,8 +682,15 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             return None
         try:
             cookie = http.cookies.SimpleCookie(cookie_header)
-            if "auth_token" in cookie:
-                return cookie["auth_token"].value
+            tab_id = self._request_tab_session()
+            if tab_id is not None:
+                if not re.fullmatch(r'[A-Za-z0-9_-]{16,64}', tab_id):
+                    return None
+                name = 'auth_tab_' + tab_id
+            else:
+                name = 'auth_token'
+            if name in cookie:
+                return cookie[name].value
         except Exception:
             pass
         return None
@@ -685,6 +700,8 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
         Returns decoded payload dict or None."""
         # 1. Prefer HttpOnly cookie (most secure)
         token = self._parse_auth_cookie()
+        if self._request_tab_session() is not None:
+            return decode_token(token) if token else None
         if token:
             payload = decode_token(token)
             if payload:
@@ -745,7 +762,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             # Non-browser or cross-origin: still need CORS for public API assets
             self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Cache-Control, Authorization")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Cache-Control, Authorization, X-Tab-Session")
         self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "SAMEORIGIN")
@@ -756,6 +773,17 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if self.path == '/api/auth/me':
+            auth = self._authenticate_request()
+            user = next((u for u in (db_manager.load_data() or {}).get('users', []) if auth and str(u.get('id')) == str(auth.get('sub'))), None)
+            public = {k: user.get(k) for k in ('id', 'name', 'phone', 'role', 'skill_tier_id', 'skill_tier', 'elo_rating', 'photo', 'avatar', 'is_approved')} if user else None
+            content = json.dumps({'user': public}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200 if user else 401)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+            return
         chat_events_match = re.fullmatch(r"/api/chat/rooms/([^/]+)/events", urllib.parse.urlsplit(self.path).path)
         if chat_events_match:
             room_id = urllib.parse.unquote(chat_events_match.group(1))
@@ -790,6 +818,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError, OSError):
                 pass
             finally:
+                self.close_connection = True
                 _remove_chat_subscriber(room_id, subscriber)
             return
 
@@ -1340,12 +1369,16 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             )
             # Issue HttpOnly cookie — JS never receives the raw token
             cookie_header = self._build_auth_cookie(access_token)
+            tab_id = secrets.token_urlsafe(18)
+            tab_cookie = cookie_header.replace('auth_token=', 'auth_tab_' + tab_id + '=', 1)
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Set-Cookie", cookie_header)
+            self.send_header("Set-Cookie", tab_cookie)
             self.end_headers()
             # Return ONLY user info — no access_token in JSON body
             self.wfile.write(json.dumps({
+                "tab_session_id": tab_id,
                 "user": {
                     "id": user.get("id"),
                     "name": user.get("name"),
@@ -1364,10 +1397,23 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
         # LOGOUT ENDPOINT — expires the HttpOnly cookie server-side
         # =========================================================================
         if self.path == "/api/logout":
+            try:
+                length = int(self.headers.get('Content-Length', 0))
+                if not 0 <= length <= 2048:
+                    raise ValueError()
+                self.rfile.read(length)
+            except ValueError:
+                self.send_response(400)
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+                return
             clear_cookie = self._build_clear_cookie()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Set-Cookie", clear_cookie)
+            tab_id = self._request_tab_session()
+            if tab_id and re.fullmatch(r'[A-Za-z0-9_-]{16,64}', tab_id):
+                self.send_header('Set-Cookie', clear_cookie.replace('auth_token=', 'auth_tab_' + tab_id + '=', 1))
             self.end_headers()
             self.wfile.write(json.dumps({
                 "success": True,
@@ -1388,7 +1434,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
 
             # Authenticate — cookie first, Bearer fallback
             payload_chat = self._authenticate_request()
-            if (cookie_token or bearer_token) and not payload_chat:
+            if (cookie_token or bearer_token or self._request_tab_session() is not None) and not payload_chat:
                 self.send_response(401)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()

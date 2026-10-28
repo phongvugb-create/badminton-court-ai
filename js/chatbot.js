@@ -371,7 +371,8 @@ class BadmintonAIChatbot {
       let replyText = "";
       let sources = [];
       const headers = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...window.BadmintonSession?.headers()
       };
       const authToken = localStorage.getItem('access_token') || localStorage.getItem('token') || sessionStorage.getItem('token');
       if (authToken) {

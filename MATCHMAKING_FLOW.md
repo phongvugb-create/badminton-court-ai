@@ -15,6 +15,11 @@
 - Kết quả tham gia chứa phiên bản danh sách thành viên. Bản đồng bộ cũ không được
   ghi đè danh sách vừa tham gia. Cả hai phía cập nhật lại bộ đếm, nút tham gia và
   danh sách thành viên khi nhận thay đổi từ máy chủ.
+- Mỗi tab đăng nhập có mã phiên lưu riêng trong `sessionStorage`; JWT vẫn chỉ nằm
+  trong cookie `HttpOnly` có tên riêng theo phiên. Gửi `X-Tab-Session` cho API và
+  mã phiên công khai trong URL SSE để chọn đúng cookie, không đưa JWT vào URL/JS.
+  Đăng nhập/đăng xuất tab khác không đổi danh tính của tab đang chat. Sau tải lại,
+  `/api/auth/me` kiểm tra phiên tab trước khi cập nhật tài khoản hiển thị.
 - Người mới vào: máy chủ lưu thông báo tên người và số phòng cho những thành viên
   hiện có, gồm chủ phòng. Không thông báo cho chính người vừa vào.
 - Nhắn tin: máy chủ lấy danh tính người gửi từ tài khoản xác thực, lưu tin nhắn
@@ -33,6 +38,8 @@
 python -m unittest test_room_notifications -q
 node test_room_ui.cjs
 node test_room_sync.cjs
+python -m unittest test_tab_sessions.TabSessionTests -q
+node test_tab_session_ui.cjs
 ```
 
 Kiểm thử HTTP dùng JWT thật cho các tài khoản giả lập, máy chủ loopback và kho

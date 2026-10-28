@@ -6,7 +6,8 @@ class BadmintonAIApp {
   constructor() {
     this.currentRole = 'CUSTOMER';
     this.currentView = 'ui-02';
-    this.currentUser = null; // Default: Chưa đăng nhập (Giao diện Khách hàng vãng lai)
+    this.currentUser = window.BadmintonSession?.user() || null;
+    if (this.currentUser) this.currentRole = this.currentUser.role;
     
     // Booking & State Tracking
     this.selectedFacility = MockData.facilities[0];
@@ -37,9 +38,8 @@ class BadmintonAIApp {
     init() {
         // Auth token is now an HttpOnly cookie set by the backend.
         // JS cannot and should not read it — auth state is tracked via currentUser.
-        // On page reload, if currentUser is missing, the user must re-authenticate
-        // OR we call /api/auth/me (future endpoint) to restore session from cookie.
-        // For now: session is in-memory only; cookie persists the token server-side.
+        // Each tab stores only its session locator; JWT stays in a dedicated
+        // HttpOnly cookie. /api/auth/me validates the restored tab identity.
         
         this.initSplashScreen();
      this.updateTopDateDisplay();
@@ -69,6 +69,7 @@ class BadmintonAIApp {
      this.initLeafletMap();
      this.updatePendingMatchesUI();
      this.startRealtimeSyncLoop();
+     this.restoreTabSession();
      document.addEventListener('visibilitychange', () => {
        if (!document.hidden && this.currentView === 'ui-07' && this.activeRoom) this.markRoomNotificationsRead(this.activeRoom.id);
      });
@@ -84,6 +85,23 @@ class BadmintonAIApp {
     } else {
       this.fallbackCopy(text, label);
     }
+  }
+
+  async restoreTabSession() {
+    if (!window.BadmintonSession?.id()) return;
+    try {
+      const response = await fetch('/api/auth/me', { credentials: 'same-origin', headers: window.BadmintonSession.headers() });
+      if (response.status === 401) {
+        window.BadmintonSession.clear();
+        this.currentUser = null;
+        this.currentRole = 'CUSTOMER';
+        this.navigateTo('ui-01');
+      } else if (response.ok) {
+        this.currentUser = (await response.json()).user;
+      }
+      this.updateHeaderUserUI();
+      this.renderSidebarNav();
+    } catch { /* Keep this tab's identity when temporarily offline; server still validates actions. */ }
   }
 
   fallbackCopy(text, label) {
@@ -1209,8 +1227,9 @@ class BadmintonAIApp {
         fetch('/api/logout', {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json', ...window.BadmintonSession?.headers() }
         }).catch(err => console.warn('Logout API error (non-fatal):', err));
+        window.BadmintonSession?.clear();
         this.updateHeaderUserUI();
 
     document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
@@ -2137,6 +2156,7 @@ class BadmintonAIApp {
 
              // Make the API call — cookie is sent automatically by browser
              fetch(url, {
+                 headers: { ...window.BadmintonSession?.headers() },
                  method: 'GET',
                  credentials: 'include',
                  headers: {
@@ -3541,7 +3561,7 @@ class BadmintonAIApp {
     const expectedUserId = this.currentUser.id;
     try {
       const response = await fetch(`/api/matchmaking/rooms/${encodeURIComponent(roomId)}/join`, {
-        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expected_user_id: expectedUserId })
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...window.BadmintonSession?.headers() }, body: JSON.stringify({ expected_user_id: expectedUserId })
       });
       const result = await response.json();
       if (!response.ok || !result.room) throw new Error(result.detail || 'Không thể tham gia phòng.');
@@ -4781,7 +4801,8 @@ class BadmintonAIApp {
     if (this.roomChatEventSource && this.roomChatEventRoomId === roomKey) return;
     if (this.roomChatEventSource) this.roomChatEventSource.close();
 
-    const source = new EventSource(`/api/chat/rooms/${encodeURIComponent(roomKey)}/events`, { withCredentials: true });
+    const eventsPath = `/api/chat/rooms/${encodeURIComponent(roomKey)}/events`;
+    const source = new EventSource(window.BadmintonSession?.eventsUrl(eventsPath) || eventsPath, { withCredentials: true });
     this.roomChatEventSource = source;
     this.roomChatEventRoomId = roomKey;
     source.onmessage = event => {
@@ -4815,7 +4836,7 @@ class BadmintonAIApp {
       const response = await fetch(`/api/chat/rooms/${encodeURIComponent(roomId)}/messages`, {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...window.BadmintonSession?.headers() },
         body: JSON.stringify({ ...message, expected_user_id: this.currentUser?.id })
       });
       if (!response.ok) {
@@ -7842,6 +7863,7 @@ class BadmintonAIApp {
             return response.json();
         })
         .then(data => {
+            window.BadmintonSession?.save(data);
             // Login successful — backend issued HttpOnly cookie
             // Do NOT store access_token in JS — it's in the HttpOnly cookie now
             this.currentUser = data.user;
@@ -8017,6 +8039,7 @@ class BadmintonAIApp {
         body: JSON.stringify({ phone, password })
       });
       serverSessionReady = authResponse.ok;
+      if (authResponse.ok) window.BadmintonSession?.save(await authResponse.json());
     } catch (error) {
       console.warn('Không thể tạo phiên đăng nhập máy chủ sau khi đăng ký:', error);
     }

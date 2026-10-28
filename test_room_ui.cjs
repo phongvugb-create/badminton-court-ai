@@ -64,7 +64,11 @@ assert.equal(app.escapeRoomText('<img onerror="bad">'), '&lt;img onerror=&quot;b
   app.currentUser = {id:2,name:'Guest'};
   context.fetch = async () => ({ok:true,json:async()=>({joined:false,actor_user_id:'1',room:{id:7,players:[{id:1,name:'Host'}]}})});
   assert.equal(await app.joinRoomOnServer(7),null);
-  context.fetch = async () => ({ok:true,json:async()=>({joined:true,actor_user_id:'2',room:{id:7,room_number:3,players:[{id:1,name:'Host'},{id:2,name:'Guest'}],current_players:2,max_players:2,status:'MATCHED'}})});
+  context.window.BadmintonSession = { headers:()=>({'X-Tab-Session':'test-tab-locator-2'}), user:()=>null };
+  context.fetch = async (url, options) => {
+    assert.equal(options.headers['X-Tab-Session'],'test-tab-locator-2');
+    return {ok:true,json:async()=>({joined:true,actor_user_id:'2',room:{id:7,room_number:3,players:[{id:1,name:'Host'},{id:2,name:'Guest'}],current_players:2,max_players:2,status:'MATCHED'}})};
+  };
   const joined = await app.joinRoomOnServer(7);
   assert.equal(joined.players.length,2);
   assert.ok(app.isRoomMember(joined));
