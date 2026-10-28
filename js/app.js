@@ -69,6 +69,9 @@ class BadmintonAIApp {
      this.initLeafletMap();
      this.updatePendingMatchesUI();
      this.startRealtimeSyncLoop();
+     document.addEventListener('visibilitychange', () => {
+       if (!document.hidden && this.currentView === 'ui-07' && this.activeRoom) this.markRoomNotificationsRead(this.activeRoom.id);
+     });
    }
 
   copyToClipboard(text, label = "Thông tin") {
@@ -748,10 +751,7 @@ class BadmintonAIApp {
           <div style="display: flex; flex-direction: column; gap: 10px;">
             ${(() => {
               const myNotis = (MockData.notifications || []).filter(n => {
-                const matchId = n.recipient_id && user.id && String(n.recipient_id) === String(user.id);
-                const matchName = n.recipient_name && user.name && n.recipient_name.trim().toLowerCase() === user.name.trim().toLowerCase();
-                const matchPhone = n.recipient_phone && user.phone && n.recipient_phone === user.phone;
-                return matchId || matchName || matchPhone;
+                return this.isMyNotification(n);
               });
 
               if (myNotis.length === 0) {
@@ -3282,6 +3282,7 @@ class BadmintonAIApp {
 
       html += `
         <div class="mm-room-card">
+          ${cand.isRoom ? `<div style="padding:8px 16px;color:#167946;font-weight:800">Phòng #${this.escapeRoomText(cand.roomObj?.room_number || cand.roomId)}</div>` : ''}
           <div class="mm-card-header" style="background: ${cand.matchScore >= 90 ? 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' : '#f8fafc'};">
             <span style="background: ${badgeBg}; color: #fff; font-weight: 800; font-size: 0.78rem; padding: 4px 10px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 5px;">
               <i class="fa-solid fa-wand-magic-sparkles"></i> Khớp ${cand.matchScore}%
@@ -3391,50 +3392,6 @@ class BadmintonAIApp {
         <i class="fa-solid fa-magnifying-glass" style="font-size: 1.25rem; margin-bottom: 8px;"></i>
         <div>Chưa có đối thủ hoặc phòng ghép phù hợp bộ lọc hiện tại.</div>
       </div>`;
-    this.renderMyMatchmakingRooms();
-  }
-
-  renderMyMatchmakingRooms() {
-    const container = document.getElementById('my-matchmaking-rooms');
-    if (!container) return;
-    const userId = String(this.currentUser?.id ?? '');
-    const userName = String(this.currentUser?.name || '');
-    const rooms = (MockData.matchmaking_rooms || []).filter(room =>
-      (userId && [room.host_id, room.host_user_id, room.owner_id].some(id => String(id ?? '') === userId)) ||
-      (userName && String(room.host_name || '') === userName)
-    );
-    if (!rooms.length) {
-      container.innerHTML = '';
-      return;
-    }
-    container.innerHTML = `
-      <section style="padding: 1rem; background: #f0fdf4; border: 1px solid #86efac; border-radius: 14px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 10px;">
-          <div>
-            <h3 style="margin:0; color:#166534; font-size:1rem;"><i class="fa-solid fa-house-user"></i> Phòng ghép của bạn</h3>
-            <div style="font-size:.82rem; color:#4b5563; margin-top:3px;">Phòng bạn đã tạo sẽ luôn hiện ở đây để kiểm tra và vào trao đổi với người chơi.</div>
-          </div>
-          <span style="font-weight:800; color:#166534;">${rooms.length} phòng</span>
-        </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:10px;">
-          ${rooms.map(room => {
-            const capacity = this.getRoomCapacity(room);
-            const players = this.getRoomPlayerCount(room);
-            const isOpen = String(room.status || 'OPEN').toUpperCase() === 'OPEN' && players < capacity;
-            const tier = this.getMatchmakingTierInfo(room.required_tier_id || room.required_tier || room.host_tier_id || room.host_tier || 5);
-            return `<article style="background:#fff; border:1px solid #bbf7d0; border-radius:11px; padding:12px;">
-              <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
-                <strong style="color:#0f172a;">${this.cleanMatchmakingRoomName(room.room_name)}</strong>
-                <span style="white-space:nowrap; font-size:.75rem; font-weight:800; color:${isOpen ? '#166534' : '#475569'}; background:${isOpen ? '#dcfce7' : '#f1f5f9'}; padding:3px 8px; border-radius:99px;">${isOpen ? 'Đang mở' : 'Đã đủ người'}</span>
-              </div>
-              <div style="font-size:.82rem; color:#64748b; margin:7px 0 10px;">${this.getRoomMatchType(room)} · Cấp ${tier.name} · ${room.facility_name || room.district || 'Chưa chọn sân'} · ${room.match_time || room.play_time || 'Chưa chọn giờ'} · ${players}/${capacity} người</div>
-              <button class="btn btn-primary btn-sm" onclick="app.openRoomChat(${JSON.stringify(room.id)})" style="background:#167946; font-weight:700;">
-                <i class="fa-solid fa-arrow-right-to-bracket"></i> Vào phòng ghép
-              </button>
-            </article>`;
-          }).join('')}
-        </div>
-      </section>`;
   }
 
   challengeOpponentPrompt(opponentName, tierName, opponentId = null, facility = null, matchTime = null) {
@@ -3571,64 +3528,35 @@ class BadmintonAIApp {
     }, 350);
   }
 
-  async joinMatchmakingRoom(roomId) {
+  async joinRoomOnServer(roomId) {
     if (!this.currentUser) {
-      this.showToast("Vui lòng đăng nhập để tham gia phòng.", "error");
+      this.showToast('Vui lòng đăng nhập để tham gia phòng.', 'error');
       this.navigateTo('ui-01');
-      return;
+      return null;
     }
-    const room = (MockData.matchmaking_rooms || []).find(r => String(r.id) === String(roomId));
-    if (!room || room.visibility === 'INVITE_ONLY' || String(room.status || 'OPEN').toUpperCase() !== 'OPEN') {
-      this.showToast("Phòng không còn mở để tham gia.", "error");
-      return;
-    }
-    if (!this.canJoinMatchmakingRoom(room)) return;
-    this.ensureRoomPlayers(room);
-    room.max_players = this.getRoomCapacity(room);
-    room.current_players = room.players.length;
-    const existing = room.players.find(player => String(player.id) === String(this.currentUser.id));
-    if (!existing && room.players.length >= room.max_players) {
-      room.status = 'MATCHED';
-      room.current_players = room.players.length;
-      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
-      this.showToast("Phòng đã đủ người.", "error");
-      this.executeMatchmakingEngine();
-      return;
-    }
-    if (!existing) {
-      const tier = this.getSkillTierInfo(this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.elo_rating || 5);
-      room.players.push({
-        id: this.currentUser.id,
-        name: this.currentUser.name,
-        photo: this.currentUser.photo || this.currentUser.avatar || null,
-        avatar: (this.currentUser.name || 'U').charAt(0),
-        tier_id: tier.tier,
-        tier: tier.name,
-        elo: Number(this.currentUser.elo_rating || tier.defaultElo || 1200),
-        role: 'Member',
-        style: 'Đã tham gia'
+    if (this._joiningRoom) return null;
+    this._joiningRoom = true;
+    try {
+      const response = await fetch(`/api/matchmaking/rooms/${encodeURIComponent(roomId)}/join`, {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}'
       });
-      room.current_players = room.players.length;
-      if (!room.chat_messages) room.chat_messages = [];
-      const memberMessage = this.createRoomChatMessage(
-        '🤖 AI Match Referee',
-        `${this.currentUser.name} đã tham gia phòng.`,
-        { isAI: true }
-      );
-      room.chat_messages.push(memberMessage);
-      if (room.current_players >= room.max_players) room.status = 'MATCHED';
-      if (typeof saveMockDataToLocalStorage === 'function') await saveMockDataToLocalStorage();
-      this.publishRoomChatMessage(room.id, memberMessage);
-      if (typeof broadcastLiveSync === 'function') {
-        broadcastLiveSync('ROOM_MEMBER_JOINED', {
-          roomId: room.id,
-          roomName: room.room_name,
-          hostName: room.host_name,
-          memberName: this.currentUser.name
-        });
-      }
-    }
-    this.openRoomChat(room.id);
+      const result = await response.json();
+      if (!response.ok || !result.room) throw new Error(result.detail || 'Không thể tham gia phòng.');
+      const index = (MockData.matchmaking_rooms || []).findIndex(r => String(r.id) === String(roomId));
+      if (index < 0) MockData.matchmaking_rooms.unshift(result.room);
+      else MockData.matchmaking_rooms[index] = result.room;
+      if (typeof saveMockDataToLocalStorage === 'function') await saveMockDataToLocalStorage({ syncToCentral: false });
+      this.showToast(result.joined ? `Đã tham gia phòng #${result.room.room_number || result.room.id}.` : 'Bạn đã là thành viên phòng này.');
+      return result.room;
+    } catch (error) {
+      this.showToast(error.message || 'Mất kết nối. Chưa tham gia được phòng.', 'error');
+      return null;
+    } finally { this._joiningRoom = false; }
+  }
+
+  async joinMatchmakingRoom(roomId) {
+    const room = await this.joinRoomOnServer(roomId);
+    if (room) this.openRoomChat(room.id);
   }
 
   async acceptChallengeInvitation(notiId, roomId) {
@@ -3715,72 +3643,10 @@ class BadmintonAIApp {
       this.showToast("Lời mời đã đến nhưng phòng chưa đồng bộ về thiết bị này. Vui lòng đợi vài giây rồi thử lại.", "error");
       return;
     }
-    this.ensureRoomPlayers(room);
-    room.max_players = this.getRoomCapacity(room);
-    const roomMemberCount = room.players.length;
-    const isAlreadyMember = (room.players || []).some(player =>
-      String(player.id) === String(this.currentUser.id)
-    );
-    if (String(room.status || 'OPEN').toUpperCase() !== 'OPEN' ||
-        (!isAlreadyMember && roomMemberCount >= room.max_players)) {
-      this.showToast("Phòng đã đủ người hoặc đã đóng, bạn không thể tham gia nữa.", "error");
-      invitation.invite_status = 'EXPIRED';
-      invitation.is_read = true;
-      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
-      return;
-    }
-
+    const joinedRoom = await this.joinRoomOnServer(room.id);
+    if (!joinedRoom) return;
     invitation.is_read = true;
     invitation.invite_status = 'ACCEPTED';
-
-    // 3. Ensure recipient is in room.players
-    const userTier = this.getSkillTierInfo(this.currentUser.skill_tier_id || this.currentUser.skill_tier || this.currentUser.tier || this.currentUser.elo || 3);
-    const existing = room.players.find(p => p.name === this.currentUser.name || (p.id && String(p.id) === String(this.currentUser.id)));
-
-    if (!existing) {
-      room.players.push({
-        id: this.currentUser.id,
-        name: this.currentUser.name,
-        photo: this.currentUser.photo || this.currentUser.avatar || null,
-        avatar: (this.currentUser.name || 'U').charAt(0),
-        tier_id: userTier.tier,
-        tier: userTier.name,
-        role: 'Member',
-        team: 'B',
-        style: 'Đã vào phòng'
-      });
-    } else {
-      if (this.currentUser.photo) existing.photo = this.currentUser.photo;
-      existing.tier_id = userTier.tier;
-      existing.style = 'Đã vào phòng';
-    }
-    room.current_players = room.players.length;
-    room.status = room.current_players >= room.max_players ? 'MATCHED' : 'OPEN';
-
-    // 4. Add system referee chat message
-    if (!room.chat_messages) room.chat_messages = [];
-    const joinedMessage = this.createRoomChatMessage(
-      "🤖 AI Match Referee",
-      `🎉 ${this.currentUser.name} (Cấp [${userTier.name}]) đã chấp nhận lời mời ghép kèo và tham gia phòng! Hai bên đã có mặt đầy đủ, có thể chat trao đổi giờ giấc và sân đấu ngay bên dưới.`,
-      { isAI: true }
-    );
-    room.chat_messages.push(joinedMessage);
-
-    let roomSavedCentrally = false;
-    if (typeof saveMockDataToLocalStorage === 'function') {
-      roomSavedCentrally = await saveMockDataToLocalStorage();
-    }
-    this.publishRoomChatMessage(room.id, joinedMessage);
-
-    if (typeof broadcastLiveSync === 'function') {
-      broadcastLiveSync('ROOM_MEMBER_JOINED', {
-        roomId: room.id,
-        roomName: room.room_name,
-        hostName: room.host_name,
-        memberName: this.currentUser.name
-      });
-    }
-
     this.updateHeaderNotificationBadge();
     this.renderIncomingInvitationsBanner();
 
@@ -3838,6 +3704,7 @@ class BadmintonAIApp {
   }
 
   handleLiveSyncEvent(eventData = {}) {
+    if (eventData.type === 'ROOM_NOTIFICATION') this.handleRoomNotification(eventData.payload?.notification);
     // 1. Cap nhat badge thong bao & banner loi moi tuc thi
     this.updateHeaderNotificationBadge();
     this.renderIncomingInvitationsBanner();
@@ -3939,6 +3806,61 @@ class BadmintonAIApp {
     }, 1000);
   }
 
+  escapeRoomText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  isMyNotification(n) {
+    if (!this.currentUser) return false;
+    if (n.recipient_id != null) return String(n.recipient_id) === String(this.currentUser.id);
+    if (n.recipient_phone) return n.recipient_phone === this.currentUser.phone;
+    return n.recipient_name === this.currentUser.name;
+  }
+
+  handleRoomNotification(n) {
+    if (!n || n.is_read || !this.isMyNotification(n)) return;
+    this._seenRoomNotifications ||= new Set();
+    if (this._seenRoomNotifications.has(String(n.id))) return;
+    this._seenRoomNotifications.add(String(n.id));
+    const viewing = this.currentView === 'ui-07' && String(this.activeRoom?.id) === String(n.room_id) && !document.hidden;
+    if (viewing) this.markRoomNotificationsRead(n.room_id);
+    else this.showToast(this.escapeRoomText(n.type === 'ROOM_MEMBER_JOINED' ? n.content : `${n.title}: ${n.content}`), 'info');
+    this.playNotificationChime();
+    this.updateHeaderNotificationBadge();
+  }
+
+  markRoomNotificationsRead(roomId) {
+    let changed = false;
+    for (const n of MockData.notifications || []) {
+      if (this.isMyNotification(n) && String(n.room_id) === String(roomId) && ['ROOM_MEMBER_JOINED', 'ROOM_CHAT_MESSAGE'].includes(n.type) && !n.is_read) {
+        n.is_read = true;
+        changed = true;
+      }
+    }
+    if (changed && typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage();
+    this.updateHeaderNotificationBadge();
+  }
+
+  async openRoomNotification(notificationId) {
+    const n = (MockData.notifications || []).find(item => String(item.id) === String(notificationId));
+    if (!n || !this.isMyNotification(n)) return;
+    if (typeof fetchCentralServerDatabase === 'function') await fetchCentralServerDatabase();
+    this.closeModal();
+    this.openRoomChat(n.room_id);
+  }
+
+  openJoinedRooms() {
+    if (!this.currentUser) { this.navigateTo('ui-01'); return; }
+    const rooms = (MockData.matchmaking_rooms || []).filter(room =>
+      String(room.host_id || room.owner_id || '') === String(this.currentUser.id) ||
+      (room.players || []).some(p => String(p.id) === String(this.currentUser.id)));
+    const body = document.getElementById('modal-body');
+    if (!body) return;
+    body.innerHTML = `<h3>Phòng đã tham gia</h3>${rooms.map(room => `<div style="padding:12px;border-bottom:1px solid #e2e8f0"><strong>Phòng #${this.escapeRoomText(room.room_number || room.id)}</strong> · ${this.escapeRoomText(room.room_name)}<br><button class="btn btn-primary btn-sm" data-joined-room="${this.escapeRoomText(room.id)}">Mở phòng chat</button></div>`).join('') || '<p>Bạn chưa tham gia phòng nào.</p>'}`;
+    body.querySelectorAll('[data-joined-room]').forEach(button => button.onclick = () => { this.closeModal(); this.openRoomChat(button.dataset.joinedRoom); });
+    this.openModal();
+  }
+
   updateHeaderNotificationBadge() {
     const notiBtn = document.getElementById('header-noti-btn');
     const badge = document.getElementById('header-noti-badge');
@@ -3955,10 +3877,7 @@ class BadmintonAIApp {
     if (!MockData.notifications) MockData.notifications = [];
     const myUnread = MockData.notifications.filter(n => {
       if (n.is_read) return false;
-      const matchId = n.recipient_id && this.currentUser.id && String(n.recipient_id) === String(this.currentUser.id);
-      const matchName = n.recipient_name && this.currentUser.name && n.recipient_name.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase();
-      const matchPhone = n.recipient_phone && this.currentUser.phone && n.recipient_phone === this.currentUser.phone;
-      return matchId || matchName || matchPhone;
+      return this.isMyNotification(n);
     });
 
     if (badge) {
@@ -3984,10 +3903,7 @@ class BadmintonAIApp {
     if (!MockData.notifications) MockData.notifications = [];
     const pendingInvites = MockData.notifications.filter(n => {
       if (n.type !== 'CHALLENGE_INVITE' || n.is_read) return false;
-      const matchId = n.recipient_id && this.currentUser.id && String(n.recipient_id) === String(this.currentUser.id);
-      const matchName = n.recipient_name && this.currentUser.name && n.recipient_name.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase();
-      const matchPhone = n.recipient_phone && this.currentUser.phone && n.recipient_phone === this.currentUser.phone;
-      return matchId || matchName || matchPhone;
+      return this.isMyNotification(n);
     });
 
     if (pendingInvites.length === 0) {
@@ -4043,10 +3959,7 @@ class BadmintonAIApp {
 
     if (!MockData.notifications) MockData.notifications = [];
     const myNotis = MockData.notifications.filter(n => {
-      const matchId = n.recipient_id && this.currentUser.id && String(n.recipient_id) === String(this.currentUser.id);
-      const matchName = n.recipient_name && this.currentUser.name && n.recipient_name.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase();
-      const matchPhone = n.recipient_phone && this.currentUser.phone && n.recipient_phone === this.currentUser.phone;
-      return matchId || matchName || matchPhone;
+      return this.isMyNotification(n);
     });
 
     let listHtml = '';
@@ -4079,13 +3992,13 @@ class BadmintonAIApp {
               </div>
               <div style="flex: 1; min-width: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 6px;">
-                  <strong style="font-size: 0.92rem; color: #0f172a;">${n.title || 'Thông báo từ hệ thống'}</strong>
+                  <strong style="font-size: 0.92rem; color: #0f172a;">${this.escapeRoomText(n.title || 'Thông báo từ hệ thống')}</strong>
                   <span style="font-size: 0.72rem; color: ${n.is_read ? '#94a3b8' : '#16a34a'}; font-weight: 700;">
                     ${n.is_read ? 'Đã xem' : 'Mới'}
                   </span>
                 </div>
                 <div style="font-size: 0.82rem; color: #334155; line-height: 1.4; margin-bottom: 6px;">
-                  ${n.content}
+                  ${this.escapeRoomText(n.content)}
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
                   <span style="font-size: 0.72rem; color: #64748b;">
@@ -4097,7 +4010,7 @@ class BadmintonAIApp {
                         <i class="fa-solid fa-users"></i> Chấp Nhận & Vào Phòng
                       </button>
                     </div>
-                  ` : ''}
+                  ` : (['ROOM_MEMBER_JOINED', 'ROOM_CHAT_MESSAGE'].includes(n.type) && n.room_id ? `<button class="btn btn-primary btn-sm" onclick="app.openRoomNotification('${this.escapeRoomText(n.id)}')">Mở phòng #${this.escapeRoomText(n.room_number || n.room_id)}</button>` : '')}
                 </div>
               </div>
             </div>
@@ -4135,10 +4048,7 @@ class BadmintonAIApp {
   markAllNotificationsRead() {
     if (!this.currentUser || !MockData.notifications) return;
     MockData.notifications.forEach(n => {
-      const matchId = n.recipient_id && this.currentUser.id && String(n.recipient_id) === String(this.currentUser.id);
-      const matchName = n.recipient_name && this.currentUser.name && n.recipient_name.trim().toLowerCase() === this.currentUser.name.trim().toLowerCase();
-      const matchPhone = n.recipient_phone && this.currentUser.phone && n.recipient_phone === this.currentUser.phone;
-      if (matchId || matchName || matchPhone) {
+      if (this.isMyNotification(n)) {
         n.is_read = true;
       }
     });
@@ -4556,7 +4466,8 @@ class BadmintonAIApp {
     const metaEl = document.getElementById('room-detail-meta');
     const statusBadge = document.getElementById('room-detail-status-badge');
 
-    if (titleEl) titleEl.textContent = this.cleanMatchmakingRoomName(this.activeRoom.room_name);
+    if (titleEl) titleEl.textContent = `Phòng #${this.activeRoom.room_number || this.activeRoom.id} · ${this.cleanMatchmakingRoomName(this.activeRoom.room_name)}`;
+    this.markRoomNotificationsRead(roomId);
     if (metaEl) {
       metaEl.innerHTML = `
         <i class="fa-solid fa-map-pin text-rose"></i> ${this.activeRoom.facility_name} | 
@@ -4796,109 +4707,7 @@ class BadmintonAIApp {
   }
 
   async joinActiveRoomChat() {
-    if (!this.currentUser) {
-      this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập hoặc Đăng Ký tài khoản để chấp nhận & tham gia kèo đấu này.", "error");
-      this.navigateTo('ui-01');
-      return;
-    }
-
-    if (!this.activeRoom) return;
-    if (String(this.activeRoom.status || 'OPEN').toUpperCase() !== 'OPEN') {
-      this.showToast("Phòng này đã đóng và không nhận thêm thành viên.", "error");
-      return;
-    }
-    if (!this.canJoinMatchmakingRoom(this.activeRoom)) return;
-    this.ensureRoomPlayers(this.activeRoom);
-
-    this.activeRoom.max_players = this.getRoomCapacity(this.activeRoom);
-    this.activeRoom.current_players = this.getRoomPlayerCount(this.activeRoom);
-
-    const user = this.currentUser;
-    const alreadyIn = this.activeRoom.players && this.activeRoom.players.some(p => p.name === user.name || String(p.id) === String(user.id));
-
-    if (alreadyIn) {
-      this.showToast("ℹ️ Bạn đã là thành viên trong phòng ghép này!");
-      return;
-    }
-
-    if (this.activeRoom.current_players >= this.activeRoom.max_players) {
-      this.showToast("⚠️ Phòng ghép đã đủ số lượng thành viên!");
-      return;
-    }
-
-    const userTier = this.getSkillTierInfo(user.skill_tier_id || user.skill_tier || 5);
-
-    this.activeRoom.players.push({
-      id: user.id,
-      name: user.name,
-      tier: userTier.name,
-      tier_id: userTier.tier,
-      elo: user.elo_rating || userTier.defaultElo || 1650,
-      avatar: user.avatar || user.name.charAt(0),
-      photo: user.photo || user.avatar || null,
-      role: 'Member',
-      style: 'Công thủ linh hoạt',
-      team: 'B'
-    });
-
-    this.activeRoom.current_players = this.activeRoom.players.length;
-    if (this.activeRoom.current_players >= this.activeRoom.max_players) this.activeRoom.status = 'MATCHED';
-    if (!Array.isArray(this.activeRoom.chat_messages)) this.activeRoom.chat_messages = [];
-
-    const welcomeMessage = this.createRoomChatMessage(
-      "🤖 AI Match Referee",
-      `🎉 Chào mừng ${user.name} (Cấp [${userTier.name}]) đã chấp nhận kèo và tham gia phòng! Kèo đấu hiện có ${this.activeRoom.current_players}/${this.activeRoom.max_players} thành viên.`,
-      { isAI: true }
-    );
-    this.activeRoom.chat_messages.push(welcomeMessage);
-
-    const hostName = this.activeRoom.host_name;
-    const isJoiningMyOwnRoom = this.currentUser.name === hostName;
-
-    // Gui thong bao ve cho Host (nguoi tao phong ban dau) neu nguoi khac xin vao phong
-    if (hostName && !isJoiningMyOwnRoom) {
-      if (!MockData.notifications) MockData.notifications = [];
-      const hostUser = (MockData.users || []).find(u => u.name && u.name.trim().toLowerCase() === hostName.trim().toLowerCase());
-      
-      const hostNoti = {
-        id: `noti_${Date.now()}`,
-        recipient_id: hostUser ? hostUser.id : null,
-        recipient_name: hostName,
-        recipient_phone: hostUser ? hostUser.phone : null,
-        sender_id: user.id,
-        sender_name: user.name,
-        sender_photo: user.photo || user.avatar || null,
-        sender_tier: userTier.name,
-        type: "ROOM_MEMBER_JOINED",
-        title: `⚡ ${user.name} Vừa Tham Gia Phòng Kèo Của Bạn!`,
-        content: `Tay vợt ${user.name} (Cấp [${userTier.name}]) vừa tham gia vào phòng đấu "${this.activeRoom.room_name}". Hãy vào phòng chat để thống nhất giờ giấc và chiến thuật ngay!`,
-        room_id: this.activeRoom.id,
-        created_at: "Vừa xong",
-        timestamp: Date.now(),
-        is_read: false
-      };
-      MockData.notifications.unshift(hostNoti);
-    }
-
-    this.renderRoomDetailMembers();
-    this.renderChatMessages();
-    this.renderAIRoomTactics();
-    this.renderMatchmakingRooms();
-    if (typeof saveMockDataToLocalStorage === 'function') {
-      await saveMockDataToLocalStorage();
-    }
-    this.publishRoomChatMessage(this.activeRoom.id, welcomeMessage);
-
-    if (typeof broadcastLiveSync === 'function') {
-      broadcastLiveSync('ROOM_MEMBER_JOINED', {
-        roomId: this.activeRoom.id,
-        roomName: this.activeRoom.room_name,
-        hostName: hostName,
-        memberName: user.name
-      });
-    }
-
-    this.showToast(`🎉 Bạn đã chấp nhận và tham gia kèo đấu "${this.activeRoom.room_name}" thành công!`);
+    if (this.activeRoom) await this.joinMatchmakingRoom(this.activeRoom.id);
   }
 
   renderChatMessages() {
@@ -4919,14 +4728,19 @@ class BadmintonAIApp {
       html += `
         <div class="${msgClass}">
           <div style="font-size: 0.72rem; font-weight: 800; opacity: 0.85; margin-bottom: 2px;">
-            ${msg.sender} • <span style="font-weight: 500;">${msg.time || 'vừa xong'}</span>
+            ${this.escapeRoomText(msg.sender)} • <span style="font-weight: 500;">${this.escapeRoomText(msg.time || 'vừa xong')}</span>
           </div>
-          <div>${msg.text}</div>
+          <div style="white-space:pre-wrap;overflow-wrap:anywhere">${this.escapeRoomText(msg.text)}</div>
+          ${msg.delivery_state === 'pending' ? '<small>Đang gửi…</small>' : msg.delivery_state === 'failed' ? `<small style="color:#dc2626">Chưa gửi được — </small><button class="btn btn-sm" data-retry-chat="${this.escapeRoomText(msg.id)}">Gửi lại</button>` : ''}
         </div>
       `;
     });
 
     container.innerHTML = html;
+    container.querySelectorAll('[data-retry-chat]').forEach(button => button.onclick = () => {
+      const message = this.activeRoom?.chat_messages?.find(m => m.id === button.dataset.retryChat);
+      if (message) this.publishRoomChatMessage(this.activeRoom.id, message);
+    });
     container.scrollTop = container.scrollHeight;
   }
 
@@ -4964,13 +4778,12 @@ class BadmintonAIApp {
     const room = (MockData.matchmaking_rooms || []).find(item => String(item.id) === String(roomId));
     if (!room || !message || !message.id) return;
     if (!Array.isArray(room.chat_messages)) room.chat_messages = [];
-    if (room.chat_messages.some(item => String(item.id || '') === String(message.id))) return;
-
-    room.chat_messages.push(message);
+    const existing = room.chat_messages.find(item => String(item.id || '') === String(message.id));
+    if (existing) Object.assign(existing, message, { delivery_state: 'sent' });
+    else room.chat_messages.push({ ...message, delivery_state: 'sent' });
     if (this.currentView === 'ui-07' && this.activeRoom && String(this.activeRoom.id) === String(roomId)) {
       this.activeRoom = room;
       this.renderChatMessages();
-      if (this.currentUser && message.sender !== this.currentUser.name) this.playNotificationChime();
     }
     if (typeof saveMockDataToLocalStorage === 'function') {
       saveMockDataToLocalStorage({ syncToCentral: false });
@@ -4978,6 +4791,7 @@ class BadmintonAIApp {
   }
 
   async publishRoomChatMessage(roomId, message) {
+    message.delivery_state = 'pending';
     try {
       const response = await fetch(`/api/chat/rooms/${encodeURIComponent(roomId)}/messages`, {
         method: 'POST',
@@ -4992,13 +4806,24 @@ class BadmintonAIApp {
             ? 'Tài khoản này chưa tham gia phòng chat.'
             : 'Không thể đồng bộ tin nhắn lên máy chủ.';
         this.showToast(`⚠️ ${messageText}`, 'error');
+        message.delivery_state = 'failed';
+        return null;
       }
+      const result = await response.json();
+      Object.assign(message, result.message, { delivery_state: 'sent' });
+      this.receiveRoomChatMessage(roomId, message);
+      return message;
     } catch (error) {
+      message.delivery_state = 'failed';
       this.showToast('⚠️ Mất kết nối máy chủ; tin nhắn hiện chỉ lưu trên thiết bị này.', 'error');
+      return null;
+    } finally {
+      if (this.currentView === 'ui-07' && String(this.activeRoom?.id) === String(roomId)) this.renderChatMessages();
+      if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage({ syncToCentral: false });
     }
   }
 
-  sendChatMessage(e) {
+  async sendChatMessage(e) {
     if (e && e.preventDefault) e.preventDefault();
     if (!this.currentUser) {
       this.showToast("⚠️ Bạn chưa đăng nhập! Vui lòng Đăng Nhập để gửi tin nhắn trong phòng kèo đấu.", "error");
@@ -5011,10 +4836,15 @@ class BadmintonAIApp {
     const text = input.value.trim();
     if (!text || !this.activeRoom) return;
 
+    const room = this.activeRoom;
+    if (!(room.players || []).some(p => String(p.id) === String(this.currentUser.id))) {
+      this.showToast("Bạn cần tham gia phòng trước khi gửi tin nhắn.", "error");
+      return;
+    }
     const currentUserName = this.currentUser.name;
-    if (!this.activeRoom.chat_messages) this.activeRoom.chat_messages = [];
-    const message = this.createRoomChatMessage(currentUserName, text);
-    this.activeRoom.chat_messages.push(message);
+    if (!room.chat_messages) room.chat_messages = [];
+    const message = this.createRoomChatMessage(currentUserName, text, { delivery_state: 'pending' });
+    room.chat_messages.push(message);
 
     input.value = '';
     this.renderChatMessages();
@@ -5022,11 +4852,12 @@ class BadmintonAIApp {
     if (typeof saveMockDataToLocalStorage === 'function') {
       saveMockDataToLocalStorage({ syncToCentral: false });
     }
-    this.publishRoomChatMessage(this.activeRoom.id, message);
+    const sent = await this.publishRoomChatMessage(room.id, message);
+    if (!sent) return;
 
     if (typeof broadcastLiveSync === 'function') {
       broadcastLiveSync('CHAT_MESSAGE', {
-        roomId: this.activeRoom.id,
+        roomId: room.id,
         sender: currentUserName,
         text: text,
         time: message.time
@@ -5041,16 +4872,16 @@ class BadmintonAIApp {
           `🎯 Trả lời bạn @${currentUserName}: Dựa trên cấp bậc và thể thức trận đấu này, đề xuất chiến thuật tối ưu nhất là tập trung kiểm soát nhịp độ, phát cầu ngắn sát lưới và bọc lót chéo góc!`,
           { isAI: true }
         );
-        this.activeRoom.chat_messages.push(aiMsg);
-        this.renderChatMessages();
+        room.chat_messages.push(aiMsg);
+        if (String(this.activeRoom?.id) === String(room.id)) this.renderChatMessages();
 
         if (typeof saveMockDataToLocalStorage === 'function') {
           saveMockDataToLocalStorage({ syncToCentral: false });
         }
-        this.publishRoomChatMessage(this.activeRoom.id, aiMsg);
+        this.publishRoomChatMessage(room.id, aiMsg);
         if (typeof broadcastLiveSync === 'function') {
           broadcastLiveSync('CHAT_MESSAGE', {
-            roomId: this.activeRoom.id,
+            roomId: room.id,
             sender: aiMsg.sender,
             text: aiMsg.text,
             time: aiMsg.time,
@@ -5394,8 +5225,8 @@ class BadmintonAIApp {
     }
 
     this.showToast(roomSavedCentrally
-      ? `🎉 Đã tạo và lưu phòng ghép. Phòng của bạn đang hiển thị bên dưới danh sách; đang mở phòng chat.`
-      : `✅ Đã tạo phòng ghép trên thiết bị này. Phòng của bạn đang hiển thị bên dưới danh sách; hiện chưa đồng bộ được database trung tâm.`, roomSavedCentrally ? "success" : "info");
+      ? `🎉 Đã tạo phòng #${newRoom.room_number || newRoom.id}. Bạn có thể mở lại trong “Phòng đã tham gia”.`
+      : `Phòng mới chỉ lưu trên thiết bị, chưa được cấp số phòng từ máy chủ. Vui lòng kiểm tra kết nối.`, roomSavedCentrally ? "success" : "info");
     setTimeout(() => {
       this.openRoomChat(newRoom.id);
     }, 300);
@@ -9109,5 +8940,6 @@ class BadmintonAIApp {
 let app;
 document.addEventListener('DOMContentLoaded', () => {
   app = new BadmintonAIApp();
+  window.app = app; // data.js delivers cross-browser sync events through this reference
   app.init();
 });

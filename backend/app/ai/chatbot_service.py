@@ -32,6 +32,7 @@ from app.core.database import AsyncSessionLocal
 from app.core.redis import get_slot_lock_holder
 from app.ai.llm_provider import BaseLLMProvider, get_default_llm_provider
 from app.ai.retrieval_service import BaseRetriever, get_retrieval_service
+from app.ai.catalog_assistant import try_catalog_answer
 from app.ai.rag_context_builder import RAGContextBuilder, get_rag_context_builder
 from app.schemas.all_schemas import RAGSourceCitation
 from app.models.all_models import Facility, Court, TimeSlot, SlotPricing
@@ -347,6 +348,13 @@ class ChatbotService:
                 "sources": [],
                 "provider": self.llm_provider.provider_name
             }
+
+        # Public catalogue questions use server-side data, not static SRS prices
+        # or the untrusted list of facilities supplied by the browser.
+        catalog_result = await try_catalog_answer(clean_message, history)
+        if catalog_result is not None:
+            return {**catalog_result, "conversation_id": conv_id,
+                    "message_id": msg_id, "user_id": user_id}
 
         # 2. Database Session Initialization
         db_session = db if (db is not None and hasattr(db, "execute")) else None
@@ -1222,7 +1230,7 @@ class ChatbotService:
                     db=db_session,
                     query=clean_message,
                     user_context=user_context,
-                    top_k=settings.RAG_TOP_K,
+                    top_k=max(settings.RAG_TOP_K, settings.RETRIEVAL_TOP_K),
                     similarity_threshold=similarity_threshold
                 )
                 latency_retrieval_ms = round((time.time() - t_retrieval) * 1000, 2)

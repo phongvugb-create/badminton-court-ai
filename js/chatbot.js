@@ -227,7 +227,7 @@ class BadmintonAIChatbot {
         const uniqueSources = [];
         const seen = new Set();
         for (const s of msg.sources) {
-          const label = `${s.filename || 'Tài liệu'}${s.section ? ' • ' + s.section : ''}${s.page_number ? ' (Trang ' + s.page_number + ')' : ''}`;
+          const label = `${s.filename || 'Tài liệu'}${s.page_number ? ' (Trang ' + s.page_number + ')' : ''}`;
           if (!seen.has(label)) {
             seen.add(label);
             uniqueSources.push({ filename: s.filename, section: s.section, page_number: s.page_number, evidence_match: s.evidence_match });
@@ -240,7 +240,7 @@ class BadmintonAIChatbot {
                 <i class="fa-solid fa-book-bookmark" style="margin-right: 4px;"></i>Nguồn tham khảo:
               </div>
               <ul style="margin: 0; padding-left: 14px;">
-                ${uniqueSources.map(src => `<li><strong>${this.escapeHtml(src.filename || 'Tài liệu')}</strong>${src.section ? ' — ' + this.escapeHtml(src.section) : ''}${src.page_number ? ' (Trang ' + src.page_number + ')' : ''}</li>`).join('')}
+                ${uniqueSources.map(src => `<li><strong>${this.escapeHtml(src.filename || 'Tài liệu')}</strong>${src.page_number ? ' (Trang ' + src.page_number + ')' : ''}</li>`).join('')}
               </ul>
             </div>
           `;
@@ -251,7 +251,9 @@ class BadmintonAIChatbot {
       let statusBadgeHtml = '';
       if (!isUser && msg.retrieval_status) {
         const badgeConfig = {
-          'supported': { icon: '🟢', label: 'RAG · Có bằng chứng', color: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.35)', text: '#10b981' },
+          'supported': { icon: '🟢', label: 'Có dữ liệu đối chiếu', color: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.35)', text: '#10b981' },
+          'no_results': { icon: '⚪', label: 'Chưa có kết quả phù hợp', color: 'rgba(100,116,139,0.15)', border: 'rgba(100,116,139,0.3)', text: '#94a3b8' },
+          'data_unavailable': { icon: '🟡', label: 'Chưa đọc được dữ liệu', color: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.35)', text: '#ca8a04' },
           'no_relevant_documents': { icon: '⚪', label: 'Không tìm thấy tài liệu', color: 'rgba(100,116,139,0.15)', border: 'rgba(100,116,139,0.3)', text: '#94a3b8' },
           'insufficient_evidence': { icon: '🟡', label: 'Bằng chứng chưa đủ', color: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.35)', text: '#ca8a04' }
         };

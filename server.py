@@ -11,6 +11,7 @@ import http.cookies
 import threading
 import queue
 import time
+from room_events import assign_room_numbers, build_room_notifications, members as room_members, join_room, RoomError
 
 # Ensure backend directory is in path if needed
 backend_dir = os.path.join(os.path.dirname(__file__), "backend")
@@ -187,6 +188,11 @@ def _save_central_database_update(incoming_data):
             else:
                 merged_database[key] = value
 
+        rooms = merged_database.get("matchmaking_rooms", [])
+        previous_rooms = current_data.get("matchmaking_rooms", [])
+        assign_room_numbers(previous_rooms, rooms)
+        generated = build_room_notifications(previous_rooms, rooms, merged_database.get("users", []))
+        merged_database["notifications"] = _merge_notifications(merged_database.get("notifications", []), generated)
         db_manager.save_data(merged_database)
         return merged_database
 
@@ -693,17 +699,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                      if isinstance(item, dict) and str(item.get("id")) == str(room_id)), None)
         if not user or not room:
             return user, room, 404 if user else 401
-        user_id = str(user.get("id"))
-        user_name = str(user.get("name") or "").strip().casefold()
-        is_member = user_id == str(room.get("host_id") or "")
-        is_member = is_member or (user_name and user_name == str(room.get("host_name") or "").strip().casefold())
-        is_member = is_member or any(
-            isinstance(player, dict) and (
-                user_id == str(player.get("id") or "") or
-                (user_name and user_name == str(player.get("name") or "").strip().casefold())
-            )
-            for player in (room.get("players") or [])
-        )
+        is_member = str(user.get("id")) in room_members(room, data.get("users", []))
         return (user, room, 200) if is_member else (user, room, 403)
 
     def _build_auth_cookie(self, token: str, max_age: int = 60 * 60 * 24 * 7) -> str:
@@ -1134,6 +1130,38 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"detail": "CSRF verification failed: Origin/Referer disallowed"}).encode("utf-8"))
             return
 
+        join_match = re.fullmatch(r"/api/matchmaking/rooms/([^/]+)/join", urllib.parse.urlsplit(self.path).path)
+        if join_match:
+            auth = self._authenticate_request()
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                if length < 0 or length > 2048:
+                    raise RoomError(400, "Yêu cầu tham gia phòng không hợp lệ.")
+                self.rfile.read(length)
+                if not auth or not auth.get("sub"):
+                    raise RoomError(401, "Vui lòng đăng nhập để tham gia phòng.")
+                with CENTRAL_DATABASE_LOCK:
+                    data = db_manager.load_data() or {}
+                    room, changed = join_room(data, auth["sub"], urllib.parse.unquote(join_match.group(1)))
+                    if changed:
+                        invitations = [dict(n, is_read=True, invite_status="ACCEPTED") for n in data.get("notifications", [])
+                                       if n.get("type") == "CHALLENGE_INVITE" and str(n.get("room_id")) == str(room["id"])
+                                       and str(n.get("recipient_id")) == str(auth["sub"])]
+                        saved = _save_central_database_update({"matchmaking_rooms": [room], "notifications": invitations})
+                        room = next(r for r in saved["matchmaking_rooms"] if str(r["id"]) == str(room["id"]))
+                status, body = 200, {"success": True, "room": room, "joined": changed}
+            except RoomError as error:
+                status, body = error.status, {"detail": str(error)}
+            except Exception:
+                status, body = 500, {"detail": "Không thể lưu việc tham gia phòng. Vui lòng thử lại."}
+            content = json.dumps(body, ensure_ascii=False).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+            return
+
         chat_message_match = re.fullmatch(r"/api/chat/rooms/([^/]+)/messages", urllib.parse.urlsplit(self.path).path)
         if chat_message_match:
             room_id = urllib.parse.unquote(chat_message_match.group(1))
@@ -1162,6 +1190,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                 ai_senders = {"🤖 AI Match Referee", "🤖 AI Virtual Coach"}
                 message = {
                     "id": message_id,
+                    "sender_id": user.get("id"),
                     "sender": requested_sender if is_ai_message and requested_sender in ai_senders else str(user.get("name") or "Thành viên"),
                     "text": text,
                     "time": str(incoming.get("time") or time.strftime("%H:%M"))[:16],
@@ -1371,7 +1400,13 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     "user_id": result.get("user_id"),
                     "status": result["status"],
                     "retrieval_status": result.get("retrieval_status"),
-                    "sources": result.get("sources", [])
+                    "sources": result.get("sources", []),
+                    "action_type": result.get("action_type"),
+                    "pending_intent_id": result.get("pending_intent_id"),
+                    "booking_intent_id": result.get("booking_intent_id"),
+                    "preview_data": result.get("preview_data"),
+                    "hold_result": result.get("hold_result"),
+                    "booking_result": result.get("booking_result")
                 }, ensure_ascii=False).encode("utf-8"))
             except Exception as e:
                 err_msg = str(e)
@@ -1420,7 +1455,8 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     "database_type": db_manager.db_type,
                     "active_driver": db_manager.active_driver,
                     "users_count": len(merged_database.get("users", [])),
-                    "facilities_count": len(merged_database.get("facilities", []))
+                    "facilities_count": len(merged_database.get("facilities", [])),
+                    "room_numbers": {str(r["id"]): r.get("room_number") for r in merged_database.get("matchmaking_rooms", [])}
                 }).encode("utf-8"))
                 return
             except Exception as e:

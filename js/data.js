@@ -1467,7 +1467,13 @@ function applyDataToMockData(sourceData) {
   });
 
   if (sourceData.matchmaking_rooms && Array.isArray(sourceData.matchmaking_rooms)) {
-    MockData.matchmaking_rooms = sourceData.matchmaking_rooms;
+    const unsent = new Map((MockData.matchmaking_rooms || []).map(room => [String(room.id),
+      (room.chat_messages || []).filter(m => ['pending', 'failed'].includes(m.delivery_state))]));
+    MockData.matchmaking_rooms = sourceData.matchmaking_rooms.map(room => {
+      const messages = room.chat_messages || [];
+      const known = new Set(messages.map(m => String(m.id)));
+      return { ...room, chat_messages: [...messages, ...(unsent.get(String(room.id)) || []).filter(m => !known.has(String(m.id)))] };
+    });
   }
 
   // 1. Cap nhat danh sach co so san (facilities) - Failsafe: Khong ghi de neu tap nguon bi rong
@@ -1517,12 +1523,23 @@ function saveMockDataToLocalStorage(options = {}) {
 // Gui du lieu len Server tap trung
 async function syncDataToCentralServer(payload) {
   try {
+    const committedPayload = { ...payload };
+    if (Array.isArray(payload.matchmaking_rooms)) {
+      committedPayload.matchmaking_rooms = payload.matchmaking_rooms.map(room => ({ ...room,
+        chat_messages: (room.chat_messages || []).filter(message => !['pending', 'failed'].includes(message.delivery_state))
+      }));
+    }
     const res = await fetch(CENTRAL_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(committedPayload)
     });
     if (!res.ok) throw new Error(`Central sync failed (${res.status})`);
+    const result = await res.json();
+    for (const room of MockData.matchmaking_rooms || []) {
+      if (result.room_numbers?.[String(room.id)] != null) room.room_number = result.room_numbers[String(room.id)];
+    }
+    if (typeof saveMockDataToLocalStorage === 'function') saveMockDataToLocalStorage({ syncToCentral: false });
     return true;
   } catch (err) {
     // Neu chua chay server.py thi van chay muot ma offline qua localStorage
@@ -1551,10 +1568,11 @@ function fetchCentralServerDatabase() {
           if (hasRemoteChanges && window.app && window.app.handleLiveSyncEvent) {
             window.app.handleLiveSyncEvent({ type: 'CENTRAL_DATABASE_UPDATED' });
             (MockData.notifications || [])
-              .filter(n => !previousNotificationIds.has(String(n.id)) && n.type === 'CHALLENGE_INVITE')
+              .filter(n => !previousNotificationIds.has(String(n.id)) && ['CHALLENGE_INVITE', 'ROOM_MEMBER_JOINED', 'ROOM_CHAT_MESSAGE'].includes(n.type))
               .forEach(n => window.app.handleLiveSyncEvent({
-                type: 'NEW_CHALLENGE',
+                type: n.type === 'CHALLENGE_INVITE' ? 'NEW_CHALLENGE' : 'ROOM_NOTIFICATION',
                 payload: {
+                  notification: n,
                   recipientId: n.recipient_id,
                   recipientName: n.recipient_name,
                   senderName: n.sender_name,
