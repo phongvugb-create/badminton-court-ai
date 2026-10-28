@@ -1,0 +1,57 @@
+% ==============================================================================
+% PHỤ LỤC B: HƯỚNG DẪN CÀI ĐẶT VÀ VẬN HÀNH
+% ==============================================================================
+
+\chapter{HƯỚNG DẪN CÀI ĐẶT VÀ VẬN HÀNH}
+\label{app:installation}
+
+\section{Yêu cầu hệ thống}
+
+Để triển khai và vận hành hệ thống Backend sân cầu lông AI, môi trường cần đáp ứng các yêu cầu sau:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Hệ điều hành:} Windows 10/11 64-bit, Ubuntu 20.04+ hoặc macOS.
+    \item \textbf{Python:} Phiên bản 3.10 trở lên.
+    \item \textbf{Dịch vụ cơ sở dữ liệu:} PostgreSQL 14+ và Redis Server 6+.
+    \item \textbf{Khóa truy cập dịch vụ bên thứ ba:} Google Gemini API Key và tài khoản MoMo Test Merchant.
+\end{itemize}
+
+\section{Các bước cài đặt môi trường}
+
+\subsection{Bước 1: Khởi tạo môi trường ảo và cài đặt thư viện}
+Mở terminal và thực thi các câu lệnh sau:
+\begin{lstlisting}[language=bash, caption={Tạo môi trường ảo và cài đặt thư viện}]
+# Tao va kich hoat moi truong ao
+python -m venv .venv
+.venv\Scripts\Activate.ps1   # Windows PowerShell
+
+# Cai dat thu vien phu thuoc
+pip install --upgrade pip
+pip install -r requirements.txt
+\end{lstlisting}
+
+\subsection{Bước 2: Cấu hình biến môi trường}
+Sao chép tệp mẫu \texttt{.env.example} thành tệp \texttt{.env} và điền đầy đủ các tham số kết nối:
+\begin{lstlisting}[language=bash, caption={Cấu hình tệp biến môi trường .env}]
+DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/badminton_db
+REDIS_URL=redis://localhost:6379/0
+SECRET_KEY=your_super_secret_jwt_key
+GEMINI_API_KEY=your_gemini_api_key
+MOMO_PARTNER_CODE=MOMO_TEST_CODE
+MOMO_ACCESS_KEY=your_access_key
+MOMO_SECRET_KEY=your_secret_key
+\end{lstlisting}
+
+\section{Khởi chạy máy chủ và thực thi kiểm thử tự động}
+
+\subsection{Khởi chạy máy chủ phát triển (FastAPI Dev Server)}
+Thực thi lệnh Uvicorn để chạy Backend API:
+\begin{lstlisting}[language=bash, caption={Lệnh khởi chạy máy chủ FastAPI}]
+uvicorn backend.app.main:app --reload --port 8000
+\end{lstlisting}
+Truy cập tài liệu đặc tả API Swagger UI trực tuyến tại: \url{http://localhost:8000/docs}.
+
+\subsection{Thực thi kiểm thử tự động với Pytest}
+Chạy toàn bộ các ca kiểm thử tích hợp:
+\begin{lstlisting}[language=bash, caption={Lệnh chạy kiểm thử tự động}]
+pytest backend/tests/ -v
+\end{lstlisting}

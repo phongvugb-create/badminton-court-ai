@@ -1,0 +1,94 @@
+% ==============================================================================
+% CHƯƠNG 1: TỔNG QUAN VỀ ĐỀ TÀI VÀ NGHIỆP VỤ THỰC TIỄN
+% ==============================================================================
+
+\chapter{TỔNG QUAN VỀ ĐỀ TÀI VÀ KHẢO SÁT NGHIỆP VỤ}
+\label{chap:tongquan}
+
+\section{Bối cảnh thực tiễn và tính cấp thiết của đề tài}
+\label{sec:boicanh}
+
+Trong những năm gần đây, phong trào tập luyện cầu lông phát triển mạnh mẽ tại Việt Nam. Nhu cầu thuê sân tăng cao dẫn đến sự ra đời của hàng loạt cụm sân thể thao quy mô từ 4 đến hơn 20 sân cho mỗi cơ sở.
+
+Tuy nhiên, thực tế vận hành tại phần lớn các cụm sân hiện nay vẫn tồn tại nhiều hạn chế:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Phương thức liên lạc rời rạc:} Khách hàng chủ yếu liên hệ đặt sân thông qua gọi điện thoại trực tiếp hoặc nhắn tin qua ứng dụng mạng xã hội (Zalo, Facebook Messenger). Điều này gây áp lực rất lớn lên nhân viên trực tổng đài vào các khung giờ cao điểm khi phải trả lời hàng trăm cuộc gọi và tin nhắn cùng lúc.
+    \item \textbf{Ghi chép lịch thủ công và nguy cơ trùng lịch (Double Booking):} Nhiều chủ sân vẫn quản lý lịch trên sổ tay hoặc các bảng tính Excel rời rạc. Khi có nhiều nhân viên cùng tiếp nhận cuộc gọi đặt sân đồng thời, tình trạng hai khách hàng cùng được xác nhận một sân trong cùng một khung giờ xảy ra thường xuyên, gây bức xúc lớn cho khách hàng và làm giảm uy tín thương hiệu của cơ sở.
+    \item \textbf{Lãng phí tài nguyên khung giờ thấp điểm:} Đa số khách hàng tập trung đặt sân vào khung giờ vàng buổi tối (17:30 -- 21:30), dẫn đến tình trạng quá tải nghiêm trọng, trong khi các khung giờ ban ngày (08:00 -- 16:00) lại thường xuyên bị bỏ trống. Chủ sân thiếu một công cụ phân tích tự động để áp dụng chính sách giá linh hoạt (Dynamic Pricing) nhằm kích cầu và tối ưu hóa hệ số lấp đầy sân (Court Occupancy Rate).
+    \item \textbf{Bất cập trong tìm kiếm bạn chơi và ghép cặp thi đấu:} Cầu lông là môn thể thao đối kháng đòi hỏi sự tương đồng về trình độ để tạo ra những trận đấu hấp dẫn. Hiện nay, người chơi muốn tìm đối thủ giao lưu hoặc tìm đội ghép thường phải đăng bài lên các hội nhóm mạng xã hội một cách may rủi, dẫn đến tình trạng chênh lệch trình độ quá lớn, gây chán nản và thiếu an toàn khi thi đấu.
+    \item \textbf{Khó khăn trong kiểm soát doanh thu và thiết bị tại quầy:} Việc cho thuê thêm dụng cụ (vợt, ống cầu), bán nước giải khát và thu tiền cọc thường không được đồng bộ hóa với hệ thống quản lý tổng thể, dễ gây thất thoát tài chính và khó khăn cho chủ sân trong công tác đối soát kế toán cuối tháng.
+\end{itemize}
+
+Xuất phát từ thực trạng trên, việc xây dựng một hệ thống phần mềm toàn diện, kết hợp sức mạnh của Trí tuệ nhân tạo (AI) để tự động hóa quy trình đặt chỗ, tối ưu hóa doanh thu, tư vấn khách hàng 24/7 và kết nối cộng đồng người chơi theo trình độ là một nhu cầu vô cùng cấp thiết. Đề tài \textbf{``\reporttitle''} được nhóm nghiên cứu triển khai nhằm giải quyết trọn vẹn chuỗi bài toán thực tiễn này.
+
+\section{Lý do chọn đề tài và ý nghĩa khoa học, thực tiễn}
+\label{sec:lydo}
+
+Đề tài được nhóm tác giả lựa chọn dựa trên những căn cứ khoa học và thực tiễn vững chắc:
+\begin{enumerate}[label=\arabic*)]
+    \item \textbf{Tính thực tiễn và giá trị kinh tế trực tiếp:} Đề tài không chỉ dừng lại ở mức độ nghiên cứu học thuật mà hướng thẳng tới một sản phẩm có thể chuyển giao và áp dụng ngay tại các cụm sân thực tế, giúp các chủ sân giảm thiểu $70\%$ chi phí nhân sự trực quầy, loại bỏ hoàn toàn lỗi đặt trùng sân và gia tăng doanh thu từ $15\%$ đến $30\%$ nhờ cơ chế định giá thông minh.
+    \item \textbf{Hàm lượng ứng dụng Trí tuệ nhân tạo chuyên sâu:} Khác biệt hoàn toàn với các phần mềm quản lý CRUD thông thường, đề tài tích hợp sâu rộng các công nghệ AI tiên tiến nhất hiện nay:
+    \begin{itemize}
+        \item Mô hình ngôn ngữ lớn (LLMs) kết hợp kiến trúc Sinh văn bản tăng cường truy xuất (RAG) và lớp kiểm soát bằng chứng (\textit{Evidence Gate}) nhằm cung cấp Trợ lý ảo tư vấn khách hàng tự động, tuyệt đối không bị ảo giác dữ liệu (Hallucination).
+        \item Hệ thống đánh giá trình độ thể thao chuẩn quốc tế Cấp bậc kết hợp thuật toán ghép trận thông minh (AI Matchmaking), tạo nên một mạng xã hội thể thao kết nối người chơi văn minh, công bằng.
+        \item Thuật toán định giá động (AI Dynamic Pricing) phân tích ma trận khung giờ và nhu cầu lịch sử để điều chỉnh bảng giá tối ưu.
+    \end{itemize}
+    \item \textbf{Cơ hội tiếp cận quy trình phát triển phần mềm chuẩn quốc tế:} Dự án là cơ hội để nhóm sinh viên áp dụng toàn diện quy trình kỹ thuật phần mềm hiện đại: từ đặc tả yêu cầu SRS theo chuẩn IEEE 830, thiết kế kiến trúc vi dịch vụ (Microservices/Clean Architecture), chuẩn hóa cơ sở dữ liệu quan hệ 9 bảng chuẩn 3NF, đến triển khai kiểm thử tự động (Automated Unit \& Integration Testing) và tích hợp cổng thanh toán trực tuyến MoMo All-in-One.
+\end{enumerate}
+
+\section{Mục tiêu nghiên cứu và phát triển cụ thể}
+\label{sec:muctieu}
+
+\subsection{Mục tiêu tổng quát}
+Xây dựng một hệ thống nền tảng Web Application hiện đại cho phép quản lý toàn diện chuỗi cơ sở sân cầu lông, cung cấp trải nghiệm đặt sân trực tuyến mượt mà cho khách hàng và tự động hóa các tác vụ quản trị thông qua Trí tuệ nhân tạo.
+
+\subsection{Mục tiêu cụ thể}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Mục tiêu 1 (Khảo sát và Chuẩn hóa quy trình nghiệp vụ):} Xây dựng tài liệu Đặc tả Yêu cầu Phần mềm (SRS) chuẩn hóa 12 Use Case bao quát toàn bộ 4 phân hệ người dùng (Khách hàng, Chủ sân, Nhân viên quầy và Quản trị viên).
+    \item \textbf{Mục tiêu 2 (Phát triển Trợ lý ảo AI RAG):} Xây dựng dịch vụ Chatbot AI có khả năng nhúng tri thức (Vector Embeddings) từ các tài liệu quy định cụm sân, tự động nhận diện ý định đặt sân, kiểm tra khung giờ trống theo thời gian thực và trả lời khách hàng 24/7 với độ chính xác trên $95\%$.
+    \item \textbf{Mục tiêu 3 (Xây dựng Bộ máy ghép trận theo cấp bậc):} Hiện thực hóa thuật toán tính điểm cấp bậc toán học chuẩn cấp bậc thể thao, xây dựng các phòng ghép đội trực tuyến (\texttt{matchmaking\_rooms}) giúp các vận động viên phong trào dễ dàng tìm bạn đấu giao lưu có chênh lệch trình độ không quá $\pm 100$ Cấp bậc.
+    \item \textbf{Mục tiêu 4 (Thiết kế cơ chế Giữ chỗ an toàn và Chống trùng lịch):} Ứng dụng Redis Cache để triển khai cơ chế khóa phân tán tạm thời trong 10 phút (Slot Holding Lock), đảm bảo tính toàn vẹn dữ liệu giao dịch khi có nhiều khách hàng cùng tranh chấp một khung giờ.
+    \item \textbf{Mục tiêu 5 (Tích hợp Cổng thanh toán MoMo):} Xây dựng module Adapter thanh toán số hỗ trợ tạo mã QR động, mã hóa chữ ký HMAC-SHA256 và xử lý phản hồi tức thời Webhook IPN với độ tin cậy tuyệt đối.
+\end{itemize}
+
+\section{Đối tượng và phạm vi nghiên cứu của đề tài}
+\label{sec:phamvi}
+
+\subsection{Đối tượng nghiên cứu}
+\begin{itemize}[leftmargin=1.5cm]
+    \item Quy trình quản lý, vận hành và khai thác kinh doanh tại các cơ sở cho thuê sân thể thao phong trào.
+    \item Các kiến trúc AI tiên tiến: Mô hình ngôn ngữ lớn (Google Gemini LLM), mô hình trích xuất vector ngữ nghĩa (Sentence Transformers), kỹ thuật phân đoạn tài liệu (Chunking), bộ máy tìm kiếm vector và bộ lọc kiểm soát bằng chứng (\textit{Evidence Gate}).
+    \item Thuật toán định hạng đối kháng Cấp bậc và các hàm phân phối kỳ vọng logistic trong thể thao.
+    \item Kiến trúc phần mềm Backend phân tầng bất đồng bộ (FastAPI Asynchronous Framework), hệ quản trị cơ sở dữ liệu quan hệ PostgreSQL hỗ trợ khóa chính UUID, cơ chế đệm dữ liệu Redis Cache và giao thức thanh toán bảo mật HMAC.
+\end{itemize}
+
+\subsection{Phạm vi nghiên cứu}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Phạm vi nghiệp vụ:} Bao gồm 12 Use Case cốt lõi: Đăng ký/Đăng nhập (RBAC), Quản lý cụm sân và sân con, Quản lý khung giờ và giá động AI, Tìm kiếm sân theo GPS và gợi ý AI, Đặt sân và giữ chỗ 10 phút, Ghép trận Cấp bậc, Quản lý thuê thiết bị, Thanh toán cọc tự động qua MoMo, Check-in và xuất hóa đơn POS tại quầy, Phân công ca trực nhân viên, Phê duyệt cơ sở của Admin, Thống kê báo cáo doanh thu và tải sân.
+    \item \textbf{Phạm vi dữ liệu và kiểm thử:} Thử nghiệm trên mô hình giả lập chuỗi cụm sân thể thao với đầy đủ các kịch bản đặt chỗ giờ vàng, giờ thấp điểm, xung đột đồng thời nhiều người dùng và các giao dịch thanh toán số.
+    \item \textbf{Phạm vi nền tảng:} Tập trung xây dựng lõi dịch vụ Backend RESTful API chuẩn OpenAPI/Swagger và giao diện tương tác Web Responsive tương thích đa thiết bị.
+\end{itemize}
+
+\section{Phương pháp tiếp cận và quy trình phát triển phần mềm}
+\label{sec:phuongphap}
+
+Đề tài áp dụng phương pháp luận kỹ thuật phần mềm kết hợp giữa nghiên cứu lý thuyết nền tảng và phát triển thực nghiệm lặp (Iterative Agile Development):
+\begin{enumerate}[label=\alph*)]
+    \item \textbf{Giai đoạn phân tích và đặc tả (Requirements Engineering):} Nghiên cứu thực tế tại các cụm sân cầu lông tại địa phương, khảo sát thói quen của người chơi và tổng hợp thành tài liệu SRS V1.0 theo chuẩn quốc tế IEEE 830.
+    \item \textbf{Giai đoạn thiết kế kiến trúc (Architectural Design):} Thiết kế cơ sở dữ liệu quan hệ 9 bảng chuẩn 3NF sử dụng khóa chính UUID để đảm bảo tính an toàn dữ liệu và khả năng mở rộng quy mô (Scalability). Thiết kế kiến trúc phân tầng (Clean Layered Architecture) đảm bảo tính độc lập giữa Data Access, Business Logic và API Routers.
+    \item \textbf{Giai đoạn hiện thực hóa và tích hợp AI (Implementation):} Lập trình bất đồng bộ với Python FastAPI, tích hợp các module AI Engine chuyên biệt (\texttt{chatbot\_service.py}, \texttt{elo\_engine.py}, \texttt{evidence\_gate.py}, \texttt{embedding\_provider.py}).
+    \item \textbf{Giai đoạn kiểm thử và bảo đảm chất lượng (QA \& Testing):} Thực thi chiến lược kiểm thử tự động toàn diện qua các bộ test suite từ Phase 1 đến Phase 7 bằng \texttt{pytest}, đảm bảo kiểm soát chặt chẽ các trường hợp biên (Edge Cases), ngăn chặn lỗi hồi quy và đảm bảo tính toàn vẹn của các giao dịch tài chính.
+\end{enumerate}
+
+\section{Cấu trúc tổng thể của bản báo cáo}
+\label{sec:cautruc}
+
+Nội dung của bản báo cáo học phần được tổ chức một cách khoa học, chặt chẽ và logic thành 5 chương chính:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{\cref{chap:tongquan} - Tổng quan về đề tài và khảo sát nghiệp vụ:} Trình bày bối cảnh thực tiễn, tính cấp thiết, lý do lựa chọn, mục tiêu nghiên cứu, đối tượng, phạm vi và phương pháp tiếp cận của đề tài.
+    \item \textbf{\cref{chap:cossolythuyet} - Cơ sở lý thuyết và công nghệ nền tảng:} Trình bày chi tiết cơ sở toán học của thuật toán xếp hạng cấp bậc, kiến trúc sinh tăng cường truy xuất RAG, các kỹ thuật xử lý vector ngữ nghĩa, cơ chế bảo mật chữ ký số HMAC-SHA256 và các công nghệ phát triển (FastAPI, PostgreSQL, Redis, MoMo API).
+    \item \textbf{\cref{chap:thietke} - Phân tích đặc tả yêu cầu và thiết kế hệ thống:} Mô tả chi tiết mô hình Use Case tổng quát, đặc tả đầy đủ 12 Use Case nghiệp vụ theo chuẩn SRS, thiết kế lược đồ cơ sở dữ liệu 9 bảng và các biểu đồ kiến trúc, luồng hoạt động của hệ thống.
+    \item \textbf{\cref{chap:trienkhai} - Triển khai thực nghiệm và kiểm thử phần mềm:} Giới thiệu môi trường cài đặt, cấu hình hệ thống, trích xuất mã nguồn các module quan trọng (RAG Engine, Bộ tính cấp bậc, MoMo Adapter) và bảng tổng kết các bộ kiểm thử tự động từ Phase 1 đến Phase 7.
+    \item \textbf{\cref{chap:ketluan} - Đánh giá kết quả và hướng phát triển tương lai:} Tổng kết toàn bộ kết quả nghiên cứu và sản phẩm phần mềm đạt được, đánh giá ưu điểm, hạn chế và vạch ra lộ trình nâng cấp hệ thống (tích hợp Camera AI Computer Vision).
+    \item \textbf{Phần Phụ lục và Tài liệu tham khảo:} Cung cấp danh mục tài liệu tham khảo chuẩn IEEE, cấu trúc mã nguồn toàn bộ repository và hướng dẫn chi tiết các bước cài đặt, vận hành hệ thống.
+\end{itemize}

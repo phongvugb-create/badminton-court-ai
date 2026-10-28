@@ -1,0 +1,188 @@
+% ==============================================================================
+% CHƯƠNG 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ NỀN TẢNG
+% ==============================================================================
+
+\chapter{CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ NỀN TẢNG}
+\label{chap:cossolythuyet}
+
+\section{Cơ sở lý thuyết thuật toán xếp hạng cấp bậc đối kháng trong thể thao}
+\label{sec:lythuyet_elo}
+
+Hệ thống đánh giá cấp bậc (Rating System) là phương pháp toán học và thống kê nhằm xác định và cập nhật trình độ kỹ năng tương đối của các đối thủ trong các trò chơi hoặc môn thể thao đối kháng đối xứng \cite{elo1978rating}. Khác với bảng xếp hạng tích lũy điểm thưởng đơn thuần (như bảng xếp hạng BWF của Liên đoàn Cầu lông Thế giới), hệ thống xếp hạng cấp bậc hoạt động dựa trên nguyên lý xác suất: điểm số của một người chơi tăng lên khi họ thắng và giảm đi khi họ thua, nhưng mức độ tăng giảm phụ thuộc chặt chẽ vào tương quan trình độ giữa hai đối thủ trước khi trận đấu diễn ra.
+
+\subsection{Mô hình xác suất chiến thắng kỳ vọng (Expected Score)}
+Giả sử có hai người chơi cầu lông $A$ và $B$ tham gia một trận đấu đơn, với điểm số cấp bậc hiện tại lần lượt là $R_A$ và $R_B$. Sự khác biệt về mặt trình độ giữa hai người chơi được phản ánh thông qua hiệu số $\Delta R = R_B - R_A$.
+
+Theo mô hình phân phối logistic chuẩn được FIDE và các hệ sinh thái thể thao điện tử hiện đại áp dụng, xác suất kỳ vọng chiến thắng của người chơi $A$ trước người chơi $B$ (ký hiệu là $E_A$) được xác định bởi công thức:
+\begin{equation}
+    E_A = \frac{1}{1 + 10^{(R_B - R_A) / 400}}
+    \label{eq:elo_expected_a}
+\end{equation}
+Tương tự, xác suất kỳ vọng chiến thắng của người chơi $B$ trước người chơi $A$ là:
+\begin{equation}
+    E_B = \frac{1}{1 + 10^{(R_A - R_B) / 400}}
+    \label{eq:elo_expected_b}
+\end{equation}
+
+Từ hai phương trình trên, ta luôn có tính chất bù trừ xác suất:
+\begin{equation}
+    E_A + E_B = \frac{1}{1 + 10^{(R_B - R_A) / 400}} + \frac{1}{1 + 10^{(R_A - R_B) / 400}} = 1
+\end{equation}
+
+Hằng số $400$ trong mẫu số của số mũ đóng vai trò là hệ số tỷ lệ co giãn (Scaling Factor). Ý nghĩa thống kê của hằng số này được giải thích như sau:
+\begin{itemize}[leftmargin=1.5cm]
+    \item Khi hai người chơi có trình độ tương đương ($R_A = R_B \Rightarrow R_B - R_A = 0$), thì $10^0 = 1$, do đó $E_A = E_B = \frac{1}{1 + 1} = 0.5$ (mỗi bên có $50\%$ cơ hội chiến thắng).
+    \item Khi người chơi $A$ vượt trội người chơi $B$ một khoảng cách đúng bằng $400$ điểm cấp bậc ($R_A - R_B = 400 \Rightarrow R_B - R_A = -400$):
+    \begin{equation}
+        E_A = \frac{1}{1 + 10^{-1}} = \frac{1}{1 + 0.1} \approx 0.9091 \quad (90.91\%)
+    \end{equation}
+    Điều này đồng nghĩa với việc người chơi $A$ có xác suất chiến thắng áp đảo gần $91\%$, trong khi người chơi $B$ chỉ có xấp xỉ $9.09\%$ cơ hội tạo nên bất ngờ.
+\end{itemize}
+
+\subsection{Thuật toán cập nhật điểm số sau trận đấu (Rating Adjustment)}
+Sau khi trận đấu kết thúc, ban trọng tài hoặc hai bên xác nhận kết quả thực tế. Gọi $S_A$ là điểm số thực tế của người chơi $A$:
+\begin{equation}
+    S_A = \begin{cases} 
+        1 & \text{nếu người chơi } A \text{ giành chiến thắng} \\
+        0.5 & \text{nếu trận đấu có kết quả hòa} \\
+        0 & \text{nếu người chơi } A \text{ thất bại}
+    \end{cases}
+\end{equation}
+
+Điểm số mới của người chơi $A$ (ký hiệu $R_A'$) sau trận đấu được tính toán theo công thức truy hồi tuyến tính:
+\begin{equation}
+    R_A' = R_A + K \cdot (S_A - E_A)
+    \label{eq:elo_update_formula}
+\end{equation}
+Tương tự cho người chơi $B$:
+\begin{equation}
+    R_B' = R_B + K \cdot (S_B - E_B)
+\end{equation}
+trong đó $K$ là hệ số điều chỉnh trọng số (K-factor). 
+
+Ý nghĩa bảo toàn điểm số của hệ thống xếp hạng cấp bậc thể hiện ở chỗ:
+\begin{equation}
+    \Delta R_A + \Delta R_B = K(S_A - E_A) + K(S_B - E_B) = K[(S_A + S_B) - (E_A + E_B)] = K(1 - 1) = 0
+\end{equation}
+Số điểm mà người chiến thắng nhận được chính là số điểm bị trừ của người thua cuộc, tạo nên một hệ thống bảo toàn điểm danh số khép kín.
+
+\subsection{Thiết kế hệ số K động (Dynamic K-Factor) cho hệ thống sân cầu lông}
+Trong đề tài này, để phản ánh chính xác quá trình tiến bộ của người chơi phong trào, nhóm nghiên cứu đã thiết kế một cơ chế $K$-factor thích ứng dựa trên số lượng trận đấu đã tham gia ($N$):
+\begin{equation}
+    K = \begin{cases}
+        32 & \text{khi } N < 10 \quad (\text{Giai đoạn phân hạng ban đầu - Placement Phase}) \\
+        24 & \text{khi } 10 \le N < 30 \quad (\text{Giai đoạn ổn định kỹ năng}) \\
+        16 & \text{khi } N \ge 30 \text{ và } R \ge 1600 \quad (\text{Giai đoạn vận động viên bán chuyên/chuyên nghiệp})
+    \end{cases}
+\end{equation}
+Cách tiếp cận này giúp các tài khoản mới lập nhanh chóng đạt tới điểm cấp bậc phản ánh đúng thực lực chỉ sau từ $5$ đến $8$ trận đấu, đồng thời bảo vệ các vận động viên kỳ cựu khỏi những biến động điểm số quá lớn do một vài trận thi đấu dưới phong độ.
+
+\section{Kiến trúc Sinh văn bản tăng cường truy xuất (RAG - Retrieval-Augmented Generation)}
+\label{sec:lythuyet_rag}
+
+Trong các ứng dụng thực tế của Trí tuệ nhân tạo, việc triển khai các Mô hình Ngôn ngữ Lớn (LLMs) đơn thuần thường đối mặt với ba rào cản kỹ thuật nghiêm trọng:
+\begin{enumerate}[label=\alph*)]
+    \item \textbf{Hiện tượng ảo giác thông tin (Hallucination):} LLM có xu hướng tự tạo ra những câu trả lời nghe rất logic và thuyết phục nhưng hoàn toàn sai lệch so với dữ liệu thực tế.
+    \item \textbf{Thiếu hụt tri thức miền nghiệp vụ đặc thù (Domain Knowledge Gap):} Các mô hình nền tảng như Google Gemini hay OpenAI GPT được huấn luyện trên dữ liệu Internet đại chúng, hoàn toàn không nắm được các thông tin nội bộ của từng cụm sân cụ thể (ví dụ: bảng giá giờ vàng hôm nay, chính sách hoàn cọc khi hủy sân trước 2 giờ, số điện thoại cứu hộ sân).
+    \item \textbf{Chi phí huấn luyện lại (Fine-tuning) quá đắt đỏ:} Việc huấn luyện lại toàn bộ mô hình mỗi khi cụm sân thay đổi bảng giá hoặc bổ sung cơ sở mới là hoàn toàn bất khả thi về mặt kinh tế và thời gian đối với các doanh nghiệp vừa và nhỏ.
+\end{enumerate}
+
+Kiến trúc RAG (Retrieval-Augmented Generation) được nhóm tác giả lựa chọn làm giải pháp cốt lõi để giải quyết triệt để các hạn chế trên \cite{lewis2020rag}. Nguyên lý hoạt động của RAG phân tách quá trình trả lời thành hai bước rõ rệt: \textbf{Truy xuất thông tin (Retrieval)} và \textbf{Tổng hợp câu trả lời (Generation)}.
+
+\subsection{Không gian biểu diễn ngữ nghĩa và Trích xuất Vector (Vector Embeddings)}
+Để máy tính có thể hiểu và so khớp được sự tương đồng về mặt ý nghĩa ngữ nghĩa giữa câu hỏi của khách hàng và kho tri thức tài liệu của sân, toàn bộ các tài liệu văn bản (chính sách giá, nội quy sân, danh mục dụng cụ) đều được chuẩn hóa và biến đổi thành các vector số thực trong không gian nhiều chiều ($d$-dimensional space).
+
+Mỗi tài liệu được chia nhỏ thành các đoạn văn ngắn có độ dài phù hợp thông qua kỹ thuật phân đoạn (Text Chunking). Sau đó, mỗi chunk $c_i$ được truyền qua một mô hình nhúng ngôn ngữ (Embedding Model) $f_{\text{embed}}$ để tạo ra vector đặc trưng $\vect{v}_i \in \R^d$:
+\begin{equation}
+    \vect{v}_i = f_{\text{embed}}(c_i), \quad \|\vect{v}_i\|_2 = 1
+\end{equation}
+
+Khi một người dùng gửi một câu hỏi $q$ (ví dụ: \textit{``Tôi muốn thuê 2 tiếng tối nay có được giảm giá không?''}), câu hỏi cũng được mã hóa thành vector truy vấn:
+\begin{equation}
+    \vect{q}_{\text{vec}} = f_{\text{embed}}(q)
+\end{equation}
+
+\subsection{Độ tương đồng ngữ nghĩa Cosine (Cosine Similarity)}
+Độ tương đồng ngữ nghĩa giữa câu hỏi của người dùng và từng đoạn tài liệu trong cơ sở tri thức được định lượng thông qua khoảng cách Cosine giữa hai vector:
+\begin{equation}
+    \text{Sim}(\vect{q}_{\text{vec}}, \vect{v}_i) = \cos(\theta) = \frac{\vect{q}_{\text{vec}} \cdot \vect{v}_i}{\|\vect{q}_{\text{vec}}\|_2 \|\vect{v}_i\|_2} = \sum_{j=1}^{d} q_{\text{vec}, j} \cdot v_{i, j}
+    \label{eq:cosine_formula}
+\end{equation}
+Giá trị $\text{Sim}(\vect{q}_{\text{vec}}, \vect{v}_i) \in [-1, 1]$, trong đó giá trị càng tiệm cận tới $1$ thể hiện hai đoạn văn bản càng có mối liên hệ ngữ nghĩa tương đồng cao. Hệ thống sử dụng thuật toán tìm kiếm láng giềng gần nhất (Nearest Neighbor Search) để trích xuất $k$ đoạn tài liệu có điểm tương đồng cao nhất:
+\begin{equation}
+    \mathcal{C}_{\text{top-}k} = \arg\max_{c_i \in \mathcal{D}}^{(k)} \text{Sim}(\vect{q}_{\text{vec}}, \vect{v}_i)
+\end{equation}
+
+\subsection{Cơ chế Cổng kiểm soát bằng chứng (Evidence Gate)}
+Một trong những đóng góp kỹ thuật nổi bật của nhóm nghiên cứu là việc thiết kế và lập trình module \texttt{EvidenceGate} (\texttt{backend/app/ai/evidence\_gate.py}). Lớp bảo vệ này đóng vai trò như một bộ lọc logic nghiêm ngặt đứng giữa bộ máy tìm kiếm vector và mô hình ngôn ngữ lớn:
+\begin{equation}
+    \text{Decision} = \begin{cases}
+        \text{PASS} & \text{nếu } \max_{i} \text{Sim}(\vect{q}_{\text{vec}}, \vect{v}_i) \ge \tau_{\text{threshold}} \\
+        \text{REJECT} & \text{nếu } \max_{i} \text{Sim}(\vect{q}_{\text{vec}}, \vect{v}_i) < \tau_{\text{threshold}}
+    \end{cases}
+\end{equation}
+với ngưỡng tin cậy được thiết lập thực nghiệm là $\tau_{\text{threshold}} = 0.75$.
+\begin{itemize}[leftmargin=1.5cm]
+    \item Nếu kết quả truy xuất vượt qua ngưỡng tin cậy ($\text{PASS}$): Ngữ cảnh $\mathcal{C}_{\text{top-}k}$ cùng với câu hỏi $q$ sẽ được định dạng vào một System Prompt chặt chẽ để gửi tới Google Gemini LLM tổng hợp câu trả lời tự nhiên.
+    \item Nếu kết quả không đạt ngưỡng tin cậy ($\text{REJECT}$): Hệ thống kích hoạt cơ chế Fallback an toàn, trả về thông báo lịch sự: \textit{``Rất tiếc, hệ thống chưa tìm thấy thông tin chính sách chính thức cho câu hỏi này của bạn. Vui lòng liên hệ trực tiếp hotline ban quản lý sân để được hỗ trợ cụ thể.''} Cơ chế này loại bỏ hoàn toàn nguy cơ AI tự bịa đặt giá tiền hay điều khoản trái với thực tế.
+\end{itemize}
+
+\section{Công nghệ cơ sở dữ liệu quan hệ và cơ chế đệm dữ liệu (Database \& Caching)}
+\label{sec:congnghe_db}
+
+\subsection{Hệ quản trị cơ sở dữ liệu PostgreSQL và chuẩn hóa dữ liệu 3NF}
+Cơ sở dữ liệu của hệ thống quản lý sân cầu lông đòi hỏi tính nhất quán, độ tin cậy và khả năng xử lý giao dịch tài chính cực kỳ khắt khe. Do đó, nhóm nghiên cứu đã lựa chọn PostgreSQL phiên bản 15+ làm hệ quản trị cơ sở dữ liệu chính.
+
+PostgreSQL hỗ trợ đầy đủ các đặc tính ACID (Atomicity, Consistency, Isolation, Durability) chuẩn mực:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Tính nguyên tử (Atomicity):} Mọi giao dịch đặt sân, bao gồm việc trừ slot trống, ghi nhận bảng \texttt{booking\_orders} và tạo bản ghi chi tiết \texttt{booking\_details}, đều được thực thi trong một Database Transaction duy nhất. Nếu bất kỳ bước nào thất bại, toàn bộ giao dịch sẽ tự động Rollback, không để lại dữ liệu rác.
+    \item \textbf{Khóa chính dạng UUID (Universally Unique Identifier):} Toàn bộ các bảng trong hệ thống đều sử dụng khóa chính kiểu UUIDv4 (128-bit) thay vì số nguyên tự tăng (Integer Auto-increment). Thiết kế này mang lại hai lợi thế bảo mật và kiến trúc to lớn: (1) Ngăn chặn hoàn toàn việc người dùng bên ngoài có thể dự đoán mã đơn hàng hoặc mã khách hàng qua URL; (2) Dễ dàng mở rộng phân tán dữ liệu đa vùng (Sharding/Replication) mà không bao giờ bị xung đột khóa chính.
+\end{itemize}
+
+\subsection{Hệ thống đệm dữ liệu và cơ chế Khóa giữ chỗ phân tán với Redis (Slot Holding Lock)}
+Khi lượng khách hàng truy cập đặt sân tăng đột biến vào giờ cao điểm, việc truy vấn trực tiếp vào ổ đĩa cơ sở dữ liệu quan hệ sẽ tạo ra hiện tượng nghẽn cổ chai (I/O Bottleneck). Nhóm nghiên cứu đã ứng dụng Redis 7+ làm hệ thống lưu trữ đệm trong bộ nhớ (In-memory Data Store) với hai mục đích cốt lõi:
+\begin{enumerate}[label=\arabic*)]
+    \item \textbf{Caching ma trận lịch rảnh của các sân con:} Trạng thái các khung giờ trong ngày được lưu dạng Key-Value trong Redis với thời gian sống ngắn (TTL = 60 giây), giúp giảm tới $85\%$ tải đọc của cơ sở dữ liệu PostgreSQL.
+    \item \textbf{Cơ chế Khóa giữ chỗ 10 phút (Slot Holding Lock):} Khi một khách hàng bấm chọn một khung giờ và tiến hành thanh toán cọc, Redis sẽ tạo một khóa nguyên tử có thời hạn:
+    \begin{equation}
+        \text{Key: } \texttt{slot\_hold:court\_id:time\_slot\_id} \rightarrow \text{Value: } \texttt{user\_id}, \quad \text{TTL} = 600\text{ giây}
+    \end{equation}
+    Trong suốt 10 phút này, bất kỳ người dùng nào khác yêu cầu đặt cùng khung giờ đó sẽ nhận được thông báo: \textit{``Khung giờ này đang có khách giữ chỗ thanh toán''}. Nếu khách hàng thanh toán thành công, trạng thái được cập nhật vĩnh viễn sang \texttt{BOOKED} trong PostgreSQL. Nếu quá 10 phút mà giao dịch chưa hoàn tất, Redis sẽ tự động hủy khóa (Key Expired), trả slot về trạng thái \texttt{AVAILABLE} mà không cần bất kỳ tác vụ quét định kỳ (Cronjob) phức tạp nào.
+\end{enumerate}
+
+\section{Kiến trúc phát triển phần mềm Backend và Cổng thanh toán MoMo}
+\label{sec:congnghe_backend_momo}
+
+\subsection{Framework bất đồng bộ FastAPI (Python)}
+Tầng Backend Service của đề tài được xây dựng trên nền tảng FastAPI -- một trong những framework hiện đại và có hiệu năng cao nhất hiện nay trong hệ sinh thái Python:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Khả năng xử lý bất đồng bộ (Asynchronous Native via AsyncIO):} Cho phép một tiến trình đơn lẻ có thể tiếp nhận và xử lý đồng thời hàng nghìn kết nối I/O chờ (chờ truy vấn cơ sở dữ liệu, chờ phản hồi từ API Gemini AI, chờ webhook từ MoMo) mà không bị block luồng thực thi chính.
+    \item \textbf{Xác thực dữ liệu tự động với Pydantic v2:} Mọi dữ liệu đầu vào của các API (Request Body, Query Parameters) đều được tự động phân tích cú pháp, ép kiểu và kiểm tra tính hợp lệ nghiêm ngặt theo các Schemas định nghĩa trước. Nếu dữ liệu không hợp lệ, hệ thống tự động trả về mã lỗi HTTP 422 Unprocessable Entity kèm thông báo chi tiết, bảo vệ hệ thống khỏi các cuộc tấn công tiêm mã độc (Injection Attacks).
+    \item \textbf{Tự động sinh tài liệu chuẩn OpenAPI (Swagger UI):} Giúp đội ngũ lập trình Frontend và các bên tích hợp dễ dàng tra cứu, kiểm thử trực tiếp các endpoint API tại đường dẫn \texttt{/docs}.
+\end{itemize}
+
+\subsection{Cơ chế mã hóa bảo mật giao dịch cổng thanh toán MoMo (All-in-One API)}
+Để xử lý giao dịch đặt cọc tự động, hệ thống tích hợp trực tiếp với cổng thanh toán điện tử MoMo thông qua chuẩn All-in-One API. Quy trình bảo mật thông tin tài chính giữa Backend của hệ thống và Máy chủ MoMo được thực hiện qua thuật toán chữ ký điện tử HMAC-SHA256 (Hash-based Message Authentication Code sử dụng hàm băm an toàn SHA-256).
+
+Chuỗi dữ liệu thô (Raw Signature) được cấu trúc nghiêm ngặt theo định dạng ghép nối các tham số giao dịch theo thứ tự chữ cái:
+\begin{align}
+    \text{RawSignature} = &\ \texttt{"accessKey="} + \text{accessKey} \nonumber \\
+    &+ \texttt{"\&amount="} + \text{amount} \nonumber \\
+    &+ \texttt{"\&extraData="} + \text{extraData} \nonumber \\
+    &+ \texttt{"\&ipnUrl="} + \text{ipnUrl} \nonumber \\
+    &+ \texttt{"\&orderId="} + \text{orderId} \nonumber \\
+    &+ \texttt{"\&orderInfo="} + \text{orderInfo} \nonumber \\
+    &+ \texttt{"\&partnerCode="} + \text{partnerCode} \nonumber \\
+    &+ \texttt{"\&redirectUrl="} + \text{redirectUrl} \nonumber \\
+    &+ \texttt{"\&requestId="} + \text{requestId} \nonumber \\
+    &+ \texttt{"\&requestType="} + \text{requestType}
+    \label{eq:momo_raw_signature}
+\end{align}
+
+Chữ ký số hợp lệ được tính toán bằng cách băm chuỗi thô trên với Khóa bí mật (Secret Key) được cấp riêng cho cơ sở:
+\begin{equation}
+    \text{Signature} = \text{HMAC-SHA256}(\text{SecretKey}, \text{RawSignature})
+    \label{eq:momo_hmac}
+\end{equation}
+
+Khi khách hàng hoàn tất việc quét mã thanh toán trên ứng dụng MoMo, máy chủ MoMo sẽ gửi một thông báo Webhook IPN (Instant Payment Notification) tới máy chủ Backend của hệ thống kèm theo chữ ký từ phía MoMo. Backend thực hiện tính toán lại chữ ký độc lập từ dữ liệu nhận được và so sánh bằng thuật toán so khớp thời gian không đổi (Constant-time Comparison) để chống tấn công phân tích thời gian (Timing Attacks). Chỉ khi hai chữ ký khớp nhau tuyệt đối, đơn đặt sân mới được ghi nhận thanh toán thành công và chuyển trạng thái sang \texttt{CONFIRMED}.

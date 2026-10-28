@@ -1,0 +1,94 @@
+% ==============================================================================
+% CONFIG: PACKAGES.TEX
+% Khai báo toàn bộ các gói thư viện (packages) sử dụng trong tài liệu.
+% Được phân loại theo từng nhóm chức năng rõ ràng.
+% ==============================================================================
+
+% ------------------------------------------------------------------------------
+% 1. ĐỊNH DẠNG KHỔ GIẤY VÀ CĂN LỀ
+% ------------------------------------------------------------------------------
+\usepackage[
+    a4paper,
+    left=3.0cm,
+    right=2.0cm,
+    top=2.5cm,
+    bottom=2.5cm
+]{geometry}
+
+% ------------------------------------------------------------------------------
+% 2. FONT CHỮ VÀ HỖ TRỢ XELATEX
+% ------------------------------------------------------------------------------
+\usepackage{fontspec}
+
+% ------------------------------------------------------------------------------
+% 3. CÔNG CỤ SOẠN THẢO VĂN BẢN VÀ KHOẢNG CÁCH
+% ------------------------------------------------------------------------------
+\usepackage{setspace}       % Điều chỉnh khoảng cách dòng
+\usepackage{indentfirst}    % Thụt đầu dòng đoạn văn đầu tiên sau tiêu đề
+\usepackage{enumitem}       % Tùy biến danh sách bullet, numbering
+\usepackage{titlesec}       % Định dạng tiêu đề chương, mục
+\usepackage{titletoc}       % Định dạng mục lục
+\usepackage{fancyhdr}       % Cấu hình header và footer
+
+% ------------------------------------------------------------------------------
+% 4. TOÁN HỌC VÀ KÝ HIỆU KHOA HỌC
+% ------------------------------------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+
+% ------------------------------------------------------------------------------
+% 5. HÌNH ẢNH VÀ ĐỒ HỌA
+% ------------------------------------------------------------------------------
+\usepackage{graphicx}       % Chèn hình ảnh
+\usepackage{float}          % Quản lý vị trí hình/bảng (tùy chọn [H], [htbp])
+\usepackage{subcaption}     % Chèn các hình con (subfigures)
+\usepackage{tikz}           % Vẽ khung bìa và sơ đồ vector
+\usetikzlibrary{calc}
+
+% ------------------------------------------------------------------------------
+% 6. BẢNG BIỂU HỌC THUẬT
+% ------------------------------------------------------------------------------
+\usepackage{booktabs}       % Bảng học thuật (\toprule, \midrule, \bottomrule)
+\usepackage{tabularx}       % Bảng co giãn theo chiều rộng trang
+\usepackage{array}          % Căn lề cột bảng nâng cao
+\usepackage{longtable}      % Bảng dài qua nhiều trang
+\usepackage{multirow}       % Gộp nhiều dòng trong bảng
+\usepackage{adjustbox}      % Co giãn bảng vừa vặn trang giấy
+
+% ------------------------------------------------------------------------------
+% 7. ĐỊNH DẠNG CAPTION CHO HÌNH VÀ BẢNG
+% ------------------------------------------------------------------------------
+\usepackage{caption}
+
+% ------------------------------------------------------------------------------
+% 8. MÃ NGUỒN (SOURCE CODE LISTINGS)
+% ------------------------------------------------------------------------------
+\usepackage{listings}
+\usepackage{xcolor}         % Quản lý màu sắc cho mã nguồn và tài liệu
+
+% ------------------------------------------------------------------------------
+% 9. TRÍCH DẪN VÀ THAM CHIẾU (IEEE STYLE)
+% LaTeX mặc định đã hỗ trợ \cite{key}. BibTeX + IEEEtran sẽ định dạng số chuẩn [1].
+% ------------------------------------------------------------------------------
+\usepackage{url}            % Hiển thị URL chuẩn xác
+
+% ------------------------------------------------------------------------------
+% 10. LIÊN KẾT SIÊU VĂN BẢN VÀ THAM CHIẾU CHÉO (HYPERREF & CLEVEREF)
+% Chú ý: hyperref nạp gần cuối, cleveref nạp sau cùng.
+% ------------------------------------------------------------------------------
+\usepackage[
+    unicode=true,
+    bookmarks=true,
+    bookmarksnumbered=true,
+    bookmarksopen=true,
+    breaklinks=true,
+    pdfstartview={FitH},
+    pdfauthor={Khoa Cong nghe Thong tin - ICTU}
+]{hyperref}
+
+\usepackage[
+    nameinlink,
+    noabbrev,
+    capitalize
+]{cleveref}

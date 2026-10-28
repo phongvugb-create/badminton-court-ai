@@ -1,0 +1,73 @@
+% ==============================================================================
+% CONFIG: COMMANDS.TEX
+% Các lệnh tùy biến hỗ trợ sinh viên thao tác nhanh với hình ảnh, bảng biểu,
+% ghi chú học thuật và định dạng văn bản.
+% ==============================================================================
+
+% ------------------------------------------------------------------------------
+% 1. LỆNH CHÈN HÌNH ĐƠN TIÊU CHUẨN
+% Cú pháp: \insertfigure[tùy chọn độ rộng]{đường dẫn}{Chú thích hình}{nhãn label}
+% Mặc định độ rộng là 0.8\linewidth nếu không chỉ định.
+% Ví dụ: \insertfigure[width=0.75\linewidth]{figures/chapter3/ai_pipeline.png}{Sơ đồ kiến trúc}{fig:pipeline}
+% ------------------------------------------------------------------------------
+\newcommand{\insertfigure}[4][width=0.8\linewidth]{
+    \begin{figure}[htbp]
+        \centering
+        \includegraphics[#1]{#2}
+        \caption{#3}
+        \label{#4}
+    \end{figure}
+}
+
+% ------------------------------------------------------------------------------
+% 2. LỆNH CHÈN HAI HÌNH SONG SONG (SUBFIGURES)
+% Cú pháp:
+% \inserttwofigures{ảnh 1}{caption 1}{label 1}{ảnh 2}{caption 2}{label 2}{caption chung}{label chung}
+% ------------------------------------------------------------------------------
+\newcommand{\inserttwofigures}[8]{
+    \begin{figure}[htbp]
+        \centering
+        \begin{subfigure}[b]{0.48\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{#1}
+            \caption{#2}
+            \label{#3}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.48\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{#4}
+            \caption{#5}
+            \label{#6}
+        \end{subfigure}
+        \caption{#7}
+        \label{#8}
+    \end{figure}
+}
+
+% ------------------------------------------------------------------------------
+% 3. HỘP GHI CHÚ HỌC THUẬT (ACADEMIC CALLOUT / NOTE)
+% Không dùng box màu mè kiểu brochure, thiết kế thanh lịch với viền trái nhẹ.
+% Cú pháp: \academicnote{Nội dung ghi chú}
+% ------------------------------------------------------------------------------
+\newcommand{\academicnote}[1]{
+    \begin{center}
+    \begin{minipage}{0.95\linewidth}
+        \vspace{4pt}
+        \noindent\makebox[\linewidth]{\rule{\linewidth}{0.5pt}}\\[-3pt]
+        \small\textbf{Ghi chú:} #1\\[-5pt]
+        \noindent\makebox[\linewidth]{\rule{\linewidth}{0.5pt}}
+        \vspace{4pt}
+    \end{minipage}
+    \end{center}
+}
+
+% ------------------------------------------------------------------------------
+% 4. ĐỊNH NGHĨA KÝ HIỆU TOÁN THƯỜNG DÙNG TRONG HỌC MÁY / AI
+% ------------------------------------------------------------------------------
+\newcommand{\vect}[1]{\boldsymbol{#1}}       % Ký hiệu vector in đậm (hỗ trợ cả chữ Hy Lạp và Latin)
+\newcommand{\mat}[1]{\boldsymbol{#1}}        % Ký hiệu ma trận in đậm
+\newcommand{\argmax}{\mathop{\mathrm{argmax}}\limits}
+\newcommand{\argmin}{\mathop{\mathrm{argmin}}\limits}
+\newcommand{\E}{\mathbb{E}}              % Kỳ vọng toán học
+\newcommand{\R}{\mathbb{R}}              % Tập số thực

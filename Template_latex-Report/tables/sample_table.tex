@@ -1,0 +1,23 @@
+% ==============================================================================
+% TABLES: SAMPLE_TABLE.TEX
+% Bảng mẫu tách riêng thành module độc lập, có thể nhúng bằng:
+% \input{tables/sample_table}
+% ==============================================================================
+
+\begin{table}[htbp]
+\centering
+\caption{Bảng mẫu so sánh các chỉ số tài nguyên và hiệu năng của hệ thống}
+\label{tab:sample_modular_table}
+\begin{tabularx}{\textwidth}{l c c c X}
+    \toprule
+    \textbf{Tác vụ} & \textbf{Thời gian (ms)} & \textbf{RAM (MB)} & \textbf{VRAM (MB)} & \textbf{Đánh giá} \\
+    \midrule
+    Tải ảnh và tiền xử lý & 12.5 & 45 & -- & Tốc độ rất nhanh trên CPU \\
+    Trích xuất đặc trưng & 85.0 & 120 & 450 & Tận dụng tăng tốc GPU \\
+    Dự đoán và phân loại & 8.2 & 60 & 180 & Phản hồi tức thời \\
+    Hiển thị giao diện & 15.0 & 95 & -- & Cập nhật mượt mà trên UI \\
+    \midrule
+    \textbf{Tổng cộng toàn pipeline} & \textbf{120.7} & \textbf{320} & \textbf{630} & \textbf{Đạt chuẩn tương tác thời gian thực} \\
+    \bottomrule
+\end{tabularx}
+\end{table}

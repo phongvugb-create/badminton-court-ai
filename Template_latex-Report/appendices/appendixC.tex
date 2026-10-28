@@ -1,0 +1,33 @@
+% ==============================================================================
+% PHỤ LỤC C: KẾT QUẢ THỰC NGHIỆM VÀ SIÊU THAM SỐ
+% ==============================================================================
+
+\chapter{KẾT QUẢ THỰC NGHIỆM VÀ SIÊU THAM SỐ}
+\label{app:hyperparams}
+
+\section{Bảng tổng hợp siêu tham số huấn luyện (Hyperparameters)}
+
+\cref{tab:hyperparams} cung cấp chi tiết toàn bộ các giá trị siêu tham số được thiết lập trong quá trình huấn luyện mô hình nhằm đảm bảo tính tái lập (reproducibility) của các thí nghiệm.
+
+\begin{table}[htbp]
+\centering
+\caption{Bảng thiết lập các siêu tham số huấn luyện mô hình}
+\label{tab:hyperparams}
+\begin{tabularx}{\textwidth}{l l X}
+    \toprule
+    \textbf{Tham số} & \textbf{Giá trị thiết lập} & \textbf{Mục đích / Ý nghĩa} \\
+    \midrule
+    Thuật toán tối ưu (Optimizer) & AdamW & Cải thiện khả năng tổng quát hóa với weight decay \\
+    Tốc độ học cơ sở (Base LR)   & $1 \times 10^{-4}$ & Bước cập nhật trọng số trong không gian gradient \\
+    Weight Decay                   & $1 \times 10^{-2}$ & Ngăn chặn hiện tượng bùng nổ trọng số (Regularization) \\
+    Batch Size                     & 32                 & Kích thước bó dữ liệu trên mỗi bước cập nhật \\
+    Số lượng Epochs                & 50                 & Tổng số lượt duyệt qua toàn bộ tập huấn luyện \\
+    Kích thước ảnh đầu vào         & $224 \times 224$   & Chuẩn hóa chiều rộng $\times$ chiều cao ảnh RGB \\
+    Chính sách học (LR Scheduler) & CosineAnnealingLR  & Giảm dần tốc độ học mượt mà theo chu kỳ \\
+    \bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Ghi chú bổ sung về kiểm thử}
+
+Các thí nghiệm được tiến hành lặp lại 3 lần với 3 hạt giống ngẫu nhiên (random seeds: 42, 123, 999). Các số liệu trình bày trong báo cáo đại diện cho giá trị trung bình của các lượt thử nghiệm độc lập này.

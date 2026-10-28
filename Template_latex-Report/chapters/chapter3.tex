@@ -1,0 +1,190 @@
+% ==============================================================================
+% CHƯƠNG 3: PHÂN TÍCH ĐẶC TẢ YÊU CẦU VÀ THIẾT KẾ HỆ THỐNG
+% ==============================================================================
+
+\chapter{PHÂN TÍCH ĐẶC TẢ YÊU CẦU VÀ THIẾT KẾ HỆ THỐNG}
+\label{chap:thietke}
+
+\section{Mô hình Use Case tổng quát và Danh sách Tác nhân (Actors)}
+\label{sec:usecase_tongquat}
+
+Căn cứ theo tài liệu Đặc tả Yêu cầu Phần mềm (SRS V1.0) của dự án, hệ thống phục vụ 4 tác nhân người dùng (Human Actors) và 1 tác nhân hệ thống thông minh (System Actor):
+\begin{enumerate}[label=\arabic*)]
+    \item \textbf{Khách hàng (Customer - Role = }	exttt{CUSTOMER}\textbf{):} Người chơi cầu lông cá nhân hoặc đại diện các nhóm thể thao. Có nhu cầu tìm kiếm cụm sân gần nhất (GPS), tra cứu lịch trống theo ma trận thời gian thực, đặt sân trực tuyến, thuê thiết bị đi kèm (vợt, ống cầu), thanh toán cọc qua cổng MoMo, tham gia các phòng ghép đấu giao lưu (Matchmaking) và theo dõi lịch sử trận đấu của bản thân.
+    \item \textbf{Chủ sân (Field Owner - Role = }	exttt{FIELD\_OWNER}\textbf{):} Cá nhân hoặc doanh nghiệp sở hữu và vận hành cơ sở cụm sân cầu lông. Có quyền thiết lập danh mục sân con, quản lý biểu phí cơ sở, bật/tắt tính năng AI Dynamic Pricing, quản lý danh mục thiết bị cho thuê, phân công nhân viên quầy và theo dõi báo cáo doanh thu tài chính tổng thể.
+    \item \textbf{Nhân viên quầy (Staff - Role = }	exttt{STAFF}\textbf{):} Nhân viên làm việc trực tiếp tại quầy tiếp đón của từng cụm sân. Sử dụng phân hệ điểm bán hàng (POS / Counter App) để check-in khách khi đến sân, ghi nhận các dịch vụ phát sinh (nước uống, thuê vợt), xử lý hủy/đổi sân tại chỗ và lập hóa đơn thanh toán cuối cùng cho khách hàng.
+    \item \textbf{Quản trị viên nền tảng (Admin - Role = }	exttt{ADMIN}\textbf{):} Người quản trị toàn bộ hệ thống nền tảng. Có quyền kiểm duyệt và phê duyệt các cụm sân mới đăng ký trước khi cho phép hoạt động công khai (\texttt{is\_approved = TRUE}), quản lý toàn bộ danh sách tài khoản người dùng, phân quyền hệ thống và theo dõi nhật ký hoạt động kiểm toán (Audit Logs).
+    \item \textbf{Dịch vụ AI thông minh (AI Engine - System Actor):} Hệ thống dịch vụ chạy ngầm độc lập (Microservice), tiếp nhận các yêu cầu truy vấn ngôn ngữ tự nhiên từ Chatbot RAG, tự động tính toán xác suất và cập nhật điểm cấp bậc sau mỗi trận đấu, và phân tích tần suất đặt sân để đề xuất giá động thông minh.
+\end{enumerate}
+
+\cref{tab:usecase_mapping} tổng hợp chi tiết việc ánh xạ (Mapping) giữa các mã Use Case chuẩn hóa từ UC001 đến UC012 và các phân hệ chức năng tương ứng trong hệ thống.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Bảng ánh xạ chuẩn hóa 12 Use Case nghiệp vụ của hệ thống}
+\label{tab:usecase_mapping}
+\begin{tabularx}{\textwidth}{l p{3.2cm} c X l}
+    \toprule
+    \textbf{Mã UC} & \textbf{Tên Use Case} & \textbf{Mã Chức năng} & \textbf{Mô tả nghiệp vụ cốt lõi} & \textbf{Tác nhân chính} \\
+    \midrule
+    \textbf{UC001} & Đăng ký \& Đăng nhập & F01 & Xác thực mật khẩu Bcrypt \& cấp Token JWT an toàn & Tất cả tác nhân \\
+    \textbf{UC002} & Quản lý Cơ sở \& Sân con & F02 & Thêm, sửa, xóa thông tin cụm sân và danh mục sân con & Chủ sân, Admin \\
+    \textbf{UC003} & Quản lý Khung giờ \& Giá AI & F03 & Quản lý ma trận slot giờ \& cấu hình Dynamic Pricing & Chủ sân, AI Engine \\
+    \textbf{UC004} & Tìm kiếm \& Gợi ý Sân AI & F04 & Tìm sân theo vị trí địa lý GPS \& bộ lọc gợi ý AI & Khách hàng, AI \\
+    \textbf{UC005} & Đặt sân \& Giữ chỗ 10 phút & F05 & Đặt lịch sân trực tuyến, khóa giữ chỗ chống trùng lịch & Khách hàng \\
+    \textbf{UC006} & AI Matchmaking \& Ghép Cấp bậc & F06 & Tạo phòng tìm đối thủ cân bằng theo dải điểm cấp bậc & Khách hàng, AI \\
+    \textbf{UC007} & Quản lý Thuê Thiết bị & F07 & Danh mục cho thuê vợt, cầu và kiểm soát kho & Chủ sân, Khách \\
+    \textbf{UC008} & Thanh toán Cọc MoMo & F08 & Tạo mã QR thanh toán cọc \& đối soát chữ ký số & Khách hàng \\
+    \textbf{UC009} & Check-in \& Lập Hóa đơn POS & F09 & Tiếp đón khách, tính phụ thu và xuất hóa đơn quầy & Nhân viên, Khách \\
+    \textbf{UC010} & Phân công Ca trực Nhân viên & F10 & Khởi tạo tài khoản nhân viên \& gán ca trực tại cơ sở & Chủ sân \\
+    \textbf{UC011} & Phê duyệt Cơ sở \& Quản trị & F11 & Kiểm duyệt hồ sơ sân mới \& quản lý tài khoản & Quản trị viên \\
+    \textbf{UC012} & Thống kê Doanh thu \& Tải sân & F12 & Báo cáo doanh thu tài chính \& biểu đồ nhiệt lấp đầy & Chủ sân, Admin \\
+    \bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Đặc tả chi tiết các Use Case nghiệp vụ cốt lõi (Use Case Specifications)}
+\label{sec:dacta_usecases}
+
+Dưới đây là đặc tả chi tiết các Use Case nghiệp vụ quan trọng nhất của hệ thống theo chuẩn IEEE 830:
+
+\subsection{Đặc tả UC001: Đăng ký, Đăng nhập và Xác thực Hệ thống}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Mã Use Case:} UC001.
+    \item \textbf{Tác nhân chính:} Khách hàng, Chủ sân, Nhân viên quầy, Quản trị viên.
+    \item \textbf{Tác nhân phụ:} Auth Service (Bcrypt, JWT Engine).
+    \item \textbf{Mục đích:} Xác thực danh tính người dùng một cách an toàn, cấp phát Access Token (JWT) và phân quyền truy cập theo vai trò (Role-Based Access Control - RBAC).
+    \item \textbf{Điều kiện trước (Pre-conditions):} Người dùng truy cập vào trang Đăng ký/Đăng nhập; hệ thống cơ sở dữ liệu hoạt động bình thường.
+    \item \textbf{Điều kiện sau (Post-conditions):} Người dùng nhận được Token JWT hợp lệ, được lưu phiên trong Cookie/LocalStorage và được điều hướng chính xác tới Dashboard chức năng tương ứng với vai trò của mình.
+    \item \textbf{Luồng sự kiện chính (Basic Flow):}
+    \begin{enumerate}
+        \item Người dùng chọn chức năng ``Đăng nhập'' trên giao diện.
+        \item Người dùng nhập thông tin gồm Số điện thoại / Email và Mật khẩu.
+        \item Trình duyệt gửi yêu cầu \texttt{POST /api/v1/auth/login} kèm theo payload JSON tới Auth Service.
+        \item Auth Service truy vấn bản ghi người dùng trong bảng \texttt{users} dựa trên Email/Số điện thoại.
+        \item Hệ thống thực hiện kiểm tra mật khẩu thô với giá trị băm \texttt{password\_hash} bằng giải thuật Bcrypt.
+        \item Nếu khớp, hệ thống tạo Access Token (JWT) có chứa \texttt{user\_id} và \texttt{role}, đồng thời thiết lập thời gian hết hạn (ví dụ: 24 giờ).
+        \item Trả về mã HTTP 200 OK cùng Token; giao diện lưu thông tin và chuyển hướng người dùng.
+    \end{enumerate}
+    \item \textbf{Luồng sự kiện phụ (Alternative Flow):} 
+    \begin{itemize}
+        \item \textit{2a. Đăng ký tài khoản mới:} Người dùng nhập Họ tên, Số điện thoại, Email, Mật khẩu. Hệ thống kiểm tra tính duy nhất $\rightarrow$ Mã hóa mật khẩu bằng Bcrypt $\rightarrow$ Lưu bản ghi mới vào bảng \texttt{users} với điểm khởi tạo \texttt{elo\_rating = 1000.0} $\rightarrow$ Tự động đăng nhập.
+    \end{itemize}
+    \item \textbf{Luồng ngoại lệ (Exception Flows):}
+    \begin{itemize}
+        \item \textit{4a. Tài khoản không tồn tại hoặc mật khẩu sai:} Hệ thống trả về mã lỗi HTTP 401 Unauthorized kèm thông báo: \textit{``Tên đăng nhập hoặc mật khẩu không chính xác''}.
+        \item \textit{4b. Tài khoản bị vô hiệu hóa (\texttt{is\_active = FALSE}):} Hệ thống từ chối đăng nhập và thông báo: \textit{``Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên''}.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Đặc tả UC005: Đặt sân trực tuyến và Cơ chế Giữ chỗ 10 phút (Slot Holding)}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Mã Use Case:} UC005.
+    \item \textbf{Tác nhân chính:} Khách hàng (Customer).
+    \item \textbf{Tác nhân phụ:} Redis Cache Service, Booking Service.
+    \item \textbf{Mục đích:} Cho phép khách hàng chọn sân và khung giờ phù hợp trên ma trận lịch trực quan, đồng thời khóa giữ chỗ tạm thời trong 10 phút để khách an tâm thực hiện thanh toán tiền cọc mà không lo bị người khác đặt mất.
+    \item \textbf{Điều kiện trước:} Khách hàng đã đăng nhập thành công vào hệ thống và đang xem trang chi tiết của một cụm sân cụ thể.
+    \item \textbf{Điều kiện sau:} Khung giờ được chuyển sang trạng thái tạm khóa (\texttt{HELD}), một đơn đặt sân tạm thời (\texttt{booking\_orders}) được tạo với trạng thái \texttt{PENDING}.
+    \item \textbf{Luồng sự kiện chính (Basic Flow):}
+    \begin{enumerate}
+        \item Khách hàng chọn ngày muốn chơi cầu lông và xem ma trận các sân con và khung giờ.
+        \item Khách hàng nhấp chọn một hoặc nhiều khung giờ còn trống (màu xanh - \texttt{AVAILABLE}).
+        \item Khách hàng nhấn nút ``Tiến hành đặt sân''.
+        \item Frontend gửi yêu cầu \texttt{POST /api/v1/bookings/hold} kèm \texttt{court\_id}, \texttt{time\_slot\_id} và \texttt{booking\_date}.
+        \item Booking Service kiểm tra nguyên tử trong Redis Cache bằng lệnh \texttt{SETNX} (Set if Not Exists) kèm TTL = 600 giây.
+        \item Nếu thành công, Redis ghi nhận khóa giữ chỗ; hệ thống tạo đơn hàng với trạng thái \texttt{PENDING} và tính toán số tiền cọc bắt buộc (ví dụ: $30\%$ tổng giá trị).
+        \item Hệ thống trả về mã đơn hàng \texttt{booking\_code} cùng đồng hồ đếm ngược 10 phút trên màn hình thanh toán.
+    \end{enumerate}
+    \item \textbf{Luồng ngoại lệ (Exception Flows):}
+    \begin{itemize}
+        \item \textit{5a. Khung giờ vừa bị người khác chọn trước:} Lệnh \texttt{SETNX} trả về False $\rightarrow$ Hệ thống phản hồi mã lỗi HTTP 409 Conflict kèm thông báo: \textit{``Khung giờ này vừa có khách hàng khác giữ chỗ, vui lòng chọn khung giờ khác''}.
+        \item \textit{7a. Hết thời gian 10 phút mà khách chưa thanh toán:} Khóa trên Redis tự động hủy $\rightarrow$ Đơn hàng \texttt{PENDING} bị chuyển sang trạng thái \texttt{EXPIRED} $\rightarrow$ Slot sân tự động mở lại trạng thái \texttt{AVAILABLE} cho cộng đồng.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Đặc tả UC006: AI Matchmaking và Ghép đối thủ theo chuẩn cấp bậc}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Mã Use Case:} UC006.
+    \item \textbf{Tác nhân chính:} Khách hàng (Customer).
+    \item \textbf{Tác nhân phụ:} AI Matchmaking Engine.
+    \item \textbf{Mục đích:} Giúp người chơi độc lập hoặc nhóm thiếu người dễ dàng tìm kiếm đối thủ hoặc đồng đội giao lưu có trình độ tương đương, hạn chế tối đa chênh lệch kỹ năng.
+    \item \textbf{Điều kiện trước:} Người dùng đã hoàn tất ít nhất trận phân hạng hoặc có điểm cấp bậc khởi tạo.
+    \item \textbf{Luồng sự kiện chính (Basic Flow):}
+    \begin{enumerate}
+        \item Khách hàng truy cập phân hệ ``Giao lưu ghép trận'' (Matchmaking Hub).
+        \item Khách hàng có thể chọn: (a) Tạo phòng ghép mới hoặc (b) Xem danh sách các phòng đang chờ đối thủ.
+        \item Khi tạo phòng, khách hàng chọn cụm sân, thời gian dự kiến và thiết lập dải trình độ mong muốn (ví dụ: Cấp bậc từ $1100$ đến $1300$).
+        \item Hệ thống lưu phòng vào bảng \texttt{matchmaking\_rooms}.
+        \item Khi có người chơi khác bấm ``Tham gia'', AI Engine tính toán độ chênh lệch $|R_A - R_B|$ và xác suất kỳ vọng $E_A, E_B$.
+        \item Nếu độ chênh lệch nằm trong biên độ an toàn ($\le 150$ Cấp bậc), hệ thống xác nhận ghép cặp thành công, kích hoạt luồng đặt sân chung và chia đều hóa đơn tiền cọc cho hai bên.
+    \end{enumerate}
+\end{itemize}
+
+\subsection{Đặc tả UC008: Thanh toán Đặt cọc tự động qua Cổng MoMo}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Mã Use Case:} UC008.
+    \item \textbf{Tác nhân chính:} Khách hàng (Customer).
+    \item \textbf{Tác nhân phụ:} MoMo Payment Gateway, Payment Service.
+    \item \textbf{Mục đích:} Thực hiện thanh toán trực tuyến số tiền đặt cọc an toàn, nhanh chóng thông qua quét mã QR trên ứng dụng MoMo, tự động xác nhận đơn đặt sân mà không cần con người can thiệp.
+    \item \textbf{Luồng sự kiện chính (Basic Flow):}
+    \begin{enumerate}
+        \item Tại màn hình thanh toán của đơn đặt sân đang giữ chỗ, khách hàng chọn phương thức ``Ví MoMo''.
+        \item Backend tổng hợp các thông số đơn hàng, tạo chuỗi dữ liệu thô và ký số HMAC-SHA256 theo \cref{eq:momo_raw_signature}.
+        \item Gửi yêu cầu HTTP POST tới máy chủ MoMo All-in-One API.
+        \item MoMo phản hồi đường dẫn thanh toán (\texttt{payUrl}) và mã \texttt{qrCodeUrl}.
+        \item Khách hàng mở ứng dụng MoMo trên điện thoại, thực hiện quét mã QR và xác thực thanh toán bằng mã PIN/Vân tay.
+        \item Sau khi trừ tiền thành công, máy chủ MoMo gửi bản tin Webhook IPN về Backend của hệ thống.
+        \item Backend xác minh chữ ký số IPN $\rightarrow$ Cập nhật bản ghi trong bảng \texttt{payments} $\rightarrow$ Chuyển trạng thái đơn hàng trong \texttt{booking\_orders} sang \texttt{CONFIRMED} $\rightarrow$ Khóa vĩnh viễn slot sân trong cơ sở dữ liệu.
+        \item Giao diện web của khách hàng tự động chuyển sang trang thông báo thành công kèm mã vé QR Check-in.
+    \end{enumerate}
+\end{itemize}
+
+\section{Thiết kế Kiến trúc Tổng thể Hệ thống (System Architecture Design)}
+\label{sec:kientruc_chitiet}
+
+Hệ thống được thiết kế theo mô hình kiến trúc phân tầng dịch vụ (Layered Service-Oriented Architecture), đảm bảo sự tách biệt rành mạch giữa các trách nhiệm nghiệp vụ (Separation of Concerns). Toàn bộ hệ sinh thái phần mềm được phân chia thành 4 tầng kiến trúc chủ đạo:
+
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Tầng Trình diễn (Presentation Layer - Frontend):}
+    \begin{itemize}
+        \item Xây dựng bằng Next.js / React hiện đại kết hợp TailwindCSS, mang lại giao diện người dùng mượt mà, thời gian tải trang nhanh và tương thích hoàn hảo trên cả máy tính để bàn (Desktop) và điện thoại di động (Responsive Web App).
+        \item Bao gồm 4 không gian giao diện riêng biệt: Portal cho Khách hàng, Bảng điều khiển cho Chủ sân, Ứng dụng POS cho Nhân viên quầy và Trang quản trị cấp cao cho Admin.
+        \item Tích hợp widget Chatbot AI dạng cửa sổ nổi (Floating Chatbox) cho phép khách hàng tương tác bằng ngôn ngữ tự nhiên tại bất kỳ trang nào.
+    \end{itemize}
+    \item \textbf{Tầng Cổng API và Xác thực (API Gateway \& Security Layer):}
+    \begin{itemize}
+        \item Sử dụng FastAPI để định tuyến và kiểm soát toàn bộ lưu lượng HTTP/HTTPS đi vào hệ thống.
+        \item Middleware bảo mật: Xử lý chính sách chia sẻ tài nguyên nguồn gốc chéo (CORS Middleware), giới hạn tần suất yêu cầu (Rate Limiting) để chống tấn công từ chối dịch vụ (DDoS).
+        \item Tầng lọc xác thực JWT: Giải mã Token từ Header hoặc HTTP-Only Cookie, tra cứu danh sách thu hồi trong Redis và nạp thông tin người dùng vào ngữ cảnh xử lý của request.
+    \end{itemize}
+    \item \textbf{Tầng Nghiệp vụ cốt lõi và Trí tuệ nhân tạo (Core Business \& AI Layer):}
+    \begin{itemize}
+        \item \textit{Booking \& Slot Engine:} Chịu trách nhiệm thực thi các quy tắc nghiệp vụ đặt sân, tính toán giá thuê theo khung giờ, trừ cọc và xử lý hủy lịch theo chính sách.
+        \item \textit{MoMo Adapter Service:} Đóng gói toàn bộ logic kết nối mạng, sinh chữ ký HMAC-SHA256, kiểm tra tính toàn vẹn gói tin IPN và xử lý ngoại lệ thanh toán.
+        \item \textit{RAG Chatbot Service (\texttt{chatbot\_service.py}):} Quản lý lịch sử hội thoại của người dùng, phân tích ý định (Intent Recognition), kích hoạt tìm kiếm vector ngữ nghĩa và tích hợp \texttt{EvidenceGate} để bảo đảm độ chính xác của câu trả lời.
+        \item \textit{Bộ máy phân loại cấp bậc (\texttt{elo\_engine.py}):} Xử lý các phép tính xác suất kỳ vọng và cập nhật điểm số sau mỗi trận đấu thể thao.
+    \end{itemize}
+    \item \textbf{Tầng Dữ liệu và Lưu trữ phân tán (Data Persistence \& Storage Layer):}
+    \begin{itemize}
+        \item \textit{PostgreSQL Database:} Lưu trữ bền vững 9 bảng thực thể dữ liệu quan hệ theo chuẩn 3NF.
+        \item \textit{Redis In-memory Store:} Lưu trữ Token Blacklist, Session Cache và các khóa giữ chỗ phân tán 10 phút (Slot Holding Lock).
+    \end{itemize}
+\end{enumerate}
+
+\section{Thiết kế Cơ sở Dữ liệu Quan hệ Chuẩn hóa 9 Bảng (Relational Database Design)}
+\label{sec:thietke_csdl_9bang}
+
+Mô hình dữ liệu của hệ thống được chuẩn hóa đạt chuẩn 3NF, loại bỏ hoàn toàn các dị thường dư thừa và cập nhật. Toàn bộ 9 bảng thực thể cốt lõi được tóm lược cấu trúc như sau:
+
+\begin{itemize}[leftmargin=1.0cm]
+    \item \textbf{Bảng 1: }	exttt{users}\textbf{ (Quản lý Tài khoản):} Lưu trữ thông tin định danh và bảo mật người dùng, gồm \texttt{id} (UUID, PK), \texttt{full\_name}, \texttt{phone} (Unique), \texttt{email} (Unique), \texttt{password\_hash} (Bcrypt), \texttt{role} (\texttt{CUSTOMER}, \texttt{FIELD\_OWNER}, \texttt{STAFF}, \texttt{ADMIN}), \texttt{elo\_rating} (điểm cấp bậc khởi tạo 1000.0) và \texttt{is\_active}.
+    \item \textbf{Bảng 2: }	exttt{facilities}\textbf{ (Quản lý Cụm Cơ sở):} Quản lý thông tin cụm sân thể thao với \texttt{id} (UUID, PK), \texttt{owner\_id} (FK $\rightarrow$ \texttt{users.id}), \texttt{name}, \texttt{address}, tọa độ GPS (\texttt{latitude}, \texttt{longitude}), khung giờ hoạt động (\texttt{open\_time}, \texttt{close\_time}) và trạng thái kiểm duyệt \texttt{is\_approved}.
+    \item \textbf{Bảng 3: }	exttt{courts}\textbf{ (Danh mục Sân con):} Định danh từng sân con trực thuộc cụm sân, gồm \texttt{id} (UUID, PK), \texttt{facility\_id} (FK), \texttt{court\_name}, loại mặt thảm \texttt{court\_type} (tiêu chuẩn BWF) và trạng thái \texttt{is\_active}.
+    \item \textbf{Bảng 4: }	exttt{time\_slots}\textbf{ (Khung giờ và Giá động AI):} Ma trận khung giờ dịch vụ 60 phút, gồm \texttt{id} (UUID, PK), \texttt{facility\_id} (FK), \texttt{start\_time}, \texttt{end\_time}, mức giá cơ sở \texttt{base\_price} và hệ số điều chỉnh giá động thông minh \texttt{dynamic\_multiplier}.
+    \item \textbf{Bảng 5: }	exttt{equipments}\textbf{ (Dụng cụ và Dịch vụ Phụ trợ):} Quản lý kho dụng cụ cho thuê với \texttt{id} (UUID, PK), \texttt{facility\_id} (FK), \texttt{item\_name} (vợt, ống cầu), số lượng tồn kho \texttt{stock\_quantity} và giá thuê \texttt{rental\_price}.
+    \item \textbf{Bảng 6: }	exttt{booking\_orders}\textbf{ (Quản lý Đơn Đặt Sân Tổng thể):} Lưu thông tin đơn đặt chỗ với \texttt{id} (UUID, PK), mã đơn \texttt{booking\_code}, \texttt{user\_id} (FK), \texttt{total\_amount}, tiền cọc \texttt{deposit\_amount}, trạng thái \texttt{booking\_status} (\texttt{HELD}, \texttt{CONFIRMED}, \texttt{COMPLETED}, \texttt{CANCELLED}) và thời hạn giữ chỗ \texttt{hold\_expires\_at}.
+    \item \textbf{Bảng 7: }	exttt{booking\_details}\textbf{ (Chi tiết Sân và Thiết bị):} Lưu cụ thể slot sân và thiết bị trong đơn, gồm \texttt{id} (UUID, PK), \texttt{order\_id} (FK), \texttt{court\_id} (FK), \texttt{time\_slot\_id} (FK), \texttt{booking\_date} và thiết bị kèm theo.
+    \item \textbf{Bảng 8: }	exttt{invoices}\textbf{ (Hóa đơn Tài chính tại Quầy):} Quản lý giao dịch POS quầy khi khách trả sân, gồm \texttt{id} (UUID, PK), mã hóa đơn \texttt{invoice\_code}, \texttt{order\_id} (FK), phụ thu dịch vụ phát sinh, thuế VAT và phương thức quyết toán (tiền mặt / chuyển khoản).
+    \item \textbf{Bảng 9: }	exttt{matchmaking\_rooms}\textbf{ (Phòng Ghép Trận Theo Cấp Bậc):} Quản lý sảnh giao lưu thể thao, gồm \texttt{id} (UUID, PK), \texttt{host\_user\_id} (FK), \texttt{guest\_user\_id} (FK), dải điểm cấp bậc yêu cầu (\texttt{required\_elo\_min}, \texttt{required\_elo\_max}), trạng thái ghép phòng và kết quả người thắng cuộc \texttt{winner\_id}.
+\end{itemize}

@@ -1,0 +1,84 @@
+% ==============================================================================
+% CHƯƠNG 5: ĐÁNH GIÁ KẾT QUẢ VÀ HƯỚNG PHÁT TRIỂN TƯƠNG LAI
+% ==============================================================================
+
+\chapter{ĐÁNH GIÁ KẾT QUẢ VÀ HƯỚNG PHÁT TRIỂN TƯƠNG LAI}
+\label{chap:ketluan}
+
+\section{Tổng kết các kết quả đạt được của đề tài}
+\label{sec:ketqua_datduoc}
+
+Sau thời gian nghiên cứu khoa học nghiêm túc, khảo sát nghiệp vụ thực tế và triển khai kỹ thuật phần mềm bài bản, đề tài \textbf{``\reporttitle''} được thực hiện bởi nhóm sinh viên lớp \textbf{\studentclass} trong khuôn khổ học phần \textbf{\course} đã hoàn thành xuất sắc toàn bộ các mục tiêu đặt ra ban đầu:
+
+\begin{enumerate}[label=\arabic*)]
+    \item \textbf{Về mặt phân tích và đặc tả hệ thống (Software Engineering):}
+    \begin{itemize}
+        \item Xây dựng thành công bộ tài liệu Đặc tả Yêu cầu Phần mềm (SRS V1.0) theo chuẩn quốc tế IEEE 830, bao quát trọn vẹn 12 Use Case nghiệp vụ từ UC001 đến UC012 cho 4 phân hệ người dùng (Khách hàng, Chủ sân, Nhân viên quầy và Quản trị viên).
+        \item Chuẩn hóa thành công mô hình cơ sở dữ liệu quan hệ gồm 9 bảng thực thể đạt chuẩn 3NF, bảo đảm tính toàn vẹn dữ liệu giao dịch thông qua cơ chế khóa chính toàn cầu UUIDv4.
+    \end{itemize}
+    \item \textbf{Về mặt Trí tuệ nhân tạo và Tự động hóa thông minh (Artificial Intelligence):}
+    \begin{itemize}
+        \item Nghiên cứu, triển khai và đóng gói thành công hệ sinh thái RAG Chatbot đa tầng với công nghệ Vector Embeddings tiếng Việt kết hợp mô hình ngôn ngữ lớn Google Gemini.
+        \item Đột phá với cơ chế cổng lọc bằng chứng tri thức (\textit{Evidence Gate}), thiết lập ngưỡng tương đồng nghiêm ngặt ($\tau = 0.75$), loại bỏ hoàn toàn hiện tượng ảo giác (Hallucination) trong các câu trả lời tư vấn giá và chính sách của cụm sân.
+        \item Hiện thực hóa thuật toán xếp hạng cấp bậc đối kháng toán học chuẩn cấp bậc thể thao kết hợp hệ số $K$-factor thích ứng (Dynamic K-Factor), tạo nên một nền tảng tìm bạn thi đấu giao lưu văn minh, công bằng cho cộng đồng cầu lông phong trào.
+    \end{itemize}
+    \item \textbf{Về mặt kiến trúc hệ thống và an toàn tài chính (Architecture \& FinTech):}
+    \begin{itemize}
+        \item Xây dựng tầng Backend bất đồng bộ hiệu năng cao với FastAPI, duy trì thời gian đáp ứng API trung bình dưới $30\text{ ms}$ khi kết hợp cùng bộ đệm phân tán Redis.
+        \item Giải quyết triệt để vấn đề xung đột đặt trùng sân (Double Booking) thông qua cơ chế khóa nguyên tử giữ chỗ 10 phút (Slot Holding Lock) trên Redis.
+        \item Tích hợp cổng thanh toán trực tuyến MoMo All-in-One API với cơ chế ký số bảo mật HMAC-SHA256 và xử lý phản hồi tức thời Webhook IPN, đạt độ chính xác tài chính $100\%$.
+    \end{itemize}
+    \item \textbf{Về mặt chất lượng phần mềm và kiểm thử tự động (QA \& Testing):}
+    \begin{itemize}
+        \item Thiết lập và thực thi thành công $180$ ca kiểm thử tự động (Unit Test \& Integration Test) thông qua công cụ \texttt{pytest}, bao phủ đầy đủ 100\% các luồng nghiệp vụ cốt lõi từ Phase 1 đến Phase 7 mà không ghi nhận bất kỳ lỗi hồi quy nào.
+    \end{itemize}
+\end{enumerate}
+
+\section{Đánh giá chi tiết ưu điểm và những hạn chế còn tồn tại}
+\label{sec:uunhuocdiem}
+
+\subsection{Ưu điểm nổi bật của hệ thống}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Khả năng giải quyết bài toán thực tiễn xuất sắc:} Hệ thống đánh trúng vào những điểm nghẽn nhức nhối nhất của các cụm sân cầu lông đô thị hiện nay (quá tải tổng đài, trùng lịch, thất thoát doanh thu quầy và chênh lệch trình độ khi giao lưu).
+    \item \textbf{Độ tin cậy và an toàn dữ liệu cao:} Việc kết hợp giữa PostgreSQL chuẩn ACID, khóa phân tán Redis và chữ ký số MoMo tạo nên một hàng rào bảo mật vững chắc cho cả dữ liệu nghiệp vụ và các giao dịch tài chính.
+    \item \textbf{Thiết kế module hóa dễ bảo trì và mở rộng (Clean Architecture):} Các dịch vụ AI (RAG, Cấp bậc, Dynamic Pricing) được thiết kế hoàn toàn độc lập dưới dạng Microservices/Adapters, cho phép dễ dàng nâng cấp mô hình AI hoặc thay đổi nhà cung cấp cổng thanh toán trong tương lai mà không làm ảnh hưởng tới các thành phần khác.
+    \item \textbf{Trải nghiệm người dùng mượt mà và trực quan:} Ma trận khung giờ thời gian thực kết hợp cùng Trợ lý ảo AI giúp khách hàng chỉ mất chưa đầy 60 giây để tìm sân, chọn giờ và hoàn tất đặt cọc.
+\end{itemize}
+
+\subsection{Những điểm hạn chế còn tồn tại}
+Bên cạnh những thành công đã đạt được, nhóm nghiên cứu cũng thẳng thắn nhìn nhận một số hạn chế kỹ thuật do giới hạn về mặt thời gian và nguồn lực thử nghiệm:
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Chưa tích hợp thị giác máy tính với Camera sân (Computer Vision):} Việc xác nhận sân đang có người chơi thực tế hay đang trống hiện tại vẫn phụ thuộc vào thao tác check-in tại quầy POS của nhân viên hoặc thông tin lịch đặt trên hệ thống, chưa có cơ chế giám sát tự động qua luồng video Camera (RTSP Stream).
+    \item \textbf{Thuật toán định giá động (Dynamic Pricing) còn mang tính quy tắc cố định (Rule-based):} Hiện tại mức giá thay đổi chủ yếu dựa trên khung giờ cao điểm định sẵn và tỷ lệ lấp đầy sân tức thời, chưa tích hợp mô hình học máy chuỗi thời gian (như LSTM hoặc Prophet) để dự báo nhu cầu thuê sân dựa trên các biến số ngoại cảnh như thời tiết, ngày nghỉ lễ hay các sự kiện thể thao lớn.
+    \item \textbf{Chưa đóng gói thành ứng dụng di động độc lập (Native Mobile App):} Hệ thống hiện đang hoạt động dưới dạng Web Responsive. Mặc dù hiển thị tốt trên trình duyệt điện thoại, việc chưa có ứng dụng cài đặt trên App Store / Google Play làm hạn chế khả năng gửi thông báo đẩy (Push Notifications) khi có đối thủ ghép trận Cấp bậc phù hợp.
+\end{itemize}
+
+\section{Hướng phát triển và mở rộng hệ thống trong tương lai}
+\label{sec:huongphattrien}
+
+Dựa trên những hạn chế đã phân tích, nhóm nghiên cứu vạch ra lộ trình nâng cấp và mở rộng hệ thống trong các giai đoạn tiếp theo như sau:
+\begin{enumerate}[label=\alph*)]
+    \item \textbf{Tích hợp hệ thống Thị giác máy tính nhận diện sân trống qua Camera (AI Edge Vision):}
+    \begin{itemize}
+        \item Nghiên cứu triển khai các mô hình học sâu nhận diện đối tượng thời gian thực nhẹ (như YOLOv8-Nano hoặc MediaPipe Pose Estimation) kết nối trực tiếp với hệ thống Camera giám sát tại sân.
+        \item Tự động phát hiện khi nào trận đấu kết thúc hoặc sân bị bỏ trống quá 15 phút so với giờ đặt để tự động thông báo cho khách vãng lai đang chờ, tối ưu hóa triệt để công suất khai thác của sân.
+    \end{itemize}
+    \item \textbf{Nâng cấp thuật toán dự báo nhu cầu và Định giá động thông minh:}
+    \begin{itemize}
+        \item Thu thập dữ liệu lịch sử đặt sân trong khoảng thời gian từ 6 tháng đến 1 năm để huấn luyện các mô hình học máy dự báo chuỗi thời gian.
+        \item Tự động điều chỉnh giá thuê sân theo thời gian thực (Real-time Dynamic Pricing) dựa trên dự báo thời tiết (ví dụ: trời mưa làm tăng nhu cầu chơi sân trong nhà) và các dịp lễ tết.
+    \end{itemize}
+    \item \textbf{Phát triển ứng dụng di động đa nền tảng (Flutter / React Native):}
+    \begin{itemize}
+        \item Xây dựng Mobile App phục vụ cộng đồng người chơi cầu lông với các tính năng mạng xã hội: kết bạn, theo dõi bảng xếp hạng cấp bậc khu vực, tạo giải đấu nội bộ (Tournament Brackets) và nhận thông báo đẩy tức thời khi có lời mời giao lưu.
+    \end{itemize}
+    \item \textbf{Mở rộng hệ sinh thái thanh toán đa kênh:}
+    \begin{itemize}
+        \item Bổ sung thêm các phương thức thanh toán phổ biến khác như VNPay-QR, ZaloPay, Apple Pay và cổng thanh toán thẻ quốc tế (Visa/Mastercard) để phục vụ khách du lịch nước ngoài.
+    \end{itemize}
+\end{enumerate}
+
+\section{Lời kết luận}
+\label{sec:loiket}
+
+Việc hoàn thành đề tài \textbf{`\reporttitle''} là minh chứng cho năng lực ứng dụng Trí tuệ nhân tạo và kỹ thuật phần mềm vào giải quyết bài toán thực tiễn. Đề tài giúp nhóm sinh viên rèn luyện tư duy kiến trúc hệ thống, quy trình phát triển chuyên nghiệp và đạo đức học thuật. Nhóm tác giả kỳ vọng hệ thống sẽ tiếp tục được hoàn thiện và triển khai thực tế, đóng góp tích cực vào chuyển đổi số quản lý thể thao.

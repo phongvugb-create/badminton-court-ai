@@ -7,31 +7,32 @@
 
 \section{Liên kết kho mã nguồn (Repository)}
 
-Toàn bộ mã nguồn, dữ liệu mẫu và tài liệu hướng dẫn chi tiết của dự án được lưu trữ công khai tại kho chứa mã nguồn GitHub:
+Toàn bộ mã nguồn, cấu hình môi trường và tài liệu hướng dẫn kiểm thử của dự án được quản lý tại kho chứa mã nguồn:
 \begin{itemize}[leftmargin=1.5cm]
-    \item \textbf{Địa chỉ repository:} \url{https://github.com/ictu-fit/ai-app-template}
+    \item \textbf{Tên dự án:} Badminton Court AI Management System
     \item \textbf{Nhánh chính (Main branch):} \texttt{main}
-    \item \textbf{Giấy phép mã nguồn:} MIT License
+    \item \textbf{Kiến trúc phát triển:} FastAPI Async Backend + RAG Engine + MoMo Payment Gateway
 \end{itemize}
 
 \section{Cấu trúc thư mục dự án phần mềm}
  
 Dưới đây là sơ đồ tổ chức thư mục của dự án phần mềm ứng dụng AI:
-\begin{lstlisting}[language={}, caption={Cấu trúc cây thư mục mã nguồn phần mềm ứng dụng AI}, label={lst:tree}]
-AI_Application/
-|-- data/                 # Thư mục lưu trữ tập dữ liệu (train, val, test)
-|-- models/               # Định nghĩa các kiến trúc mạng nơ-ron
-|   |-- __init__.py
-|   |-- backbone.py       # Module trích xuất đặc trưng
-|   `-- classifier.py     # Module phân loại
-|-- weights/              # Tệp trọng số mô hình đã huấn luyện (.pt, .onnx)
-|-- utils/                # Các hàm tiện ích tiền xử lý dữ liệu và vẽ đồ thị
-|   |-- dataset.py
-|   `-- metrics.py
-|-- ui/                   # Giao diện người dùng (Streamlit / PyQt)
-|   `-- app.py
-|-- train.py              # Script chạy quá trình huấn luyện
-|-- evaluate.py           # Script đánh giá mô hình trên tập test
-|-- requirements.txt      # Danh sách các thư viện phụ thuộc
-`-- README.md             # Hướng dẫn tổng quan về dự án
+\begin{lstlisting}[language={}, caption={Cấu trúc cây thư mục mã nguồn hệ thống sân cầu lông AI}, label={lst:tree}]
+badminton-court-ai/
+|-- backend/
+|   |-- app/
+|   |   |-- ai/                   # Engine RAG Chatbot, ELO Engine, Embedding Provider
+|   |   |   |-- chatbot_service.py
+|   |   |   |-- elo_engine.py
+|   |   |   |-- embedding_provider.py
+|   |   |   `-- evidence_gate.py
+|   |   |-- api/                  # RESTful API Endpoints (Auth, Courts, Bookings, Payments)
+|   |   |-- core/                 # Cau hinh Database, Redis, Security JWT
+|   |   |-- models/               # SQLAlchemy ORM Models (User, Court, Booking, Payment)
+|   |   |-- schemas/              # Pydantic Request & Response Schemas
+|   |   `-- services/             # Logic nghiep vu & MoMo Payment Adapter
+|   `-- tests/                    # Bo kiem thu tu dong (Unit Tests & Integration Tests)
+|-- Template_latex-Report/        # Bao cao hoc phan LaTeX (ICTU Standard)
+|-- requirements.txt              # Danh sach goi thu vien Python
+`-- pytest.ini                    # Cau hinh thuc thi kiem thu tu dong
 \end{lstlisting}

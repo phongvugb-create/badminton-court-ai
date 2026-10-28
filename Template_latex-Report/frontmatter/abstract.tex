@@ -1,0 +1,24 @@
+% ==============================================================================
+% FRONTMATTER: ABSTRACT.TEX
+% Tóm tắt báo cáo học phần và từ khóa nghiên cứu (Keywords).
+% ==============================================================================
+
+\chapter*{TÓM TẮT BÁO CÁO}
+\addcontentsline{toc}{chapter}{TÓM TẮT BÁO CÁO}
+
+Báo cáo học phần \textbf{\course} với đề tài \textbf{``\reporttitle''} trình bày quá trình nghiên cứu, khảo sát thực tiễn, phân tích đặc tả yêu cầu (SRS) theo chuẩn quốc tế IEEE 830, thiết kế kiến trúc và phát triển toàn diện một nền tảng chuyển đổi số thông minh cho ngành dịch vụ thể thao cầu lông.
+
+Trước làn sóng phát triển mạnh mẽ của phong trào tập luyện cầu lông tại Việt Nam, các cụm sân truyền thống đang phải đối mặt với nhiều điểm nghẽn nghiêm trọng: xung đột lịch đặt sân (Double Booking), lãng phí tài nguyên khung giờ thấp điểm, áp lực trực tổng đài tư vấn và sự mất cân bằng về kỹ năng khi người chơi tự ghép cặp giao lưu. Đề tài đã giải quyết triệt để các bài toán này thông qua việc ứng dụng chuyên sâu Trí tuệ nhân tạo (AI) vào lõi nghiệp vụ của hệ thống:
+\begin{enumerate}[label=\arabic*)]
+    \item \textbf{Trợ lý ảo AI thông minh (RAG Chatbot):} Ứng dụng kỹ thuật sinh có tăng cường truy xuất (Retrieval-Augmented Generation), vector embedding đa ngôn ngữ kết hợp bộ lọc kiểm soát bằng chứng (\textit{Evidence Gate}), giúp giải đáp chính sách sân, bảng giá và đề xuất sân 24/7 với độ chính xác cao, loại bỏ hoàn toàn hiện tượng ảo giác thông tin (Hallucination).
+    \item \textbf{Cơ chế ghép trận cân bằng kỹ năng (AI Matchmaking \& Xếp hạng cấp bậc):} Áp dụng thuật toán đánh giá kỹ năng đối kháng Cấp bậc chuẩn quốc tế, tự động tính toán xác suất kỳ vọng và cập nhật điểm số sau mỗi trận đấu, hỗ trợ người chơi tìm kiếm bạn thi đấu tương đồng về trình độ.
+    \item \textbf{Cơ chế định giá động (AI Dynamic Pricing):} Tự động đề xuất và điều chỉnh biểu phí thuê sân dựa trên hệ số tải lấp đầy và khung giờ cao điểm/thấp điểm nhằm tối ưu hóa doanh thu cho cơ sở.
+    \item \textbf{Hạ tầng Backend hiệu năng cao và Thanh toán số tự động:} Triển khai bằng kiến trúc bất đồng bộ FastAPI, lưu trữ quan hệ chuẩn 3NF trên PostgreSQL, quản lý khóa tạm giữ chỗ 10 phút (Slot Holding Lock) trên Redis Cache để chống trùng lịch tuyệt đối, tích hợp cổng thanh toán trực tuyến MoMo qua chữ ký điện tử HMAC-SHA256 và bảo mật đa tầng JWT/RBAC.
+\end{enumerate}
+
+Toàn bộ hệ thống được kiểm thử nghiêm ngặt thông qua hơn 80 ca kiểm thử tự động (Unit Test \& Integration Test) với công cụ \texttt{pytest}, đạt tỷ lệ thành công 100\%. Báo cáo cung cấp đầy đủ các sơ đồ kiến trúc, đặc tả chi tiết 12 Use Case nghiệp vụ, biểu đồ luồng hoạt động, lược đồ cơ sở dữ liệu 9 bảng và hướng dẫn triển khai môi trường sản xuất.
+
+\vspace{1.0cm}
+\noindent\textbf{Từ khóa:} Trí tuệ nhân tạo, RAG Chatbot, Vector Embedding, Xếp hạng cấp bậc, Dynamic Pricing, FastAPI, PostgreSQL, Redis, MoMo Payment, Đặt sân cầu lông, Khoa Công nghệ Thông tin ICTU.
+
+\clearpage

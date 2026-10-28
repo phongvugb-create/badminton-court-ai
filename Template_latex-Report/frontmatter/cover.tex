@@ -1,0 +1,47 @@
+% ==============================================================================
+% FRONTMATTER: COVER.TEX
+% Thiết kế trang bìa báo cáo học phần theo phong cách học thuật, trang trọng,
+% tối giản, hoàn toàn KHÔNG sử dụng khung viền (border/box) gây lỗi hiển thị.
+% Toàn bộ thông tin được liên kết tự động từ file config/metadata.tex.
+% ==============================================================================
+
+\begin{titlepage}
+
+\begin{center}
+    % Tên Đại học và Khoa
+    {\large\bfseries \MakeUppercase{\university}}\\[0.25cm]
+    {\large\bfseries \MakeUppercase{\faculty}}\\[0.4cm]
+    \rule{4.0cm}{0.6pt}
+
+    \vspace{0.8cm}
+    % Logo trường ICTU
+    \ifx\logopath\empty\relax\else
+        \includegraphics[width=3.2cm, keepaspectratio]{\logopath}\\[0.8cm]
+    \fi
+
+    % Loại báo cáo và tên Học phần
+    {\Large\bfseries \MakeUppercase{\reporttype}}\\[0.35cm]
+    {\large\bfseries HỌC PHẦN: \MakeUppercase{\course}}\\[1.2cm]
+
+    % Đề tài nghiên cứu
+    {\large\bfseries ĐỀ TÀI}\\[0.4cm]
+    {\LARGE\bfseries \reporttitle}\\[0.3cm]
+    \ifx\reportsubtitle\empty\relax\else
+        {\normalsize\itshape \reportsubtitle}\\[0.3cm]
+    \fi
+
+    \vfill
+
+    % Thông tin Giảng viên hướng dẫn và Sinh viên thực hiện
+    \begin{tabular}{p{5.5cm}l}
+        \textbf{Giảng viên hướng dẫn:} & \supervisor \\[0.35cm]
+        \textbf{Sinh viên thực hiện:}  & \studentname \\[0.35cm]
+        \textbf{Lớp:}                  & \studentclass \\
+    \end{tabular}
+
+    \vspace{1.5cm}
+    % Địa điểm và năm thực hiện
+    {\normalsize\bfseries \location, \reportyear}
+\end{center}
+
+\end{titlepage}

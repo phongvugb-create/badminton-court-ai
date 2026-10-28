@@ -1,0 +1,176 @@
+% ==============================================================================
+% CONFIG: FORMATTING.TEX
+% Cấu hình định dạng trang, tiêu đề chương mục, header/footer, khoảng cách,
+% bảng biểu và mã nguồn sử dụng hệ font thống nhất Latin Modern.
+% ==============================================================================
+
+% ------------------------------------------------------------------------------
+% 1. GIÃN DÒNG VÀ KHOẢNG CÁCH ĐOẠN VĂN
+% Line spacing: 1.35 (phù hợp tỷ lệ vàng văn bản học thuật)
+% Thụt đầu dòng: 1.0 cm
+% Khoảng cách giữa các đoạn văn: 6pt
+% ------------------------------------------------------------------------------
+\setstretch{1.35}
+\setlength{\parindent}{1.0cm}
+\setlength{\parskip}{6pt}
+
+% Giới hạn độ sâu phân cấp đánh số và hiển thị mục lục
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% ------------------------------------------------------------------------------
+% 2. VIỆT HÓA CÁC TÊN TIÊU ĐỀ MẶC ĐỊNH
+% ------------------------------------------------------------------------------
+\renewcommand{\chaptername}{CHƯƠNG}
+\renewcommand{\contentsname}{MỤC LỤC}
+\renewcommand{\listfigurename}{DANH MỤC HÌNH ẢNH}
+\renewcommand{\listtablename}{DANH MỤC BẢNG}
+\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\appendixname}{PHỤ LỤC}
+
+% ------------------------------------------------------------------------------
+% 3. ĐỊNH DẠNG CLEVEREF CHO TIẾNG VIỆT
+% ------------------------------------------------------------------------------
+\crefname{figure}{Hình}{Hình}
+\Crefname{figure}{Hình}{Hình}
+\crefname{table}{Bảng}{Bảng}
+\Crefname{table}{Bảng}{Bảng}
+\crefname{equation}{Phương trình}{Phương trình}
+\Crefname{equation}{Phương trình}{Phương trình}
+\crefname{chapter}{Chương}{Chương}
+\Crefname{chapter}{Chương}{Chương}
+\crefname{section}{Mục}{Mục}
+\Crefname{section}{Mục}{Mục}
+\crefname{subsection}{Mục}{Mục}
+\Crefname{subsection}{Mục}{Mục}
+\crefname{subsubsection}{Mục}{Mục}
+\Crefname{subsubsection}{Mục}{Mục}
+\crefname{appendix}{Phụ lục}{Phụ lục}
+\Crefname{appendix}{Phụ lục}{Phụ lục}
+\crefname{listing}{Đoạn mã}{Đoạn mã}
+\Crefname{listing}{Đoạn mã}{Đoạn mã}
+
+% ------------------------------------------------------------------------------
+% 4. ĐỊNH DẠNG TIÊU ĐỀ CHƯƠNG VÀ MỤC (TITLESEC)
+% Sử dụng cỡ chữ LaTeX tiêu chuẩn (\large, \Large, \LARGE) và khoảng cách hợp lý.
+% ------------------------------------------------------------------------------
+% Tiêu đề chương có đánh số
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering}
+  {\large\chaptername\ \thechapter}
+  {0.6ex}
+  {\Large}
+
+% Tiêu đề chương không đánh số (Mục lục, Lời cảm ơn, v.v.)
+\titleformat{name=\chapter,numberless}[display]
+  {\normalfont\bfseries\centering}
+  {}
+  {0ex}
+  {\Large}
+
+\titlespacing*{\chapter}{0pt}{10pt}{20pt}
+
+% Mục cấp 1 (Section): 1.1. Tiêu đề
+\titleformat{\section}
+  {\normalfont\large\bfseries}
+  {\thesection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+
+% Mục cấp 2 (Subsection): 1.1.1. Tiêu đề
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries}
+  {\thesubsection.}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+
+% Mục cấp 3 (Subsubsection): 1.1.1.1. Tiêu đề
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\itshape}
+  {\thesubsubsection.}{0.5em}{}
+\titlespacing*{\subsubsection}{0pt}{8pt}{3pt}
+
+% ------------------------------------------------------------------------------
+% 5. ĐỊNH DẠNG CAPTION HÌNH ẢNH VÀ BẢNG BIỂU
+% Bảng: Caption đặt ở TRÊN bảng
+% Hình: Caption đặt ở DƯỚI hình
+% ------------------------------------------------------------------------------
+\captionsetup{
+    font=small,
+    labelfont=bf,
+    labelsep=colon,
+    justification=centering,
+    skip=6pt
+}
+
+% ------------------------------------------------------------------------------
+% 6. MÀU SẮC VÀ ĐỊNH DẠNG HYPERLINK
+% Tone màu chuẩn học thuật, nghiêm túc.
+% ------------------------------------------------------------------------------
+\definecolor{academicblue}{RGB}{10, 45, 95}
+\definecolor{codegreen}{RGB}{40, 140, 60}
+\definecolor{codegray}{RGB}{110, 110, 110}
+\definecolor{codepurple}{RGB}{125, 30, 140}
+\definecolor{codebg}{RGB}{248, 249, 250}
+\definecolor{framegray}{RGB}{220, 220, 220}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=academicblue,
+    citecolor=academicblue,
+    urlcolor=academicblue,
+    filecolor=academicblue
+}
+
+% ------------------------------------------------------------------------------
+% 7. HEADER VÀ FOOTER (FANCYHDR)
+% ------------------------------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+
+% Header: Hiển thị tên chương hiện tại bên trái
+\fancyhead[L]{\small\itshape\nouppercase{\leftmark}}
+\fancyhead[R]{}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Footer: Số trang ở chính giữa
+\fancyfoot[C]{\thepage}
+\renewcommand{\footrulewidth}{0pt}
+
+\setlength{\headheight}{16pt}
+
+% Trang đầu tiên của chương dùng kiểu 'plain' (chỉ có số trang ở footer)
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[C]{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0pt}
+}
+
+% ------------------------------------------------------------------------------
+% 8. ĐỊNH DẠNG MÃ NGUỒN (LISTINGS) VỚI LATIN MODERN MONO
+% ------------------------------------------------------------------------------
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    backgroundcolor=\color{codebg},
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{academicblue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=8pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=4,
+    frame=single,
+    rulecolor=\color{framegray},
+    xleftmargin=12pt,
+    framexleftmargin=12pt
+}
+\lstset{style=pythonstyle}

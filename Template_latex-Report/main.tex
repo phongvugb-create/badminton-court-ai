@@ -1,0 +1,79 @@
+% ==============================================================================
+% MAIN.TEX - BỘ TEMPLATE BÁO CÁO HỌC PHẦN
+% PHÁT TRIỂN ỨNG DỤNG AI - KHOA CÔNG NGHỆ THÔNG TIN - TRƯỜNG ĐH CNTT & TT (ICTU)
+% 
+% Quy ước:
+% - File main.tex chỉ đóng vai trò điều phối cấu trúc chung.
+% - KHÔNG viết nội dung báo cáo trực tiếp trong file này.
+% - Cấu hình thông tin đề tài: xem file 'config/metadata.tex'.
+% - Viết nội dung các chương: xem thư mục 'chapters/'.
+% ==============================================================================
+
+\documentclass[12pt,a4paper,oneside]{report}
+
+% ------------------------------------------------------------------------------
+% 1. NẠP CÁC CẤU HÌNH HỆ THỐNG
+% ------------------------------------------------------------------------------
+\input{config/packages}      % Nạp các gói thư viện LaTeX
+\input{config/fonts}         % Cấu hình hệ font Latin Modern chuẩn LaTeX
+\input{config/formatting}    % Cấu hình định dạng trang, tiêu đề, header/footer
+\input{config/commands}      % Lệnh tùy biến (chèn hình, công thức, bảng biểu)
+\input{config/metadata}      % Thông tin đề tài, sinh viên, giảng viên
+
+% ------------------------------------------------------------------------------
+% 2. BẮT ĐẦU TÀI LIỆU
+% ------------------------------------------------------------------------------
+\begin{document}
+
+% ------------------------------------------------------------------------------
+% 2.1. TRANG BÌA (Không đánh số trang)
+% ------------------------------------------------------------------------------
+\input{frontmatter/cover}
+
+% ------------------------------------------------------------------------------
+% 2.2. PHẦN ĐẦU BÁO CÁO (Đánh số trang La Mã: i, ii, iii...)
+% ------------------------------------------------------------------------------
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\input{frontmatter/declaration}       % Lời cam đoan
+\input{frontmatter/acknowledgement}   % Lời cảm ơn
+\input{frontmatter/abstract}          % Tóm tắt báo cáo
+\input{frontmatter/abbreviations}     % Danh mục từ viết tắt
+\input{frontmatter/glossary}          % Danh mục thuật ngữ
+
+\input{frontmatter/tableofcontents}   % Mục lục
+\input{frontmatter/listoffigures}     % Danh mục hình ảnh
+\input{frontmatter/listoftables}      % Danh mục bảng biểu
+
+% ------------------------------------------------------------------------------
+% 2.3. NỘI DUNG CHÍNH (Đánh số trang Ả Rập: 1, 2, 3...)
+% ------------------------------------------------------------------------------
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{chapters/chapter1}             % Chương 1: Tổng quan về đề tài
+\input{chapters/chapter2}             % Chương 2: Cơ sở lý thuyết và công nghệ
+\input{chapters/chapter3}             % Chương 3: Phân tích và thiết kế ứng dụng AI
+\input{chapters/chapter4}             % Chương 4: Triển khai và thực nghiệm
+\input{chapters/chapter5}             % Chương 5: Đánh giá và kết luận
+
+% ------------------------------------------------------------------------------
+% 2.4. TÀI LIỆU THAM KHẢO (Chuẩn IEEE)
+% ------------------------------------------------------------------------------
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{\bibname}
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+% ------------------------------------------------------------------------------
+% 2.5. CÁC PHỤ LỤC (Đánh số A, B, C...)
+% ------------------------------------------------------------------------------
+\appendix
+\input{appendices/appendixA}          % Phụ lục A: Mã nguồn chương trình
+\input{appendices/appendixB}          % Phụ lục B: Hướng dẫn cài đặt và vận hành
+\input{appendices/appendixC}          % Phụ lục C: Kết quả thực nghiệm và siêu tham số
+
+\end{document}
