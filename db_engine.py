@@ -643,6 +643,30 @@ def init_sqlite(conn):
         # by index definitions. execute() only accepts one statement; execute
         # the complete schema script so every table and index is initialized.
         conn.executescript(stmt)
+
+    # CREATE TABLE IF NOT EXISTS does not add columns to a database that
+    # already has an older version of the table (for example, Render's
+    # persisted badminton.db volume). Migrate user columns required by the
+    # current seed and authentication code before any data is written.
+    user_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(users)").fetchall()
+    }
+    user_column_migrations = {
+        "password": "TEXT",
+        "password_hash": "TEXT",
+        "email": "TEXT",
+        "role": "TEXT DEFAULT 'CUSTOMER'",
+        "elo_rating": "INTEGER DEFAULT 1200",
+        "avatar": "TEXT",
+        "facility_id": "INTEGER",
+        "is_approved": "INTEGER DEFAULT 1",
+        # CURRENT_TIMESTAMP cannot be used as an ALTER TABLE default on
+        # existing rows, so legacy rows receive NULL for this optional field.
+        "created_at": "TIMESTAMP",
+    }
+    for column, definition in user_column_migrations.items():
+        if column not in user_columns:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {column} {definition}")
     conn.commit()
     logger.info(f"✅ SQLite tables initialized successfully at {SQLITE_PATH}.")
 
