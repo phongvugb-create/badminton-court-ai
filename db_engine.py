@@ -676,14 +676,22 @@ def save_to_sqlite(data_dict, conn):
         # Save users
         if "users" in data_dict and isinstance(data_dict["users"], list):
             for u in data_dict["users"]:
+                password_hash = u.get("password_hash")
+                if not password_hash:
+                    existing_user = cur.execute(
+                        "SELECT password_hash FROM users WHERE id = ? OR phone = ? LIMIT 1",
+                        (u.get("id"), u.get("phone")),
+                    ).fetchone()
+                    password_hash = existing_user[0] if existing_user and existing_user[0] else ""
                 cur.execute("""
-                INSERT OR REPLACE INTO users (id, name, phone, password, role, elo_rating, avatar, is_approved)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO users (id, name, phone, password, password_hash, role, elo_rating, avatar, is_approved)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     u.get("id"),
                     u.get("name"),
                     u.get("phone"),
                     u.get("password") or "123456",
+                    password_hash,
                     u.get("role", "CUSTOMER"),
                     u.get("elo_rating") if isinstance(u.get("elo_rating"), int) else 1200,
                     u.get("avatar") or "👤",
