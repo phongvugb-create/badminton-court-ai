@@ -191,6 +191,7 @@ class RAGSourceCitation(BaseModel):
     evidence_match: Optional[bool] = None
 
 class AIChatResponse(BaseModel):
+    actions: List[Dict[str, Any]] = Field(default_factory=list)
     answer: str
     reply: Optional[str] = None
     conversation_id: Optional[str] = None

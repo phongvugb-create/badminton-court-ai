@@ -7,6 +7,7 @@ import unicodedata
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from collections import defaultdict
+from app.ai.navigation import booking_actions
 
 RANGE_LOOKUP_TIMEOUT = 15
 
@@ -204,17 +205,21 @@ async def _answer_range(request, db, sync_inventory, availability_tool):
         if not rows:
             return response('Chưa tìm thấy cơ sở phù hợp khu vực bạn hỏi. Bạn cho biết tên quận hoặc cụm sân cụ thể nhé.', 'clarification_required', 'no_results')
         matches = []
+        actions = []
         for facility in rows:
             result = await availability_tool(db=db, facility_id=facility.id, date=request['date'], time=None, limit=500)
             if result.get('status') not in ('success', 'no_results') or result.get('reason') == 'availability_unverified' or len(result.get('data', [])) >= 500:
                 return response('Tôi chưa thể xác minh đầy đủ lịch trống và trạng thái giữ chỗ lúc này. Bạn vui lòng thử lại sau hoặc xem ma trận lịch sân.', 'availability_unverified', 'data_unavailable')
-            for court in continuously_available(result.get('data', []), request['start'], request['end']):
+            available = continuously_available(result.get('data', []), request['start'], request['end'])
+            if available and len(matches) < 30:
+                actions.extend(booking_actions(facility.id, facility.name, request['date']))
+            for court in available:
                 matches.append(f"- **{facility.name} — Sân {court['court_number']}** · {facility.address}")
         label = f"{request['date']} · {format_time(request['start'])}–{format_time(request['end'])}"
         if not matches:
             return response(f'Tôi chưa tìm thấy sân trống liên tục suốt khoảng **{label}** trong các cơ sở phù hợp. Bạn thử đổi giờ hoặc khu vực nhé.', retrieval='no_results')
         text = f"**Sân còn trống liên tục {label}:**\n" + '\n'.join(matches[:30])
         text += '\n\nTrạng thái được kiểm tra tại thời điểm tra cứu; chỉ được giữ chỗ sau khi bạn xác nhận.'
-        return response(text)
+        return {**response(text), 'actions': actions}
     except Exception:
         return response('Hiện tôi chưa đọc được lịch sân. Bạn vui lòng thử lại sau; tôi chưa thể xác nhận sân trống.', 'error', 'data_unavailable')

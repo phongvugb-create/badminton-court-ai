@@ -218,7 +218,7 @@ class BadmintonAIChatbot {
     const container = document.getElementById('ai-chat-messages-body');
     if (!container) return;
 
-    container.innerHTML = this.messages.map(msg => {
+    container.innerHTML = this.messages.map((msg, messageIndex) => {
       const isUser = msg.sender === 'user';
       const formattedText = isUser ? this.escapeHtml(msg.text) : this.formatMarkdown(msg.text);
 
@@ -294,6 +294,9 @@ class BadmintonAIChatbot {
         `;
       }
 
+      const navigationHtml = !isUser && Array.isArray(msg.actions) ? msg.actions.map((action, actionIndex) =>
+        action.type === 'open_booking' ? `<button type="button" class="btn btn-primary btn-sm" style="margin:6px 4px 0 0;white-space:normal" onclick="window.badmintonAIChatbot.openBookingAction(${messageIndex},${actionIndex})">${this.escapeHtml(action.label || 'Mở lịch đặt sân')}</button>` : ''
+      ).join('') : '';
       return `
         <div class="ai-msg-row ${isUser ? 'user' : 'bot'}">
           ${!isUser ? `
@@ -306,6 +309,7 @@ class BadmintonAIChatbot {
             ${statusBadgeHtml}
             ${sourcesHtml}
             ${actionButtonsHtml}
+            ${navigationHtml}
             <div class="ai-msg-time">${msg.time || ''}</div>
           </div>
         </div>
@@ -413,6 +417,7 @@ class BadmintonAIChatbot {
           sender: 'bot',
           text: replyText,
           sources: sources,
+          actions: Array.isArray(data.actions) ? data.actions : [],
           retrieval_status: retrieval_status,
           action_type: action_type,
           pending_intent_id: pending_intent_id,
@@ -451,6 +456,12 @@ class BadmintonAIChatbot {
       this.isProcessing = false;
       this.setSendButtonState(true);
     }
+  }
+
+  openBookingAction(messageIndex, actionIndex) {
+    const action = this.messages[messageIndex]?.actions?.[actionIndex];
+    if (action?.type !== 'open_booking' || typeof app === 'undefined') return;
+    if (app.openBookingFromChat(action)) this.toggle(false);
   }
 
   confirmHold(intentId) {

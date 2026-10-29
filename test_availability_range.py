@@ -185,6 +185,8 @@ class RangeChatbotTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('19:00–21:00',r['answer'])
         self.assertIn('Sân Hà Nội',r['answer'])
         self.assertNotIn('Đà Nẵng',r['answer'])
+        self.assertEqual([a['section'] for a in r['actions']], ['schedule', 'equipment'])
+        self.assertTrue(all(a['facility_id'] == 1 and a['date'] for a in r['actions']))
 
     async def test_partial_interval_is_not_available(self):
         r = await self.search({'status':'success','data':[slot('19:00','20:00'),slot('20:00','21:00','HELD')]})

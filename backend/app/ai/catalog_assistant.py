@@ -10,6 +10,7 @@ import unicodedata
 import sys
 from pathlib import Path
 from typing import Optional
+from app.ai.navigation import booking_actions
 
 
 def normalize(value):
@@ -135,7 +136,13 @@ def answer_equipment(message, data):
     if len(matches) > 20:
         lines.append("Danh sách còn tiếp; bạn cho biết cơ sở hoặc loại dụng cụ để thu hẹp kết quả.")
     lines.append("\nNguồn: danh mục dụng cụ của hệ thống. Giá theo từng cơ sở và đơn vị niêm yết; số lượng còn cho thuê cần xác nhận khi đặt.")
-    return _response("\n".join(lines))
+    actions = []
+    seen = set()
+    for _, facility in matches[:20]:
+        if facility['id'] not in seen:
+            seen.add(facility['id'])
+            actions.extend(booking_actions(facility['id'], facility.get('name', 'Cơ sở')))
+    return {**_response("\n".join(lines)), 'actions': actions}
 
 
 def facility_intent(message):

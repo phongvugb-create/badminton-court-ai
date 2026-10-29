@@ -1665,6 +1665,30 @@ class BadmintonAIApp {
     }, 600);
   }
 
+  openBookingFromChat(action) {
+    const facility = MockData.facilities.find(f => String(f.id) === String(action.facility_id) && f.is_approved !== false);
+    if (!facility) {
+      this.showToast('Cơ sở này chưa có trong danh sách hiện tại. Vui lòng tải lại danh sách sân.', 'error');
+      return false;
+    }
+    const datePicker = document.getElementById('booking-date-picker');
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(action.date || '') ? action.date : null;
+    if (String(this.selectedFacility?.id) !== String(facility.id) || (date && datePicker?.value !== date)) {
+      this.selectedSlots = [];
+      this.selectedSlot = null;
+      this.selectedEquipments = {};
+    }
+    this.selectFacilityForBooking(facility.id);
+    if (date && datePicker) datePicker.value = date;
+    this.renderSlotMatrix();
+    this.renderEquipmentRentalList();
+    this.updateBookingSummary();
+    const destination = document.getElementById(action.section === 'equipment' ? 'equipment-rent-container' : 'slot-matrix-grid');
+    destination?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    this.showToast('Chọn khung giờ và thiết bị tại đây để tiếp tục đặt sân.');
+    return true;
+  }
+
   selectFacilityForBooking(facilityId) {
     this.selectedFacility = MockData.facilities.find(f => f.id === facilityId);
     document.getElementById('facility-detail-name').textContent = this.selectedFacility.name;
@@ -1805,6 +1829,7 @@ class BadmintonAIApp {
     let html = '';
 
     MockData.equipments.forEach(eq => {
+      if (eq.facility_id != null && String(eq.facility_id) !== String(this.selectedFacility?.id)) return;
       const qty = this.selectedEquipments[eq.id] || 0;
       const styleTag = eq.style ? `<div style="font-size: 0.72rem; color: var(--accent-cyan); font-weight: 600; margin-top: 1px;">${eq.style}</div>` : '';
       html += `
@@ -1823,7 +1848,7 @@ class BadmintonAIApp {
       `;
     });
 
-    if (container) container.innerHTML = html;
+    if (container) container.innerHTML = html || '<p>Chưa có thiết bị cho thuê tại cơ sở này.</p>';
   }
 
   changeEquipQty(equipId, delta) {

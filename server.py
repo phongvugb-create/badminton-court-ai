@@ -1477,6 +1477,7 @@ class BadmintonServerHandler(http.server.SimpleHTTPRequestHandler):
                     "status": result["status"],
                     "retrieval_status": result.get("retrieval_status"),
                     "sources": result.get("sources", []),
+                    "actions": result.get("actions", []),
                     "action_type": result.get("action_type"),
                     "pending_intent_id": result.get("pending_intent_id"),
                     "booking_intent_id": result.get("booking_intent_id"),

@@ -33,6 +33,7 @@ from app.core.redis import get_slot_lock_holder
 from app.ai.llm_provider import BaseLLMProvider, get_default_llm_provider
 from app.ai.retrieval_service import BaseRetriever, get_retrieval_service
 from app.ai.catalog_assistant import try_catalog_answer, normalize
+from app.ai.navigation import booking_actions
 from app.ai.availability_range import range_question, parse_range, answer_range
 from app.ai.rag_context_builder import RAGContextBuilder, get_rag_context_builder
 from app.schemas.all_schemas import RAGSourceCitation
@@ -931,6 +932,7 @@ class ChatbotService:
             # 4.2. Facility Search Query
             if SEARCH_COURTS_PATTERN.search(clean_message):
                 if db_session:
+                    navigation_actions = []
                     location_end = r"(?=\s+(?:còn|trống|không|hôm\s+nay|ngày\s+mai|ngày\s+kia|ngày\s+\d|từ\s+\d|lúc\s+\d)|[,?.!]|$)"
                     q_match = re.search(
                         rf"(?:ở|tại|khu\s+vực)\s+([A-Za-zÀ-ỹ0-9\s-]+?){location_end}",
@@ -1003,6 +1005,7 @@ class ChatbotService:
                         else:
                             lines = [f"🏸 **Các khung giờ còn trống ngày {search_date} tại {search_kw or 'khu vực bạn tìm'}:**"]
                             for facility, slots in available_by_facility:
+                                navigation_actions.extend(booking_actions(facility['facility_id'], facility['name'], search_date))
                                 lines.append(f"\n**{facility['name']}** — {facility['address']}")
                                 for slot in slots:
                                     lines.append(
@@ -1011,6 +1014,7 @@ class ChatbotService:
                                     )
                             ans = "\n".join(lines)
                     return {
+                        "actions": navigation_actions,
                         "answer": ans, "reply": ans, "conversation_id": conv_id, "message_id": msg_id,
                         "user_id": user_id, "status": "success", "retrieval_status": "supported",
                         "sources": [], "provider": self.llm_provider.provider_name
@@ -1110,6 +1114,7 @@ class ChatbotService:
                     )
                     facilities = facility_result.all()
                     available_by_facility = []
+                    navigation_actions = []
                     availability_failed = False
                     for facility_id, facility_name, facility_address in facilities:
                         availability = await check_court_availability(
@@ -1127,6 +1132,7 @@ class ChatbotService:
                             if slot.get("effective_status") == "AVAILABLE"
                         ]
                         if open_slots:
+                            navigation_actions.extend(booking_actions(facility_id, facility_name, target_date))
                             available_by_facility.append((facility_name, facility_address, open_slots))
 
                     if availability_failed:
@@ -1149,6 +1155,7 @@ class ChatbotService:
                         realtime_msg = "\n".join(lines)
                     return {
                         "answer": realtime_msg,
+                        "actions": navigation_actions if not availability_failed else [],
                         "reply": realtime_msg,
                         "conversation_id": conv_id,
                         "message_id": msg_id,
@@ -1247,7 +1254,9 @@ class ChatbotService:
                     return {
                         "answer": ans, "reply": ans, "conversation_id": conv_id, "message_id": msg_id,
                         "user_id": user_id, "status": "success", "retrieval_status": "supported",
-                        "sources": [], "provider": self.llm_provider.provider_name
+                        "sources": [], "provider": self.llm_provider.provider_name,
+                        "actions": booking_actions(target_fac_id, tool_res['data'][0]['facility_name'], target_date)
+                        if tool_res.get('data') else [],
                     }
         except Exception as router_err:
             logger.error(f"[ChatbotService] Realtime router error: {router_err}", exc_info=True)
