@@ -6,6 +6,7 @@ rows, so this module materializes the shared templates for the requested date.
 """
 
 import json
+import asyncio
 import logging
 import re
 import uuid
@@ -185,9 +186,12 @@ async def sync_legacy_inventory(
     date: Optional[str] = None,
     facility_ids: Optional[Iterable[int]] = None,
     start_time: Optional[str] = None,
+    location: Optional[str] = None,
+    interval_start: Optional[int] = None,
+    interval_end: Optional[int] = None,
 ) -> Dict[str, int]:
     """Upsert shared facilities/courts and materialize date-specific slot rows."""
-    data = _load_central_data()
+    data = await asyncio.to_thread(_load_central_data)
     raw_facilities = data.get("facilities", [])
     if not isinstance(raw_facilities, list) or not raw_facilities:
         return {"facilities": 0, "courts": 0, "slots": 0}
@@ -198,6 +202,14 @@ async def sync_legacy_inventory(
         if isinstance(item, dict)
         and (requested_ids is None or int(item.get("id", -1)) in requested_ids)
     ]
+    if location:
+        from app.ai.catalog_assistant import normalize
+        key = normalize(location)
+        facilities = [item for item in facilities if key in normalize(
+            f"{item.get('name', '')} {item.get('address', '')}"
+        )]
+    if not facilities:
+        return {"facilities": 0, "courts": 0, "slots": 0}
     raw_users = data.get("users", []) if isinstance(data.get("users", []), list) else []
     users_by_source_id: Dict[int, User] = {}
 
@@ -363,6 +375,13 @@ async def sync_legacy_inventory(
                 if not re.fullmatch(r"\d{2}:\d{2}", start) or not re.fullmatch(r"\d{2}:\d{2}", end):
                     continue
                 if start_time and start != start_time:
+                    continue
+                # Only materialize templates overlapping the requested interval.
+                start_minutes = int(start[:2]) * 60 + int(start[3:])
+                end_minutes = int(end[:2]) * 60 + int(end[3:])
+                if interval_start is not None and end_minutes <= interval_start:
+                    continue
+                if interval_end is not None and start_minutes >= interval_end:
                     continue
                 legacy_status = str(template.get("status") or "AVAILABLE").upper()
                 if legacy_status == "MAINTENANCE":

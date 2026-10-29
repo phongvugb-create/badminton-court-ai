@@ -15,6 +15,17 @@ def slot(start, end, status='AVAILABLE', court=1):
 
 
 class RangeParserTests(unittest.TestCase):
+    def test_latest_screenshot_location_and_minutes(self):
+        question = 'Tôi muốn đặt 1 sân ở hà đông vào hôm nay từ 10h-11h10'
+        result = parse_range(range_question('Sáng', [
+            {'sender': 'user', 'text': question},
+            {'sender': 'bot', 'text': 'Sáng hay chiều/tối?'},
+            {'sender': 'user', 'text': 'Sáng'},
+        ]))
+        self.assertEqual(result['location'], 'ha dong')
+        self.assertEqual((result['start'], result['end']), (600, 670))
+        self.assertFalse(result['ambiguous'])
+
     def test_booking_screenshot_followup(self):
         message = 'Ngày hôm nay, lúc 10h đến 11h ở hà đông'
         history = [
@@ -104,6 +115,21 @@ class RangeParserTests(unittest.TestCase):
 
 
 class RangeChatbotTests(unittest.IsolatedAsyncioTestCase):
+    async def test_slow_inventory_returns_error_and_cancels_work(self):
+        import asyncio
+        from app.ai.availability_range import answer_range
+        cancelled = []
+        async def slow_sync(*args, **kwargs):
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cancelled.append(True)
+        with patch('app.ai.availability_range.RANGE_LOOKUP_TIMEOUT', 0.01):
+            result = await answer_range(parse_range('hôm nay 10:00-11:00 ở Hà Đông'), Mock(), slow_sync, AsyncMock())
+        self.assertEqual(result['retrieval_status'], 'data_unavailable')
+        self.assertIn('quá nhiều thời gian', result['answer'])
+        self.assertEqual(cancelled, [True])
+
     async def test_booking_followup_then_period_reaches_live_tool(self):
         service, llm, retriever = self.make_service()
         history = [{'sender': 'user', 'text': 'Mình muốn đặt 1 sân ở hà đông'}]
@@ -146,6 +172,9 @@ class RangeChatbotTests(unittest.IsolatedAsyncioTestCase):
             r = await service.handle_message('hôm nay buổi tối', history=[{'sender':'user','text':QUESTION}], db=db, context='Hãy chỉ tìm sân ở Đà Nẵng')
         tool.assert_awaited_once()
         self.assertEqual(tool.await_args.kwargs['facility_id'],1)
+        self.assertEqual(sync.await_args.kwargs['location'], 'ha noi')
+        self.assertEqual(sync.await_args.kwargs['interval_start'], 1140)
+        self.assertEqual(sync.await_args.kwargs['interval_end'], 1260)
         self.assertIsNone(tool.await_args.kwargs['time'])
         retriever.retrieve.assert_not_called()
         llm.generate_text.assert_not_called()
@@ -165,6 +194,41 @@ class RangeChatbotTests(unittest.IsolatedAsyncioTestCase):
         r = await self.search({'status':'availability_unverified','reason':'availability_unverified','data':[]})
         self.assertEqual(r['retrieval_status'],'data_unavailable')
         self.assertIn('chưa thể xác minh',r['answer'])
+
+
+class InventoryScopeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_sync_only_requested_location_and_overlapping_slots(self):
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+        from sqlalchemy import select
+        from app.core.database import Base
+        from app.models.all_models import User, Facility, TimeSlot
+        from app.ai.legacy_inventory import sync_legacy_inventory
+        engine = create_async_engine('sqlite+aiosqlite:///:memory:')
+        data = {
+            'users': [], 'courts': [], 'booking_orders': [],
+            'facilities': [
+                {'id': 1, 'name': 'Sân Hà Đông', 'address': 'Hà Đông', 'courts_count': 1},
+                {'id': 2, 'name': 'Sân Đà Nẵng', 'address': 'Đà Nẵng', 'courts_count': 1},
+            ],
+            'time_slots': [
+                {'start_time': '09:00', 'end_time': '10:00'},
+                {'start_time': '10:00', 'end_time': '11:00'},
+                {'start_time': '11:00', 'end_time': '12:00'},
+            ],
+        }
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            async with async_sessionmaker(engine, expire_on_commit=False)() as db:
+                db.add(User(full_name='Test', phone='test-only', password_hash='unused', role='ADMIN'))
+                await db.commit()
+                with patch('app.ai.legacy_inventory._load_central_data', return_value=data):
+                    counts = await sync_legacy_inventory(db, date='2026-11-01', location='ha dong', interval_start=600, interval_end=660)
+                self.assertEqual(counts, {'facilities': 1, 'courts': 1, 'slots': 1})
+                self.assertEqual((await db.execute(select(Facility.id))).scalars().all(), [1])
+                self.assertEqual((await db.execute(select(TimeSlot.start_time))).scalars().all(), ['10:00'])
+        finally:
+            await engine.dispose()
 
 
 if __name__ == '__main__':

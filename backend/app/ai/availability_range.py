@@ -2,10 +2,13 @@
 is free throughout the requested interval. Never consult static SRS for live slots.
 """
 import re
+import asyncio
 import unicodedata
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from collections import defaultdict
+
+RANGE_LOOKUP_TIMEOUT = 15
 
 
 def fold(text):
@@ -126,7 +129,7 @@ def parse_range(text):
                 day = today.isoformat()
     except ValueError:
         return {'error': 'Ngày không hợp lệ. Bạn nhập ngày theo dạng DD/MM/YYYY nhé.'}
-    location = re.search(r'\b(?:o|tai|khu vuc)\s+(.+?)(?=\s+(?:co|con|trong|tu|luc|hom|ngay|buoi|sang|chieu|toi)\b|[?!,]|$)', q)
+    location = re.search(r'\b(?:o|tai|khu vuc)\s+(.+?)(?=\s+(?:vao|co|con|trong|tu|luc|hom|ngay|buoi|sang|chieu|toi)\b|[?!,]|$)', q)
     return {'start': start, 'end': end, 'date': day, 'ambiguous': ambiguous,
             'location': location.group(1).strip() if location else None}
 
@@ -165,6 +168,17 @@ def continuously_available(slots, start, end):
 
 
 async def answer_range(request, db, sync_inventory, availability_tool):
+    try:
+        return await asyncio.wait_for(
+            _answer_range(request, db, sync_inventory, availability_tool), timeout=RANGE_LOOKUP_TIMEOUT
+        )
+    except asyncio.TimeoutError:
+        text = 'Tra cứu lịch sân đang mất quá nhiều thời gian. Tôi chưa thể xác nhận sân trống. Bạn vui lòng thử lại hoặc xem lịch sân trực tiếp trên website.'
+        return {'answer': text, 'reply': text, 'status': 'error',
+                'retrieval_status': 'data_unavailable', 'sources': [], 'provider': 'business_tools'}
+
+
+async def _answer_range(request, db, sync_inventory, availability_tool):
     from sqlalchemy import select
     from app.models.all_models import Facility
     def response(text, status='success', retrieval='supported'):
@@ -181,7 +195,8 @@ async def answer_range(request, db, sync_inventory, availability_tool):
     if db is None:
         return response('Hiện tôi chưa kết nối được dữ liệu lịch sân. Bạn vui lòng thử lại sau.', 'error', 'data_unavailable')
     try:
-        await sync_inventory(db, date=request['date'])
+        await sync_inventory(db, date=request['date'], location=request['location'],
+                             interval_start=request['start'], interval_end=request['end'])
         rows = (await db.execute(select(Facility.id, Facility.name, Facility.address).where(Facility.is_approved == True))).all()
         location = request['location']
         if location:

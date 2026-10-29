@@ -366,6 +366,9 @@ class BadmintonAIChatbot {
       siteContext += `\nDANH SÁCH SÂN CẦU LÔNG HIỆN CÓ:\n${JSON.stringify(facilitiesForAI, null, 2)}\n`;
     }
 
+    // Bound the entire request, including reading the response body.
+    const requestController = new AbortController();
+    const requestTimer = setTimeout(() => requestController.abort(), 25000);
     // 4. Call Secure Server Endpoint
     try {
       let replyText = "";
@@ -380,6 +383,7 @@ class BadmintonAIChatbot {
       }
 
       const response = await fetch(this.apiEndpoint, {
+        signal: requestController.signal,
         method: 'POST',
         headers: headers,
         credentials: 'include',
@@ -435,12 +439,15 @@ class BadmintonAIChatbot {
 
       this.messages.push({
         sender: 'bot',
-        text: "⚠️ **Kết nối gián đoạn**:\nHiện không thể kết nối tới máy chủ Trợ lý AI. Bạn vui lòng thử lại sau giây lát hoặc xem thông tin sân trực tiếp trên website nhé!",
+        text: err.name === 'AbortError'
+          ? "⚠️ Tra cứu đang mất quá nhiều thời gian. Tôi chưa thể xác nhận kết quả. Bạn vui lòng thử lại hoặc xem lịch sân trực tiếp trên website."
+          : "⚠️ **Kết nối gián đoạn**:\nHiện không thể kết nối tới máy chủ Trợ lý AI. Bạn vui lòng thử lại sau giây lát hoặc xem thông tin sân trực tiếp trên website nhé!",
         time: this.getCurrentTimeString()
       });
       this.saveHistory();
       this.renderMessages();
     } finally {
+      clearTimeout(requestTimer);
       this.isProcessing = false;
       this.setSendButtonState(true);
     }
