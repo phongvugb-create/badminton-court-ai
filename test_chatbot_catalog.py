@@ -139,6 +139,22 @@ class CatalogTests(unittest.TestCase):
 
 
 class CatalogRoutingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_incomplete_booking_clarifies_without_rag_or_side_effects(self):
+        from app.ai.chatbot_service import ChatbotService
+        from unittest.mock import Mock
+        for query in ["Mình muốn đặt 1 sân ở hà đông", "Tôi muốn đặt một sân tại Hà Đông", "Đặt sân ngày mai", "Thuê sân ở Hà Đông"]:
+            with self.subTest(query=query):
+                llm, retriever = Mock(), Mock()
+                with patch("app.ai.chatbot_service.AsyncSessionLocal") as session:
+                    result = await ChatbotService(llm_provider=llm, retriever=retriever).handle_message(query)
+                self.assertEqual(result["status"], "clarification_required")
+                self.assertIsNone(result["retrieval_status"])
+                self.assertIn("ngày nào", result["answer"])
+                self.assertIn("mấy giờ", result["answer"])
+                session.assert_not_called()
+                llm.generate_text.assert_not_called()
+                self.assertEqual(retriever.mock_calls, [])
+
     async def test_catalog_routing(self):
         with patch("app.ai.catalog_assistant.load_catalog", return_value=CATALOG):
             result = await try_catalog_answer("Thuê vợt bên mình giá bao nhiêu")

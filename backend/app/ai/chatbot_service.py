@@ -32,7 +32,7 @@ from app.core.database import AsyncSessionLocal
 from app.core.redis import get_slot_lock_holder
 from app.ai.llm_provider import BaseLLMProvider, get_default_llm_provider
 from app.ai.retrieval_service import BaseRetriever, get_retrieval_service
-from app.ai.catalog_assistant import try_catalog_answer
+from app.ai.catalog_assistant import try_catalog_answer, normalize
 from app.ai.availability_range import range_question, parse_range, answer_range
 from app.ai.rag_context_builder import RAGContextBuilder, get_rag_context_builder
 from app.schemas.all_schemas import RAGSourceCitation
@@ -348,6 +348,30 @@ class ChatbotService:
                 "retrieval_status": None,
                 "sources": [],
                 "provider": self.llm_provider.provider_name
+            }
+
+        # Booking requests with missing scheduling details are not document FAQs.
+        # Clarify before retrieval, without reserving a slot or assuming today.
+        booking_query = normalize(clean_message)
+        booking_request = bool(re.search(
+            r"\b(?:dat|thue)\s+(?:(?:\d+|mot|vai)\s+)?san\b", booking_query
+        )) and not re.search(
+            r"\b(?:cach|huong dan|quy trinh|quy dinh|chinh sach|huy|hoan|xac nhan|dong y|nhu the nao|la gi|bao lau|truoc bao nhieu)\b",
+            booking_query,
+        )
+        if booking_request and (
+            not extract_date_from_text(clean_message) or not extract_time_from_text(clean_message)
+        ):
+            answer = (
+                "Bạn muốn đặt sân vào **ngày nào**, **mấy giờ** và **chơi bao lâu**? "
+                "Bạn cho biết thêm **tên cụm sân hoặc khu vực** muốn chơi nếu chưa cung cấp nhé. "
+                "Tôi sẽ tra cứu lịch trống sau khi có đủ thông tin; sân chưa được giữ hay đặt."
+            )
+            return {
+                "answer": answer, "reply": answer, "conversation_id": conv_id,
+                "message_id": msg_id, "user_id": user_id,
+                "status": "clarification_required", "retrieval_status": None,
+                "sources": [], "provider": self.llm_provider.provider_name,
             }
 
         ranged_query = range_question(clean_message, history)
