@@ -23,12 +23,46 @@ def is_availability(text):
     return bool(re.search(r'\b(?:san|slot)\b', q) and re.search(r'\b(?:trong|con cho|dat duoc)\b', q)) and not re.search(r'\b(?:quy dinh|chinh sach|huong dan|cach|huy|hoan coc)\b', q)
 
 
+def is_booking(text):
+    q = fold(text)
+    return bool(re.search(r'\b(?:dat|thue)\s+(?:(?:\d+|mot|vai)\s+)?san\b', q)) and not re.search(
+        r'\b(?:quy dinh|chinh sach|huong dan|quy trinh|cach|huy|hoan|xac nhan|dong y|nhu the nao|la gi|bao lau)\b', q)
+
+
 def range_question(message, history=None):
-    if is_availability(message) and TIME_RANGE.search(fold(message)):
+    if (is_availability(message) or is_booking(message)) and TIME_RANGE.search(fold(message)):
         return message
     # A short answer to our missing date/period question continues only the
     # immediately preceding user's availability question, never bot/page context.
     q = fold(message)
+    if len(q.split()) <= 12 and re.search(r'\b(?:sang|toi|chieu|hom nay|ngay mai)\b', q) and not TIME_RANGE.search(q):
+        recent = (history or [])[-8:]
+        for index in range(len(recent) - 1, -1, -1):
+            item = recent[index]
+            if item.get('role', item.get('sender')) not in ('user', 'customer'):
+                continue
+            previous = str(item.get('content') or item.get('text') or '')
+            if fold(previous) == q:
+                continue
+            if TIME_RANGE.search(fold(previous)):
+                resolved = range_question(previous, recent[:index])
+                if resolved:
+                    return resolved + ' ' + message
+            break
+    # Scheduling replies may omit "sân" entirely and include the browser's
+    # current message in history. Only continue the recent user topic.
+    if len(q.split()) <= 24 and TIME_RANGE.search(q) and not re.search(
+        r'\b(?:quy dinh|chinh sach|huong dan|cach|huy|hoan)\b', q
+    ):
+        for item in reversed((history or [])[-8:]):
+            if item.get('role', item.get('sender')) not in ('user', 'customer'):
+                continue
+            previous = str(item.get('content') or item.get('text') or '')
+            if fold(previous) == q:
+                continue
+            if is_booking(previous) or is_availability(previous):
+                return message + ', ' + previous
+            break
     if len(q.split()) <= 12 and re.search(r'\b(?:hom nay|mai|ngay kia|sang|toi|chieu|\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4})\b', q):
         answers = []
         for item in reversed((history or [])[-8:]):
@@ -37,7 +71,7 @@ def range_question(message, history=None):
             previous = str(item.get('content') or item.get('text') or '')
             if fold(previous) == q:
                 continue
-            if is_availability(previous) and TIME_RANGE.search(fold(previous)):
+            if (is_availability(previous) or is_booking(previous)) and TIME_RANGE.search(fold(previous)):
                 return ' '.join([previous, *reversed(answers), message])
             if len(previous.split()) <= 8 and re.search(r'\b(?:hom nay|mai|ngay kia|sang|toi|chieu|\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4})\b', fold(previous)):
                 answers.append(previous)

@@ -15,6 +15,24 @@ def slot(start, end, status='AVAILABLE', court=1):
 
 
 class RangeParserTests(unittest.TestCase):
+    def test_booking_screenshot_followup(self):
+        message = 'Ngày hôm nay, lúc 10h đến 11h ở hà đông'
+        history = [
+            {'sender': 'user', 'text': 'Mình muốn đặt 1 sân ở hà đông'},
+            {'sender': 'bot', 'text': 'Ngày nào, mấy giờ?'},
+            {'sender': 'user', 'text': message},
+        ]
+        result = parse_range(range_question(message, history))
+        self.assertEqual(result['location'], 'ha dong')
+        self.assertEqual((result['start'], result['end']), (600, 660))
+        self.assertIsNotNone(result['date'])
+
+    def test_booking_does_not_survive_topic_change(self):
+        self.assertIsNone(range_question('Hôm nay 10h đến 11h', [
+            {'role': 'user', 'content': 'Đặt sân ở Hà Đông'},
+            {'role': 'user', 'content': 'Cách đổi mật khẩu'},
+        ]))
+
     def test_exact_reported_question(self):
         self.assertEqual(range_question(QUESTION), QUESTION)
         r = parse_range(QUESTION)
@@ -86,6 +104,26 @@ class RangeParserTests(unittest.TestCase):
 
 
 class RangeChatbotTests(unittest.IsolatedAsyncioTestCase):
+    async def test_booking_followup_then_period_reaches_live_tool(self):
+        service, llm, retriever = self.make_service()
+        history = [{'sender': 'user', 'text': 'Mình muốn đặt 1 sân ở hà đông'}]
+        first = await service.handle_message(history[0]['text'])
+        self.assertEqual(first['status'], 'clarification_required')
+        followup = 'Ngày hôm nay, lúc 10h đến 11h ở hà đông'
+        second = await service.handle_message(followup, history=history)
+        self.assertEqual(second['status'], 'clarification_required')
+        self.assertIsNone(second['retrieval_status'])
+        history.append({'sender': 'user', 'text': followup})
+        db = Mock()
+        db.execute = AsyncMock(return_value=SimpleNamespace(all=lambda: [SimpleNamespace(id=1, name='Sân Hà Đông', address='Hà Đông')]))
+        with patch('app.ai.chatbot_service.sync_legacy_inventory', new=AsyncMock()), patch('app.ai.chatbot_service.check_court_availability', new=AsyncMock(return_value={'status':'success', 'data':[slot('10:00','11:00')]})) as tool:
+            result = await service.handle_message('buổi sáng', history=history, db=db)
+        tool.assert_awaited_once()
+        self.assertIn('10:00–11:00', result['answer'])
+        self.assertIn('Sân Hà Đông', result['answer'])
+        llm.generate_text.assert_not_called()
+        retriever.retrieve.assert_not_called()
+
     def make_service(self):
         from app.ai.chatbot_service import ChatbotService
         llm, retriever = Mock(), Mock()
